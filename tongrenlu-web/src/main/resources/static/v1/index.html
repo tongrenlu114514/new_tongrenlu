@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>东方Project同人音乐网站</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #302363;
+            --secondary-color: #df8888;
+            --accent-color: #00a6eb;
+            --download-color: #C51D1D;
+            --background-gradient-start: #120F33;
+            --background-gradient-end: #2A235A;
+            --text-primary: #333;
+            --text-secondary: #666;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: #fff;
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        /* 导航栏 */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 3rem;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .logo {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 2rem;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #333;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-color);
+        }
+
+        /* Hero区域 */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding-top: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: -1;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+        }
+
+        .cta-button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(0, 166, 235, 0.5);
+        }
+
+        /* 专辑轮播 */
+        .album-carousel {
+            width: 100%;
+            max-width: 1200px;
+            margin: 2rem auto;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .carousel-container {
+            display: flex;
+            transition: transform 0.5s ease;
+        }
+
+        .carousel-item {
+            min-width: 100%;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .album-feature {
+            display: flex;
+            background: #f9f9f9;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .album-feature-cover {
+            width: 40%;
+            background: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8rem;
+        }
+
+        .album-feature-info {
+            width: 60%;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .album-feature-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .album-feature-artist {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .album-feature-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .carousel-controls {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            transform: translateY(-50%);
+        }
+
+        .carousel-btn {
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s ease;
+        }
+
+        .carousel-btn:hover {
+            background: white;
+        }
+
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .indicator.active {
+            background: var(--accent-color);
+        }
+
+        /* 特色内容区域 */
+        .section {
+            padding: 5rem 3rem;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: "";
+            display: block;
+            width: 100px;
+            height: 4px;
+            background: var(--secondary-color);
+            margin: 0.5rem auto;
+            border-radius: 2px;
+        }
+
+        /* 音乐轮播 */
+        .music-carousel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .music-card {
+            background: #f9f9f9;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .music-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .album-cover {
+            width: 100%;
+            height: 200px;
+            background: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-artist {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        /* 社团推荐 */
+        .artists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .artist-card {
+            text-align: center;
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .artist-card:hover {
+            transform: scale(1.05);
+        }
+
+        .artist-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        /* 页脚 */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: #f5f5f5;
+            margin-top: 3rem;
+        }
+
+        /* 星空粒子效果容器 */
+        #particles-js {
+            display: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem;
+            }
+            
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .section {
+                padding: 3rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空粒子背景 -->
+    <div id="particles-js"></div>
+    
+    <!-- 导航栏 -->
+    <nav>
+        <a href="#" class="logo">东方同音</a>
+        <div class="nav-links">
+            <a href="#">首页</a>
+            <a href="#">音乐库</a>
+            <a href="#">艺术家</a>
+            <a href="#">关于我们</a>
+        </div>
+    </nav>
+    
+    <!-- Hero区域 -->
+    <section class="hero">
+        <h1 class="hero-title">发现东方Project同人音乐的魅力</h1>
+        <p class="hero-subtitle">汇聚最优质的同人音乐作品，连接创作者与爱好者，感受二次创作的独特魅力</p>
+        <button class="cta-button" id="start-explore-btn">开始探索</button>
+    </section>
+    
+    <!-- 专辑轮播 -->
+    <section class="section">
+        <h2 class="section-title">精选专辑</h2>
+        <div class="album-carousel">
+            <div class="carousel-container">
+                <!-- 专辑 1 -->
+                <div class="carousel-item">
+                    <div class="album-feature">
+                        <div class="album-feature-cover">🎵</div>
+                        <div class="album-feature-info">
+                            <h3 class="album-feature-title">东方红魔乡</h3>
+                            <p class="album-feature-artist">上海爱丽丝幻乐团</p>
+                            <p class="album-feature-description">《东方红魔乡 ～ the Embodiment of Scarlet Devil.》是东方Project系列的第六个作品，也是第一个发布在Windows平台上的作品。该作品奠定了东方Project在同人音乐界的地位。</p>
+                            <button class="cta-button play-album-btn" data-album-id="1">立即播放</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 专辑 2 -->
+                <div class="carousel-item">
+                    <div class="album-feature">
+                        <div class="album-feature-cover">🎶</div>
+                        <div class="album-feature-info">
+                            <h3 class="album-feature-title">蓬莱人形</h3>
+                            <p class="album-feature-artist">黄昏边境</p>
+                            <p class="album-feature-description">《蓬莱人形 ～ Dolls in Pseudo Paradise.》是黄昏边境与上海爱丽丝幻乐团合作的第二张音乐专辑，延续了红魔乡的音乐风格并有所创新。</p>
+                            <button class="cta-button play-album-btn" data-album-id="2">立即播放</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 专辑 3 -->
+                <div class="carousel-item">
+                    <div class="album-feature">
+                        <div class="album-feature-cover">🎼</div>
+                        <div class="album-feature-info">
+                            <h3 class="album-feature-title">梦违科学世纪</h3>
+                            <p class="album-feature-artist">Alstroemeria Records</p>
+                            <p class="album-feature-description">《梦违科学世纪》是Alstroemeria Records的代表作品之一，以其独特的电子音乐风格和优美的旋律深受同人音乐爱好者喜爱。</p>
+                            <button class="cta-button play-album-btn" data-album-id="3">立即播放</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="carousel-controls">
+                <button class="carousel-btn" id="prevBtn">‹</button>
+                <button class="carousel-btn" id="nextBtn">›</button>
+            </div>
+            
+            <div class="carousel-indicators">
+                <div class="indicator active" data-index="0"></div>
+                <div class="indicator" data-index="1"></div>
+                <div class="indicator" data-index="2"></div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 热门音乐轮播 -->
+    <section class="section">
+        <h2 class="section-title">热门音乐</h2>
+        <div class="music-carousel">
+            <div class="music-card" data-track-id="1001">
+                <div class="album-cover">🎵</div>
+                <div class="card-content">
+                    <h3 class="card-title">月面战争</h3>
+                    <p class="card-artist">黄昏边境</p>
+                    <button class="cta-button play-btn">播放</button>
+                </div>
+            </div>
+            <div class="music-card" data-track-id="1002">
+                <div class="album-cover">🎶</div>
+                <div class="card-content">
+                    <h3 class="card-title">ネイティブフェイス</h3>
+                    <p class="card-artist">A-One</p>
+                    <button class="cta-button play-btn">播放</button>
+                </div>
+            </div>
+            <div class="music-card" data-track-id="1003">
+                <div class="album-cover">🎼</div>
+                <div class="card-content">
+                    <h3 class="card-title">Bad Apple</h3>
+                    <p class="card-artist">Alstroemeria Records</p>
+                    <button class="cta-button play-btn">播放</button>
+                </div>
+            </div>
+            <div class="music-card" data-track-id="1004">
+                <div class="album-cover">🎹</div>
+                <div class="card-content">
+                    <h3 class="card-title">幽雅に咲かせ、墨染の桜</h3>
+                    <p class="card-artist">IOSYS</p>
+                    <button class="cta-button play-btn">播放</button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 社团推荐 -->
+    <section class="section">
+        <h2 class="section-title">推荐社团</h2>
+        <div class="artists-grid">
+            <div class="artist-card">
+                <div class="artist-avatar">🌸</div>
+                <h3>上海爱丽丝幻乐团</h3>
+                <p>官方原作</p>
+            </div>
+            <div class="artist-card">
+                <div class="artist-avatar">🌙</div>
+                <h3>黄昏边境</h3>
+                <p>经典名社</p>
+            </div>
+            <div class="artist-card">
+                <div class="artist-avatar">⭐</div>
+                <h3>Alstroemeria Records</h3>
+                <p>人气社团</p>
+            </div>
+            <div class="artist-card">
+                <div class="artist-avatar">🎶</div>
+                <h3>幽闭星光</h3>
+                <p>原创社团</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 页脚 -->
+    <footer>
+        <p>&copy; 2025 东方Project同人音乐网站. 本站所有内容版权归原作者所有.</p>
+        <p>本网站仅为学习交流使用，不涉及任何商业用途</p>
+    </footer>
+    
+    <!-- 隐藏的音频播放器 -->
+    <audio id="audioPlayer" style="display: none;"></audio>
+    
+    <!-- 引入Particles.js实现星空背景效果 -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // 初始化星空粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof particlesJS !== 'undefined') {
+                particlesJS('particles-js', {
+                    particles: {
+                        number: {
+                            value: 80,
+                            density: {
+                                enable: true,
+                                value_area: 800
+                            }
+                        },
+                        color: {
+                            value: "#ffffff"
+                        },
+                        shape: {
+                            type: "circle",
+                            stroke: {
+                                width: 0,
+                                color: "#000000"
+                            }
+                        },
+                        opacity: {
+                            value: 0.5,
+                            random: true,
+                            anim: {
+                                enable: true,
+                                speed: 1,
+                                opacity_min: 0.1,
+                                sync: false
+                            }
+                        },
+                        size: {
+                            value: 3,
+                            random: true,
+                            anim: {
+                                enable: true,
+                                speed: 2,
+                                size_min: 0.1,
+                                sync: false
+                            }
+                        },
+                        line_linked: {
+                            enable: true,
+                            distance: 150,
+                            color: "#FFB7C5",
+                            opacity: 0.2,
+                            width: 1
+                        },
+                        move: {
+                            enable: true,
+                            speed: 1,
+                            direction: "none",
+                            random: true,
+                            straight: false,
+                            out_mode: "out",
+                            bounce: false
+                        }
+                    },
+                    interactivity: {
+                        detect_on: "canvas",
+                        events: {
+                            onhover: {
+                                enable: true,
+                                mode: "grab"
+                            },
+                            onclick: {
+                                enable: true,
+                                mode: "push"
+                            },
+                            resize: true
+                        },
+                        modes: {
+                            grab: {
+                                distance: 140,
+                                line_linked: {
+                                    opacity: 1
+                                }
+                            },
+                            push: {
+                                particles_nb: 4
+                            }
+                        }
+                    },
+                    retina_detect: true
+                });
+            }
+        });
+        
+        // 添加一些简单的动画效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 淡入动画
+            const fadeElements = document.querySelectorAll('.music-card, .artist-card, .section-title');
+            fadeElements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 200 * index);
+            });
+            
+            // "开始探索"按钮点击事件
+            const startExploreBtn = document.getElementById('start-explore-btn');
+            startExploreBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'music.html';
+            });
+            
+            // 其他CTA按钮点击事件
+            const ctaButtons = document.querySelectorAll('.cta-button');
+            ctaButtons.forEach(button => {
+                // 跳过"开始探索"按钮，因为已经单独处理
+                if (button.id !== 'start-explore-btn') {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        // 其他按钮保持原有的行为（如果需要的话）
+                    });
+                }
+            });
+        });
+        
+        // 专辑轮播功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const carouselContainer = document.querySelector('.carousel-container');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const indicators = document.querySelectorAll('.indicator');
+            let currentIndex = 0;
+            const totalItems = 3;
+            
+            // 更新轮播位置
+            function updateCarousel() {
+                carouselContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+                
+                // 更新指示器
+                indicators.forEach((indicator, index) => {
+                    if (index === currentIndex) {
+                        indicator.classList.add('active');
+                    } else {
+                        indicator.classList.remove('active');
+                    }
+                });
+            }
+            
+            // 下一张
+            nextBtn.addEventListener('click', () => {
+                currentIndex = (currentIndex + 1) % totalItems;
+                updateCarousel();
+            });
+            
+            // 上一张
+            prevBtn.addEventListener('click', () => {
+                currentIndex = (currentIndex - 1 + totalItems) % totalItems;
+                updateCarousel();
+            });
+            
+            // 指示器点击
+            indicators.forEach(indicator => {
+                indicator.addEventListener('click', (e) => {
+                    currentIndex = parseInt(e.target.getAttribute('data-index'));
+                    updateCarousel();
+                });
+            });
+            
+            // 自动播放
+            setInterval(() => {
+                currentIndex = (currentIndex + 1) % totalItems;
+                updateCarousel();
+            }, 5000);
+        });
+        
+        // 播放音乐功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            let currentPlayingButton = null; // 记录当前播放的按钮
+            
+            // 为所有播放按钮添加点击事件监听器
+            const playButtons = document.querySelectorAll('.play-btn');
+            playButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // 如果点击的是当前正在播放的按钮，则暂停
+                    if (currentPlayingButton === this && !audioPlayer.paused) {
+                        audioPlayer.pause();
+                        this.textContent = '播放';
+                        currentPlayingButton = null;
+                        return;
+                    }
+                    
+                    // 获取父级音乐卡片元素
+                    const musicCard = this.closest('.music-card');
+                    if (!musicCard) return;
+                    
+                    // 从data-track-id属性获取trackId
+                    const trackId = musicCard.getAttribute('data-track-id');
+                    if (!trackId) {
+                        console.error('未找到trackId');
+                        return;
+                    }
+                    
+                    // 调用API获取音乐URL
+                    fetch(`/api/music/track?id=${trackId}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // 从API响应中提取音乐URL
+                            let trackUrl = '';
+                            if (data && data.data && data.data[0] && data.data[0].url) {
+                                trackUrl = data.data[0].url;
+                            } else {
+                                console.error('API响应中未找到音乐URL');
+                                alert('未找到音乐URL');
+                                return;
+                            }
+                            
+                            // 设置音频源并播放
+                            audioPlayer.src = trackUrl;
+                            audioPlayer.play()
+                                .then(() => {
+                                    console.log('音乐开始播放');
+                                    
+                                    // 恢复之前按钮的状态
+                                    if (currentPlayingButton && currentPlayingButton !== this) {
+                                        currentPlayingButton.textContent = '播放';
+                                        currentPlayingButton.disabled = false;
+                                    }
+                                    
+                                    // 更新当前播放按钮
+                                    this.textContent = '播放中...';
+                                    currentPlayingButton = this;
+                                    
+                                    // 播放结束后恢复按钮状态
+                                    audioPlayer.onended = () => {
+                                        if (currentPlayingButton) {
+                                            currentPlayingButton.textContent = '播放';
+                                            currentPlayingButton = null;
+                                        }
+                                    };
+                                })
+                                .catch(error => {
+                                    console.error('播放失败:', error);
+                                    alert('播放失败，请稍后重试');
+                                });
+                        })
+                        .catch(error => {
+                            console.error('获取音乐URL失败:', error);
+                            alert('获取音乐失败，请稍后重试');
+                        });
+                });
+            });
+            
+            // 为专辑播放按钮添加点击事件监听器
+            const albumPlayButtons = document.querySelectorAll('.play-album-btn');
+            albumPlayButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // 如果点击的是当前正在播放的按钮，则暂停
+                    if (currentPlayingButton === this && !audioPlayer.paused) {
+                        audioPlayer.pause();
+                        this.textContent = '立即播放';
+                        currentPlayingButton = null;
+                        return;
+                    }
+                    
+                    // 获取专辑ID
+                    const albumId = this.getAttribute('data-album-id');
+                    if (!albumId) {
+                        console.error('未找到albumId');
+                        return;
+                    }
+                    
+                    // 先获取专辑详情，然后播放第一首曲目
+                    fetch(`/api/music/detail?albumId=${albumId}`)
+                        .then(response => response.json())
+                        .then(albumDetail => {
+                            if (!albumDetail.tracks || albumDetail.tracks.length === 0) {
+                                console.error('专辑中没有曲目');
+                                alert('该专辑暂无曲目');
+                                return;
+                            }
+                            
+                            // 获取第一首曲目的ID
+                            const firstTrack = albumDetail.tracks[0];
+                            const trackId = firstTrack.id || firstTrack.cloudMusicId || firstTrack.neteaseId;
+                            
+                            if (!trackId) {
+                                console.error('未找到曲目ID');
+                                alert('未找到可播放的曲目');
+                                return;
+                            }
+                            
+                            // 调用API获取音乐URL
+                            fetch(`/api/music/track?id=${trackId}`)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    // 从API响应中提取音乐URL
+                                    let trackUrl = '';
+                                    if (data && data.data && data.data[0] && data.data[0].url) {
+                                        trackUrl = data.data[0].url;
+                                    } else {
+                                        console.error('API响应中未找到音乐URL');
+                                        alert('未找到音乐URL');
+                                        return;
+                                    }
+                                    
+                                    // 设置音频源并播放
+                                    audioPlayer.src = trackUrl;
+                                    audioPlayer.play()
+                                        .then(() => {
+                                            console.log('专辑音乐开始播放');
+                                            
+                                            // 恢复之前按钮的状态
+                                            if (currentPlayingButton && currentPlayingButton !== this) {
+                                                currentPlayingButton.textContent = '立即播放';
+                                                currentPlayingButton.disabled = false;
+                                            }
+                                            
+                                            // 更新当前播放按钮
+                                            this.textContent = '播放中...';
+                                            currentPlayingButton = this;
+                                            
+                                            // 播放结束后恢复按钮状态
+                                            audioPlayer.onended = () => {
+                                                if (currentPlayingButton) {
+                                                    currentPlayingButton.textContent = '立即播放';
+                                                    currentPlayingButton = null;
+                                                }
+                                            };
+                                        })
+                                        .catch(error => {
+                                            console.error('播放失败:', error);
+                                            alert('播放失败，请稍后重试');
+                                        });
+                                })
+                                .catch(error => {
+                                    console.error('获取专辑音乐URL失败:', error);
+                                    alert('获取音乐失败，请稍后重试');
+                                });
+                        })
+                        .catch(error => {
+                            console.error('获取专辑详情失败:', error);
+                            alert('获取专辑详情失败，请稍后重试');
+                        });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

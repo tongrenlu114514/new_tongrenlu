@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="info.tongrenlu.mapper.MusicMapper">
+
+    <select id="count" resultType="int">
+        SELECT 
+            count(v_music.id)
+        FROM
+            v_music
+        <where>
+            <if test="userBean != null">
+            AND v_music.`userBean.id` = #{userBean.id}
+            </if>
+            <if test="publishFlg != null">
+                and v_music.publishFlg in
+                <foreach item="flg" index="index" collection="publishFlg"
+                    open="(" separator="," close=")">
+                      #{flg}
+                </foreach>
+            </if>
+            <if test="query != null">
+            <bind name="pattern" value="'%' + query + '%'" />
+            AND (v_music.title LIKE #{pattern}
+            OR  v_music.description LIKE #{pattern})
+            </if>
+        </where>
+    </select>
+    
+    <select id="fetchList" resultType="info.tongrenlu.domain.MusicBean">
+        SELECT 
+        <trim suffixOverrides=",">
+            v_music.id                      as id,
+            v_music.title                   as title,
+            v_music.description             as description,
+            v_music.publishFlg              as publishFlg,
+            v_music.publishDate             as publishDate,
+            v_music.`userBean.id`           as `userBean.id`,
+            v_music.`userBean.nickname`     as `userBean.nickname`,
+            v_music.accessCount             as accessCount,
+            v_music.likeCount               as likeCount,
+            v_music.commentCount            as commentCount,
+        </trim>
+        FROM
+            v_music 
+        <where>
+        </where>
+        order by v_music.id desc
+        limit #{start}, #{pageSize}
+    </select>
+    
+    <select id="fetchBean" resultType="info.tongrenlu.domain.MusicBean">
+        SELECT 
+        <trim suffixOverrides=",">
+            v_music.id                      as id,
+            v_music.title                   as title,
+            v_music.description             as description,
+            v_music.publishFlg              as publishFlg,
+            v_music.publishDate             as publishDate,
+            v_music.`userBean.id`           as `userBean.id`,
+            v_music.`userBean.nickname`     as `userBean.nickname`,
+            v_music.`userBean.signature`    as `userBean.signature`,
+            v_music.accessCount             as accessCount,
+            v_music.likeCount               as likeCount,
+            v_music.commentCount            as commentCount,
+        </trim>
+        FROM
+            v_music
+        <where>
+            v_music.id = #{id}
+        </where>
+    </select>
+    
+    <select id="fetchRanking" resultType="info.tongrenlu.domain.MusicBean">
+        SELECT 
+        <trim suffixOverrides=",">
+            v_music_ranking.id                      as id,
+            v_music_ranking.title                   as title,
+            v_music_ranking.description             as description,
+            v_music_ranking.publishFlg              as publishFlg,
+            v_music_ranking.publishDate             as publishDate,
+            v_music_ranking.`userBean.id`           as `userBean.id`,
+            v_music_ranking.`userBean.nickname`     as `userBean.nickname`,
+            v_music_ranking.accessCount             as accessCount,
+            v_music_ranking.likeCount               as likeCount,
+            v_music_ranking.commentCount            as commentCount,
+            v_music_ranking.pt                      as pt
+        </trim>
+        FROM
+            v_music_ranking
+        where
+            v_music_ranking.pt1 + v_music_ranking.pt2 > 0
+        order by 
+            v_music_ranking.pt1 + v_music_ranking.pt2 desc, 
+            v_music_ranking.publishDate desc
+        limit 0, #{pageSize}
+    </select>
+    
+    <select id="fetchTopping" resultType="info.tongrenlu.domain.MusicBean">
+        SELECT 
+        <trim suffixOverrides=",">
+            v_music_ranking.id                      as id,
+            v_music_ranking.title                   as title,
+            v_music_ranking.description             as description,
+            v_music_ranking.publishFlg              as publishFlg,
+            v_music_ranking.publishDate             as publishDate,
+            v_music_ranking.accessCount             as accessCount,
+            v_music_ranking.likeCount               as likeCount,
+            v_music_ranking.commentCount            as commentCount,
+            v_music_ranking.pt                      as pt
+        </trim>
+        FROM
+            v_music_ranking
+        order by 
+            v_music_ranking.pt1 + v_music_ranking.pt2 + v_music_ranking.pt3 desc, 
+            v_music_ranking.publishDate desc
+        limit 0, #{pageSize}
+    </select>
+    
+        
+    <select id="countLucky" resultType="int">
+        SELECT 
+            count(m_article.id)
+        FROM
+            m_article
+        JOIN
+            r_music ON m_article.id = r_music.id
+        <if test="userBean != null">
+        LEFT JOIN
+            (SELECT 
+                id, article_id
+            FROM
+                r_user_library
+            WHERE
+                user_id = #{userBean.id} 
+            AND status = 1
+            AND del_flg = 0) r_user_library 
+        ON m_article.id = r_user_library.article_id
+        </if>
+        <where>
+            m_article.del_flg = 0
+        AND (m_article.publish_flg = 2
+            <if test="userBean != null">
+            OR r_user_library.id IS NOT NULL
+            </if>)
+        </where>
+    </select>
+    
+    <select id="fetchLucky" resultType="info.tongrenlu.domain.MusicBean">
+        SELECT 
+        <trim suffixOverrides=",">
+            m_article.id AS id,
+            m_article.title AS title,
+            m_article.publish_flg,
+        </trim>
+        FROM
+            m_article
+        JOIN
+            r_music ON m_article.id = r_music.id
+        <if test="userBean != null">
+        LEFT JOIN
+            (SELECT 
+                id, article_id
+            FROM
+                r_user_library
+            WHERE
+                user_id = #{userBean.id} 
+            AND status = 1
+            AND del_flg = 0) r_user_library 
+        ON m_article.id = r_user_library.article_id
+        </if>
+        <where>
+            m_article.del_flg = 0
+        AND (m_article.publish_flg = 2
+            <if test="userBean != null">
+            OR r_user_library.id IS NOT NULL
+            </if>)
+        </where>
+        order by m_article.id desc
+        limit #{start}, #{pageSize}
+    </select>
+</mapper>
