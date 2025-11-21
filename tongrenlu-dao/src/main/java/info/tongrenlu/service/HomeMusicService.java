@@ -1,6 +1,5 @@
 package info.tongrenlu.service;
 
-import ch.qos.logback.core.util.StringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
@@ -9,8 +8,9 @@ import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.mapper.ArticleMapper;
 import info.tongrenlu.mapper.TrackMapper;
-import org.apache.commons.lang3.StringUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +21,7 @@ import java.util.Map;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class HomeMusicService {
 
     private final ArticleMapper articleMapper;
@@ -156,6 +157,85 @@ public class HomeMusicService {
             // Log the error if needed
             // logger.error("Error reporting album error for albumId: {}", albumId, e);
             return false;
+        }
+    }
+
+    /**
+     * 获取未发布专辑列表（publishFlg=0 或 2）
+     * 按id正向排序，分页显示
+     *
+     * @param pageNumber 页码
+     * @param pageSize   每页数量
+     * @return 分页的未发布专辑列表
+     */
+    public Page<ArticleBean> getUnpublishedAlbums(int pageNumber, int pageSize) {
+        LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ArticleBean::getPublishFlg, "0")
+                .orderByAsc(ArticleBean::getId);
+        return this.articleMapper.selectPage(new PageDTO<>(pageNumber, pageSize), queryWrapper);
+    }
+
+    /**
+     * 更新专辑信息并发布
+     * 更新专辑的云音乐ID、标题、图片URL，并将publishFlg设置为1
+     *
+     * @param albumId          专辑ID
+     * @param cloudMusicId     云音乐ID
+     * @param title            专辑标题
+     * @param cloudMusicPicUrl 云音乐图片URL
+     * @return 操作是否成功
+     */
+    @Transactional
+    public boolean updateAlbum(Long albumId, Long cloudMusicId, String title, String cloudMusicPicUrl) {
+        try {
+            ArticleBean article = this.articleMapper.selectById(albumId);
+
+            if (article == null) {
+                log.error("Album not found: {}", albumId);
+                return false;
+            }
+
+            article.setCloudMusicId(cloudMusicId);
+            article.setTitle(title);
+            article.setCloudMusicPicUrl(cloudMusicPicUrl);
+            article.setPublishFlg("1");
+
+            int updateResult = this.articleMapper.updateById(article);
+
+            return updateResult > 0;
+
+        } catch (Exception e) {
+            log.error("Error updating album {}", albumId, e);
+            throw e;
+        }
+    }
+
+    /**
+     * 标记专辑为无匹配状态
+     * 将publishFlg设置为2，表示该专辑在网易云音乐中没有对应的结果
+     *
+     * @param albumId 专辑ID
+     * @return 操作是否成功
+     */
+    @Transactional
+    public boolean markAsNoMatch(Long albumId) {
+        try {
+            ArticleBean article = this.articleMapper.selectById(albumId);
+
+            if (article == null) {
+                log.error("Album not found: {}", albumId);
+                return false;
+            }
+
+            article.setPublishFlg("2");
+
+            int updateResult = this.articleMapper.updateById(article);
+
+            return updateResult > 0;
+
+        } catch (Exception e) {
+            log.error("Error marking album {} as no match", albumId, e);
+            throw e;
         }
     }
 }

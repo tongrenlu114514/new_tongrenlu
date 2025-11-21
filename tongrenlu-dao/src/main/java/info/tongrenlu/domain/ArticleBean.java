@@ -1,7 +1,5 @@
 package info.tongrenlu.domain;
 
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -10,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import lombok.Data;
 import org.apache.ibatis.type.JdbcType;
+
+import java.util.Date;
 
 @JsonInclude(Include.NON_DEFAULT)
 @TableName(value = "m_article", autoResultMap = true)
@@ -21,6 +21,9 @@ public class ArticleBean {
 
     @TableField(value = "title", jdbcType = JdbcType.VARCHAR)
     private String title;
+
+    @TableField(value = "artist", jdbcType = JdbcType.VARCHAR)
+    private String artist;
 
     @TableField(value = "code", jdbcType = JdbcType.VARCHAR)
     private String code;

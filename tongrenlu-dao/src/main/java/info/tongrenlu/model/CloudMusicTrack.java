@@ -1,4 +1,4 @@
-package info.tongrenlu.support;
+package info.tongrenlu.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

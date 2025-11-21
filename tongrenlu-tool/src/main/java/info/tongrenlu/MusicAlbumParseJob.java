@@ -25,8 +25,13 @@ public class MusicAlbumParseJob implements CommandLineRunner {
     public void run(String... args) throws Exception {
         String input = "E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\ls.txt";
         List<MusicTrack> tracks = musicAlbumParser.parseMusicAlbumFile(input);
-        String progress = FileUtils.readFileToString(new File("E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\progress.txt"), StandardCharsets.UTF_8);
-        int lastProgress = Integer.parseInt(progress);
+
+        int lastProgress = 0;
+        try {
+            String progress = FileUtils.readFileToString(new File("E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\progress.txt"), StandardCharsets.UTF_8);
+            lastProgress = Integer.parseInt(progress);
+        } catch (Exception ignored) {
+        }
 
         List<MusicAlbumContext> albumList = tracks.stream()
                 .collect(Collectors.groupingBy(MusicTrack::getAlbumCode))

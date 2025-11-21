@@ -1,5 +1,5 @@
 // 初始化星空粒子效果
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     if (typeof particlesJS !== 'undefined') {
         particlesJS('particles-js', {
             particles: {

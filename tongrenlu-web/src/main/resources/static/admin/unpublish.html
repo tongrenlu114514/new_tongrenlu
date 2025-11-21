@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>未发布专辑管理 - Tongrenlu</title>
+    <link href="/components/admin/admin.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="header-content">
+            <h1>未发布专辑管理</h1>
+            <div class="nav-links">
+                <a class="active" href="/admin/">未发布专辑</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="stats">
+        <div class="stat-card">
+            <h3>未发布专辑数量</h3>
+            <div class="value" id="unpublished-count">0</div>
+        </div>
+    </div>
+
+    <main>
+        <div class="card">
+            <div class="card-header">
+                <h2>未发布专辑列表</h2>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>专辑名称</th>
+                        <th>网易云ID</th>
+                        <th>状态</th>
+                        <th>发布日期</th>
+                        <th>访问次数</th>
+                        <th style="text-align:right">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="album-list">
+                    </tbody>
+                </table>
+            </div>
+            <div id="loading">加载中...</div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </main>
+
+    <!-- 搜索模态框 -->
+    <div class="modal" id="searchModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>搜索网易云专辑</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-section">
+                    <p>当前专辑: <strong class="clickable" id="searchAlbumTitle"></strong></p>
+                    <p>艺术家: <strong class="clickable" id="searchAlbumArtist"></strong></p>
+                    <p>发布日期: <strong id="searchAlbumPublishDate"></strong></p>
+                    <div class="search-input-group">
+                        <input class="search-input" id="searchKeyword" placeholder="输入搜索关键词" type="text">
+                        <button class="btn btn-edit" id="searchBtn">搜索</button>
+                    </div>
+                    <div class="search-results" id="searchResultsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/components/admin/admin.js"></script>
+</body>
+</html>

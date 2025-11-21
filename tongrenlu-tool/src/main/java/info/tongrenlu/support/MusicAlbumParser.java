@@ -3,7 +3,6 @@ package info.tongrenlu.support;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.ArticleTagBean;
@@ -13,6 +12,10 @@ import info.tongrenlu.mapper.ArticleMapper;
 import info.tongrenlu.mapper.ArticleTagMapper;
 import info.tongrenlu.mapper.TagMapper;
 import info.tongrenlu.mapper.TrackMapper;
+import info.tongrenlu.model.CloudAlbumSearchResponse;
+import info.tongrenlu.model.CloudAlbumSearchResult;
+import info.tongrenlu.model.CloudMusicAlbum;
+import info.tongrenlu.model.CloudMusicTrack;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -31,12 +34,11 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -186,8 +188,11 @@ public class MusicAlbumParser {
                     if (articleBean.getCloudMusicId() != null) {
                         return;
                     }
+                    if (articleBean.getPublishFlg().equals("2")) {
+                        return;
+                    }
                     //album search
-                    CloudMusicAlbum cloudMusicAlbum = getCloudMusicAlbum(track.getAlbumName(), track.getArtistName());
+                    CloudMusicAlbum cloudMusicAlbum = getCloudMusicAlbum(articleBean);
                     if (cloudMusicAlbum != null) {
                         articleBean.setCloudMusicId(cloudMusicAlbum.getId());
                         articleBean.setCloudMusicPicUrl(cloudMusicAlbum.getPicUrl());
@@ -261,20 +266,19 @@ public class MusicAlbumParser {
         });
     }
 
-    private CloudMusicAlbum getCloudMusicAlbum(String title, String artist) {
+    private CloudMusicAlbum getCloudMusicAlbum(ArticleBean articleBean) {
         String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
-                .queryParam("keywords", URLEncoder.encode(title, StandardCharsets.UTF_8))
-                .queryParam("keywords", URLEncoder.encode(artist, StandardCharsets.UTF_8))
+                .queryParam("keywords", URLEncoder.encode(articleBean.getTitle(), StandardCharsets.UTF_8))
+                .queryParam("keywords", URLEncoder.encode(articleBean.getArtist(), StandardCharsets.UTF_8))
                 .queryParam("limit", 30)
                 .queryParam("offset", 0)
                 .queryParam("type", 10)
                 .build()
                 .toString();
 
-        CloudAlbumSearchResponse musicDetailResponse;
         try(HttpResponse response = HttpRequest.get(url).execute()) {
             String json = response.body();
-            musicDetailResponse = new ObjectMapper().readValue(json, CloudAlbumSearchResponse.class);
+            CloudAlbumSearchResponse musicDetailResponse = new ObjectMapper().readValue(json, CloudAlbumSearchResponse.class);
             if (musicDetailResponse == null){
                 return null;
             }
@@ -290,7 +294,15 @@ public class MusicAlbumParser {
                 return null;
             }
             return albums.stream()
-                    .filter(album -> title.equals(album.getName()))
+                    .filter(album -> {
+                        if (articleBean.getTitle().equals(album.getName())) {
+                            return true;
+                        }
+
+                        long publishTime = Long.parseLong(album.getPublishTime());
+                        Date publishDate = new Date(publishTime);
+                        return DateUtils.isSameDay(publishDate, articleBean.getPublishDate());
+                    })
                     .findFirst()
                     .map(CloudMusicAlbum::getId)
                     .map(this::getCloudMusicAlbumById)
@@ -365,8 +377,9 @@ public class MusicAlbumParser {
         ArticleBean articleBean = Optional.ofNullable(articleMapper.selectOne(queryWrapper))
                 .orElseGet(ArticleBean::new);
         articleBean.setTitle(track.getAlbumName());
+        articleBean.setArtist(track.getArtistName());
         articleBean.setCode(track.getAlbumCode());
-        articleBean.setDescription(track.getArtistName());
+        articleBean.setDescription(track.getFileName());
         articleBean.setPublishFlg("1");
         try {
             articleBean.setPublishDate(DateUtils.parseDate(track.getReleaseDate(), "yyyy.MM.dd"));

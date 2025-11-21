@@ -15,9 +15,9 @@ class StatsManager {
 
     init() {
         // DOM元素 - 使用与HTML中匹配的ID
-        this.progressBar = document.getElementById('albumProgressBar');
-        this.progressText = document.getElementById('progressText');
-        this.progressInfo = document.getElementById('progressInfo');
+        this.progressBar = $('#albumProgressBar');
+        this.progressText = $('#progressText');
+        this.progressInfo = $('#progressInfo');
 
         // 开始加载统计数据
         this.loadStats();
@@ -43,13 +43,17 @@ class StatsManager {
 
     async fetchStatsFromAPI() {
         try {
-            const response = await fetch('/api/music/album-stats');
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await new Promise((resolve, reject) => {
+                $.ajax({
+                    url: '/api/music/album-stats',
+                    method: 'GET',
+                    dataType: 'json',
+                    success: resolve,
+                    error: (xhr, status, error) => {
+                        reject(new Error(`HTTP error! status: ${xhr.status}`));
+                    }
+                });
+            });
 
             // 检查响应是否成功
             if (!result || !result.success) {
@@ -76,7 +80,7 @@ class StatsManager {
     }
 
     startAnimation(stats) {
-        if (!this.progressBar || !this.progressText || !this.progressInfo) {
+        if (this.progressBar.length === 0 || this.progressText.length === 0 || this.progressInfo.length === 0) {
             console.error('DOM elements not found');
             return;
         }
@@ -112,16 +116,16 @@ class StatsManager {
             const percentage = currentTotal > 0 ? Math.round((currentPublished / currentTotal) * 100) : 0;
 
             // 更新UI
-            this.progressText.textContent = `${percentage}%`;
-            this.progressInfo.textContent = `专辑发布进度：已发布 ${currentPublished} / ${currentTotal} 张`;
+            this.progressText.text(`${percentage}%`);
+            this.progressInfo.text(`专辑发布进度：已发布 ${currentPublished} / ${currentTotal} 张`);
 
             if (currentStep < steps) {
                 setTimeout(animate, stepDuration);
             } else {
                 // 确保最终显示的是准确值
                 const finalPercentage = this.targetTotal > 0 ? Math.round((this.targetPublished / this.targetTotal) * 100) : 0;
-                this.progressText.textContent = `${finalPercentage}%`;
-                this.progressInfo.textContent = `专辑发布进度：已发布 ${this.targetPublished} / ${this.targetTotal} 张`;
+                this.progressText.text(`${finalPercentage}%`);
+                this.progressInfo.text(`专辑发布进度：已发布 ${this.targetPublished} / ${this.targetTotal} 张`);
                 this.isAnimating = false;
             }
         };
@@ -143,19 +147,19 @@ class StatsManager {
             }
 
             // 更新进度条
-            if (this.progressBar) {
-                this.progressBar.style.width = progress + '%';
+            if (this.progressBar.length > 0) {
+                this.progressBar.css('width', progress + '%');
 
                 // 根据百分比设置不同的颜色
                 const percentage = Math.floor(progress);
                 if (percentage < 30) {
-                    this.progressBar.style.background = '#e74c3c'; // 红色
+                    this.progressBar.css('background', '#e74c3c'); // 红色
                 } else if (percentage < 70) {
-                    this.progressBar.style.background = '#f39c12'; // 橙色
+                    this.progressBar.css('background', '#f39c12'); // 橙色
                 } else if (percentage < 90) {
-                    this.progressBar.style.background = '#3498db'; // 蓝色
+                    this.progressBar.css('background', '#3498db'); // 蓝色
                 } else {
-                    this.progressBar.style.background = '#27ae60'; // 绿色
+                    this.progressBar.css('background', '#27ae60'); // 绿色
                 }
             }
         }, 50);
@@ -176,17 +180,19 @@ class StatsManager {
         this.isAnimating = false;
         this.currentProgress = 0;
 
-        if (this.progressBar) {
-            this.progressBar.style.width = '0%';
-            this.progressBar.style.background = '#3498db';
+        if (this.progressBar.length > 0) {
+            this.progressBar.css({
+                'width': '0%',
+                'background': '#3498db'
+            });
         }
 
-        if (this.progressText) {
-            this.progressText.textContent = '0%';
+        if (this.progressText.length > 0) {
+            this.progressText.text('0%');
         }
 
-        if (this.progressInfo) {
-            this.progressInfo.textContent = '专辑发布进度：已发布 0 / 0 张';
+        if (this.progressInfo.length > 0) {
+            this.progressInfo.text('专辑发布进度：已发布 0 / 0 张');
         }
     }
 
@@ -209,7 +215,7 @@ class StatsManager {
 let statsManager;
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
+$(function () {
     // 等待页面完全加载后再启动统计动画
     setTimeout(() => {
         statsManager = new StatsManager();
@@ -224,8 +230,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 当从其他页面切换到首页时重新触发动画
-document.addEventListener('pageSwitchComplete', function(e) {
-    if (e.detail.page === 'home' && statsManager) {
+$(document).on('pageSwitchComplete', function (e, data) {
+    // 兼容不同的事件数据格式
+    const page = e.originalEvent && e.originalEvent.detail ? e.originalEvent.detail.page : (data ? data.page : null);
+    if (page === 'home' && statsManager) {
         // 重置并重新播放动画
         setTimeout(() => {
             statsManager.refresh();
