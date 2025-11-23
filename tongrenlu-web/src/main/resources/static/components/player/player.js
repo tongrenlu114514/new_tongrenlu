@@ -40,7 +40,7 @@ function playMusic(musicData, trackIndex = 0) {
         $('.now-playing-title').text(trackTitle + ' (加载中...)');
 
         $.ajax({
-            url: `/api/music/track?id=${trackId}`,
+            url: `api/music/track?id=${trackId}`,
             method: 'GET',
             dataType: 'json',
             success: function (data) {
@@ -216,7 +216,7 @@ $(function () {
                 if (albumId) {
                     // 获取专辑详情并播放
                     $.ajax({
-                        url: `/api/music/detail?albumId=${albumId}`,
+                        url: `api/music/detail?albumId=${albumId}`,
                         method: 'GET',
                         dataType: 'json',
                         success: function (albumDetail) {
@@ -242,7 +242,7 @@ $(function () {
             if (albumId) {
                 // 获取专辑详情并播放指定曲目
                 $.ajax({
-                    url: `/api/music/detail?albumId=${albumId}`,
+                    url: `api/music/detail?albumId=${albumId}`,
                     method: 'GET',
                     dataType: 'json',
                     success: function (albumDetail) {

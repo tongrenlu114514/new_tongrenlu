@@ -45,7 +45,7 @@ class StatsManager {
         try {
             const result = await new Promise((resolve, reject) => {
                 $.ajax({
-                    url: '/api/music/album-stats',
+                    url: 'api/music/album-stats',
                     method: 'GET',
                     dataType: 'json',
                     success: resolve,

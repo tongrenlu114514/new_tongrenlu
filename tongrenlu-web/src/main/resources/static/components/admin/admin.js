@@ -17,7 +17,7 @@ $(document).ready(function () {
         $list.hide()
         $pagination.hide()
 
-        fetch(`/api/admin/unpublished-list?pageNumber=${currentPage}&pageSize=${pageSize}`)
+        fetch(`api/admin/unpublished-list?pageNumber=${currentPage}&pageSize=${pageSize}`)
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -139,7 +139,7 @@ $(document).ready(function () {
     function updateAlbum(cloudMusicId, title, picUrl) {
         // if (!confirm(`更新专辑信息？\n新歌名: ${title}\n网易云ID: ${cloudMusicId}`)) return
 
-        fetch(`/api/admin/update-album`, {
+        fetch(`api/admin/update-album`, {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `albumId=${currentAlbumId}&cloudMusicId=${cloudMusicId}&title=${encodeURIComponent(title)}&cloudMusicPicUrl=${encodeURIComponent(picUrl)}`
@@ -159,7 +159,7 @@ $(document).ready(function () {
 
     function markAsNoMatch(albumId) {
         // if (!confirm('标记为无匹配？')) return
-        fetch(`/api/admin/mark-no-match?albumId=${albumId}`, {method: 'POST'})
+        fetch(`api/admin/mark-no-match?albumId=${albumId}`, {method: 'POST'})
             .then(r => r.json())
             .then(res => {
                 if (res.success) {
@@ -262,7 +262,7 @@ $(document).ready(function () {
         $btn.text('搜索中...').prop('disabled', true)
         $container.html('<div class="no-results">正在搜索...</div>')
 
-        fetch(`/api/admin/search-cloud-music?keyword=${encodeURIComponent(keyword)}&page=${searchCurrentPage}`)
+        fetch(`api/admin/search-cloud-music?keyword=${encodeURIComponent(keyword)}&page=${searchCurrentPage}`)
             .then(r => r.json())
             .then(res => {
                 if (res.success && res.data) {

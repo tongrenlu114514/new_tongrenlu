@@ -18,7 +18,7 @@ async function updateAlbumModal(albumId) {
         // 调用后端接口获取专辑详情
         const albumDetail = await new Promise((resolve, reject) => {
             $.ajax({
-                url: `/api/music/detail?albumId=${albumId}`,
+                url: `api/music/detail?albumId=${albumId}`,
                 method: 'GET',
                 dataType: 'json',
                 success: resolve,
@@ -154,7 +154,7 @@ async function updateAlbumModal(albumId) {
                     // 获取专辑详情并播放指定曲目
                     if (albumId) {
                         $.ajax({
-                            url: `/api/music/detail?albumId=${albumId}`,
+                            url: `api/music/detail?albumId=${albumId}`,
                             method: 'GET',
                             dataType: 'json',
                             success: function (albumDetail) {
@@ -260,7 +260,7 @@ function searchMusic(keyword, page = 1) {
 
     // 发送请求到后端API
     $.ajax({
-        url: `/api/music/search?${params.toString()}`,
+        url: `api/music/search?${params.toString()}`,
         method: 'GET',
         dataType: 'json',
         success: function (data) {
@@ -321,7 +321,7 @@ function renderSearchResults(data) {
                 if (albumId) {
                     // 获取专辑详情并播放
                     $.ajax({
-                        url: `/api/music/detail?albumId=${albumId}`,
+                        url: `api/music/detail?albumId=${albumId}`,
                         method: 'GET',
                         dataType: 'json',
                         success: function (albumDetail) {
@@ -474,7 +474,7 @@ async function reportAlbumError() {
 
         // 发送POST请求到后端API
         await $.ajax({
-            url: `/api/music/report-error?albumId=${albumId}`,
+            url: `api/music/report-error?albumId=${albumId}`,
             method: 'POST',
             dataType: 'json',
             headers: {

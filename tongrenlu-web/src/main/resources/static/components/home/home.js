@@ -172,7 +172,7 @@ $(function () {
         }
 
         // 使用jQuery的get方法简化API调用
-        $.get(`/api/music/track?id=${trackId}`)
+        $.get(`api/music/track?id=${trackId}`)
             .done(function (data) {
                 const trackUrl = data && data.url;
                 if (!trackUrl) {
@@ -212,7 +212,7 @@ $(function () {
         }
 
         // 使用jQuery的Deferred对象来处理异步链
-        $.get(`/api/music/detail?albumId=${albumId}`)
+        $.get(`api/music/detail?albumId=${albumId}`)
             .then(function (albumDetail) {
                 if (!albumDetail.tracks || albumDetail.tracks.length === 0) {
                     throw new Error('专辑中没有曲目');
@@ -226,7 +226,7 @@ $(function () {
                 }
 
                 // 返回第二个AJAX请求的Promise
-                return $.get(`/api/music/track?id=${trackId}`);
+                return $.get(`api/music/track?id=${trackId}`);
             })
             .then(function (data) {
                 const trackUrl = data && data.url;
