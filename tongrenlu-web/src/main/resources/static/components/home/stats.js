@@ -112,12 +112,11 @@ class StatsManager {
 
             // 计算当前值
             const currentPublished = Math.floor(this.targetPublished * easeProgress);
-            const currentTotal = Math.floor(this.targetTotal * easeProgress);
-            const percentage = currentTotal > 0 ? Math.round((currentPublished / currentTotal) * 100) : 0;
+            const percentage = this.targetTotal > 0 ? Math.round((currentPublished / this.targetTotal) * 100) : 0;
 
             // 更新UI
             this.progressText.text(`${percentage}%`);
-            this.progressInfo.text(`专辑发布进度：已发布 ${currentPublished} / ${currentTotal} 张`);
+            this.progressInfo.text(`专辑发布进度：已发布 ${currentPublished} / ${this.targetTotal} 张`);
 
             if (currentStep < steps) {
                 setTimeout(animate, stepDuration);
