@@ -38,18 +38,25 @@ function loadImageWithCache(element, url, width, height) {
     $(img).on('load', function () {
         // 创建canvas进行缩略图处理
         const $canvas = $('<canvas>')[0];
-        const ctx = $canvas.getContext('2d');
+        const ctx = $canvas.getContext('2d', {alpha: false});
 
         // 设置canvas尺寸
         $canvas.width = width;
         $canvas.height = height;
 
-        // 计算缩放比例以保持宽高比
-        const scale = Math.min(img.width, img.height) / Math.max(width, height);
-        const newWidth = img.width * (width / Math.max(img.width, img.height));
-        const newHeight = img.height * (height / Math.max(img.width, img.height));
+        // 计算缩放比例以保持宽高比（填充模式）
+        const widthRatio = width / img.width;
+        const heightRatio = height / img.height;
+        const ratio = Math.max(widthRatio, heightRatio); // 使用最大比例以保证填满容器
 
-        // 在canvas上绘制缩略图
+        const newWidth = img.width * ratio;
+        const newHeight = img.height * ratio;
+
+        // 配置高质量绘制设置
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // 在canvas上绘制缩略图（居中裁剪）
         ctx.drawImage(
             img,
             (width - newWidth) / 2,
@@ -58,8 +65,8 @@ function loadImageWithCache(element, url, width, height) {
             newHeight
         );
 
-        // 转换为data URL（提高质量参数从0.8到0.95，图像更清晰）
-        const dataUrl = $canvas.toDataURL('image/jpeg', 0.95);
+        // 转换为PNG格式（无损），避免JPEG压缩导致的质量损失
+        const dataUrl = $canvas.toDataURL('image/png');
 
         // 缓存处理后的图片
         imageCache.set(cacheKey, dataUrl);
