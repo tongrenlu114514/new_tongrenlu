@@ -1,10 +1,12 @@
 $(document).ready(function () {
     let currentPage = 1
-    const pageSize = 20
+    const pageSize = 10
     let currentAlbumId = null
     let currentAlbumTitle = null
     let currentAlbumArtist = null
     let currentAlbumPublishDate = null
+    let searchCurrentPage = 1
+    let searchTotalPages = 1
 
     function loadUnpublishedAlbums() {
         const $loading = $('#loading')
@@ -63,6 +65,22 @@ $(document).ready(function () {
         }).join('')
 
         $list.html(rows)
+    }
+
+    function renderSearchPagination() {
+        const $pagination = $('#search-pagination')
+        if (searchTotalPages <= 1) return $pagination.hide()
+
+        let html = `<span class="page-item ${searchCurrentPage === 1 ? 'disabled' : ''}" data-page="${searchCurrentPage - 1}">上一页</span>`
+        for (let i = 1; i <= searchTotalPages; i++) {
+            if (i === 1 || i === searchTotalPages || (i >= searchCurrentPage - 2 && i <= searchCurrentPage + 2)) {
+                html += `<span class="page-item ${i === searchCurrentPage ? 'active' : ''}" data-page="${i}">${i}</span>`
+            } else if (i === searchCurrentPage - 3 || i === searchCurrentPage + 3) {
+                html += '<span class="page-item disabled">...</span>'
+            }
+        }
+        html += `<span class="page-item ${searchCurrentPage === searchTotalPages ? 'disabled' : ''}" data-page="${searchCurrentPage + 1}">下一页</span>`
+        $pagination.html(html).show()
     }
 
     function renderPagination(total, current) {
@@ -172,9 +190,29 @@ $(document).ready(function () {
     })
 
     $('.close-btn').on('click', closeSearchModal)
-    $('#searchBtn').on('click', searchCloudMusic)
+    $('#searchBtn').on('click', () => {
+        searchCurrentPage = 1
+        searchCloudMusic()
+    })
     $('#searchKeyword').on('keypress', e => {
-        if (e.key === 'Enter') searchCloudMusic()
+        if (e.key === 'Enter') {
+            searchCurrentPage = 1
+            searchCloudMusic()
+        }
+    })
+
+    $('#search-pagination').on('click', '.page-item:not(.disabled)', function () {
+        const page = $(this).data('page')
+        if (page && page > 0) {
+            searchCurrentPage = page
+            searchCloudMusic()
+        }
+    })
+
+    $('#searchModal').on('click', '.close-btn', function () {
+        searchCurrentPage = 1
+        searchTotalPages = 1
+        closeSearchModal()
     })
 
     // 点击专辑名称触发搜索
@@ -224,16 +262,20 @@ $(document).ready(function () {
         $btn.text('搜索中...').prop('disabled', true)
         $container.html('<div class="no-results">正在搜索...</div>')
 
-        fetch(`/api/admin/search-cloud-music?keyword=${encodeURIComponent(keyword)}`)
+        fetch(`/api/admin/search-cloud-music?keyword=${encodeURIComponent(keyword)}&page=${searchCurrentPage}`)
             .then(r => r.json())
             .then(res => {
-                if (res.success && Array.isArray(res.data) && res.data.length) {
-                    const html = res.data.map(item => {
-                        const artistMatch = getHighlightClass(item.artists.map(art => art.name), currentAlbumArtist)
-                        const formattedPublishDate = formatTimestamp(item.publishTime)
-                        const publishDateMatch = getHighlightClass([formattedPublishDate], currentAlbumPublishDate)
+                if (res.success && res.data) {
+                    searchTotalPages = res.data.pages || 1
+                    const albums = res.data.records || res.data
 
-                        return `
+                    if (Array.isArray(albums) && albums.length) {
+                        const html = albums.map(item => {
+                            const artistMatch = getHighlightClass(item.artists.map(art => art.name), currentAlbumArtist)
+                            const formattedPublishDate = formatTimestamp(item.publishTime)
+                            const publishDateMatch = getHighlightClass([formattedPublishDate], currentAlbumPublishDate)
+
+                            return `
               <div class="result-item">
                 <div style="display:flex;gap:15px;align-items:center">
                   <img src="${item.picUrl}" style="width:60px;height:60px;border-radius:4px;object-fit:cover" onerror="this.style.display='none'">
@@ -248,10 +290,16 @@ $(document).ready(function () {
                   </div>
                 </div>
               </div>`
-                    }).join('')
-                    $container.html(html)
+                        }).join('')
+                        $container.html(html)
+                        renderSearchPagination()
+                    } else {
+                        $container.html('<div class="no-results">未找到匹配结果</div>')
+                        $('#search-pagination').hide()
+                    }
                 } else {
                     $container.html('<div class="no-results">未找到匹配结果</div>')
+                    $('#search-pagination').hide()
                 }
             })
             .catch(e => $container.html(`<div class="no-results">搜索失败: ${e.message}</div>`))

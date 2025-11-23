@@ -1,42 +1,57 @@
 package info.tongrenlu.service;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
-import info.tongrenlu.domain.AlbumDetailBean;
-import info.tongrenlu.domain.ArticleBean;
-import info.tongrenlu.domain.TrackBean;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import info.tongrenlu.domain.*;
 import info.tongrenlu.mapper.ArticleMapper;
+import info.tongrenlu.mapper.ArticleTagMapper;
+import info.tongrenlu.mapper.TagMapper;
 import info.tongrenlu.mapper.TrackMapper;
+import info.tongrenlu.model.CloudAlbumDetailResponse;
+import info.tongrenlu.model.CloudAlbumSearchResponse;
+import info.tongrenlu.model.CloudMusicAlbum;
+import info.tongrenlu.model.CloudMusicTrack;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class HomeMusicService {
+    public static final String ARTIST = "artist";
+    public static final String EVENT = "event";
+    public static final String M_ARTICLE = "m_article";
 
     private final ArticleMapper articleMapper;
     private final TrackMapper trackMapper;
+    private final TagMapper tagMapper;
+    private final ArticleTagMapper articleTagMapper;
 
     public Page<ArticleBean> getMusicTopping(final int pageSize) {
         LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
-        return this.articleMapper.selectPage(new PageDTO<>(1,pageSize), queryWrapper);
+        return this.articleMapper.selectPage(new PageDTO<>(1, pageSize), queryWrapper);
     }
 
     public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize) {
         LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.isNotNull(ArticleBean::getCloudMusicId);
         queryWrapper.eq(ArticleBean::getPublishFlg, "1")
-                .and(StringUtils.isNotBlank(keyword), wrapper ->  wrapper.like(ArticleBean::getTitle, keyword)
+                .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper.like(ArticleBean::getTitle, keyword)
                         .or().like(ArticleBean::getDescription, keyword));
         queryWrapper.orderByDesc(ArticleBean::getId);
         return this.articleMapper.selectPage(new PageDTO<>(pageNumber, pageSize), queryWrapper);
@@ -72,7 +87,7 @@ public class HomeMusicService {
         albumDetail.setCloudMusicId(article.getCloudMusicId());
         albumDetail.setCloudMusicPicUrl(article.getCloudMusicPicUrl());
         albumDetail.setTracks(tracks);
-        
+
         // 从文章标题中提取艺术家信息（这里使用一个简单的逻辑）
         // 实际项目中可能需要更复杂的逻辑来从其他字段获取
         String title = article.getTitle();
@@ -90,14 +105,14 @@ public class HomeMusicService {
 
         return albumDetail;
     }
-    
+
     // 获取点赞数的辅助方法
     private int getLikeCount(Long albumId) {
         // 这里需要根据实际的数据访问逻辑来实现
         // 暂时返回0，实际项目中需要通过Mapper查询r_like表
         return 0;
     }
-    
+
     // 获取评论数的辅助方法
     private int getCommentCount(Long albumId) {
         // 这里需要根据实际的数据访问逻辑来实现
@@ -128,6 +143,7 @@ public class HomeMusicService {
 
     /**
      * Report an error for an album by setting its publishFlg to "0"
+     *
      * @param albumId the ID of the album to mark as having an error
      * @return true if successful, false otherwise
      */
@@ -188,19 +204,34 @@ public class HomeMusicService {
     @Transactional
     public boolean updateAlbum(Long albumId, Long cloudMusicId, String title, String cloudMusicPicUrl) {
         try {
-            ArticleBean article = this.articleMapper.selectById(albumId);
+            ArticleBean articleBean = this.articleMapper.selectById(albumId);
 
-            if (article == null) {
+            if (articleBean == null) {
                 log.error("Album not found: {}", albumId);
                 return false;
             }
 
-            article.setCloudMusicId(cloudMusicId);
-            article.setTitle(title);
-            article.setCloudMusicPicUrl(cloudMusicPicUrl);
-            article.setPublishFlg("1");
+            CloudMusicAlbum cloudMusicAlbum = getCloudMusicAlbumById(cloudMusicId);
+            if (cloudMusicAlbum != null) {
+                articleBean.setCloudMusicName(cloudMusicAlbum.getName());
+                articleMapper.insertOrUpdate(articleBean);
+                log.info("# 云音乐专辑名称: {}", cloudMusicAlbum.getName());
 
-            int updateResult = this.articleMapper.updateById(article);
+                cloudMusicAlbum.getArtists().forEach(artist -> {
+                    TagBean artistTag = getTagByType(artist.getName(), ARTIST);
+                    saveArticleTag(articleBean, artistTag);
+                });
+
+                List<CloudMusicTrack> songs = cloudMusicAlbum.getSongs();
+                saveCloudMusicTrackList(songs, articleBean);
+            }
+
+            articleBean.setCloudMusicId(cloudMusicId);
+            articleBean.setCloudMusicPicUrl(cloudMusicPicUrl);
+            articleBean.setCloudMusicName(title);
+            articleBean.setPublishFlg("1");
+
+            int updateResult = this.articleMapper.updateById(articleBean);
 
             return updateResult > 0;
 
@@ -208,6 +239,85 @@ public class HomeMusicService {
             log.error("Error updating album {}", albumId, e);
             throw e;
         }
+    }
+
+    @SneakyThrows
+    public void saveCloudMusicTrackList(List<CloudMusicTrack> songs, ArticleBean musicBean) {
+        LambdaQueryWrapper<TrackBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(TrackBean::getArticleId, musicBean.getId());
+        trackMapper.delete(queryWrapper);
+
+        songs.forEach(track -> {
+            log.info("* 曲目名称: {}.{}, 网易云ID：{}", track.getNo(), track.getName(), track.getId());
+            TrackBean trackBean = new TrackBean();
+            trackBean.setArticleId(musicBean.getId());
+            trackBean.setName(track.getName());
+            trackBean.setCloudMusicId(track.getId());
+            trackBean.setDisc(track.getCd());
+            trackBean.setTrackNumber(track.getNo());
+            trackBean.setOriginal(String.join(", ", track.getAlia()));
+            trackMapper.insertOrUpdate(trackBean);
+        });
+    }
+
+    public TagBean getTagByType(String tag, String type) {
+        LambdaQueryWrapper<TagBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(TagBean::getTag, tag);
+        queryWrapper.eq(TagBean::getType, type);
+        TagBean artistTag = Optional.ofNullable(tagMapper.selectOne(queryWrapper))
+                .orElseGet(() -> {
+                    TagBean tagBean = new TagBean();
+                    tagBean.setTag(tag);
+                    tagBean.setType(type);
+                    return tagBean;
+                });
+
+        tagMapper.insertOrUpdate(artistTag);
+        return artistTag;
+    }
+
+    public CloudMusicAlbum getCloudMusicAlbumById(Long id) {
+        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/album")
+                .queryParam("id", id)
+                .build()
+                .toString();
+
+        CloudAlbumDetailResponse musicDetailResponse;
+        try (HttpResponse response = HttpRequest.get(url).execute()) {
+            String json = response.body();
+            musicDetailResponse = new ObjectMapper().readValue(json, CloudAlbumDetailResponse.class);
+            if (musicDetailResponse == null) {
+                return null;
+            }
+            int code = musicDetailResponse.getCode();
+            if (code != 200) {
+                return null;
+            }
+
+            CloudMusicAlbum album = musicDetailResponse.getAlbum();
+            album.setSongs(musicDetailResponse.getSongs());
+            return album;
+        } catch (IOException e) {
+            log.error("get {} error", url, e);
+        }
+        return null;
+    }
+
+
+    public void saveArticleTag(ArticleBean musicBean, TagBean tagBean) {
+        LambdaQueryWrapper<ArticleTagBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArticleTagBean::getArticleId, musicBean.getId());
+        queryWrapper.eq(ArticleTagBean::getTagId, tagBean.getId());
+        ArticleTagBean articleTagBean = Optional.ofNullable(articleTagMapper.selectOne(queryWrapper))
+                .orElseGet(() -> {
+                    ArticleTagBean bean = new ArticleTagBean();
+                    bean.setArticleId(musicBean.getId());
+                    bean.setTagId(tagBean.getId());
+                    return bean;
+                });
+
+        articleTagBean.setType(M_ARTICLE);
+        articleTagMapper.insertOrUpdate(articleTagBean);
     }
 
     /**
@@ -237,5 +347,57 @@ public class HomeMusicService {
             log.error("Error marking album {} as no match", albumId, e);
             throw e;
         }
+    }
+
+    public void insertOrUpdate(ArticleBean articleBean) {
+        articleMapper.insertOrUpdate(articleBean);
+    }
+
+    public void saveTrackBeanList(List<TrackBean> trackBeanList) {
+        trackBeanList.stream()
+                .map(trackBean -> {
+                    LambdaQueryWrapper<TrackBean> queryWrapper = new LambdaQueryWrapper<>();
+                    queryWrapper.eq(TrackBean::getArticleId, trackBean.getArticleId());
+                    queryWrapper.eq(StringUtils.isNotBlank(trackBean.getDisc()), TrackBean::getDisc, trackBean.getDisc());
+                    queryWrapper.eq(TrackBean::getTrackNumber, trackBean.getTrackNumber());
+                    List<TrackBean> trackBeans = trackMapper.selectList(queryWrapper);
+                    if (trackBeans.size() != 1) {
+                        trackMapper.delete(queryWrapper);
+                    }
+                    return trackBeans.stream().findFirst().orElse(trackBean);
+                })
+                .forEach(trackMapper::insertOrUpdate);
+    }
+
+    public ArticleBean getByTitle(String title) {
+        LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArticleBean::getTitle, title);
+        return articleMapper.selectOne(queryWrapper);
+    }
+
+    public ArticleBean getByArtistAndCode(String artistName, String code) {
+        LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArticleBean::getArtist, artistName);
+        queryWrapper.eq(ArticleBean::getCode, code);
+        return articleMapper.selectOne(queryWrapper);
+    }
+
+    public CloudAlbumSearchResponse searchCloudMusicAlbum(String[] keywords, int limit, int offset, int type) {
+        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
+                .queryParam("keywords", Arrays.stream(keywords).map(keyword -> URLEncoder.encode(keyword, StandardCharsets.UTF_8)).toArray())
+                .queryParam("limit", limit)
+                .queryParam("offset", offset)
+                .queryParam("type", type)
+                .build()
+                .toString();
+        log.info("Searching cloud music: {}", url);
+
+        try (HttpResponse response = HttpRequest.get(url).execute()) {
+            String json = response.body();
+            return new ObjectMapper().readValue(json, CloudAlbumSearchResponse.class);
+        } catch (IOException e) {
+            log.error("get {} error", url, e);
+        }
+        return null;
     }
 }

@@ -1,9 +1,7 @@
-package info.tongrenlu.support;
+package info.tongrenlu.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import info.tongrenlu.model.CloudMusicAlbum;
-import info.tongrenlu.model.CloudMusicTrack;
 import lombok.Data;
 
 import java.util.List;

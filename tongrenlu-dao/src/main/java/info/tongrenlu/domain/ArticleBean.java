@@ -43,7 +43,10 @@ public class ArticleBean {
     @TableField(value = "cloud_music_pic_url", jdbcType = JdbcType.VARCHAR)
     private String cloudMusicPicUrl;
 
-    @TableField(value = "cloud_music_id", jdbcType = JdbcType.VARCHAR)
+    @TableField(value = "cloud_music_id", jdbcType = JdbcType.INTEGER)
     private Long cloudMusicId;
+
+    @TableField(value = "cloud_music_name", jdbcType = JdbcType.VARCHAR)
+    private String cloudMusicName;
 
 }

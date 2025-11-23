@@ -1,37 +1,22 @@
 package info.tongrenlu.support;
 
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.domain.ArticleBean;
-import info.tongrenlu.domain.ArticleTagBean;
 import info.tongrenlu.domain.TagBean;
 import info.tongrenlu.domain.TrackBean;
-import info.tongrenlu.mapper.ArticleMapper;
-import info.tongrenlu.mapper.ArticleTagMapper;
-import info.tongrenlu.mapper.TagMapper;
-import info.tongrenlu.mapper.TrackMapper;
 import info.tongrenlu.model.CloudAlbumSearchResponse;
 import info.tongrenlu.model.CloudAlbumSearchResult;
 import info.tongrenlu.model.CloudMusicAlbum;
 import info.tongrenlu.model.CloudMusicTrack;
+import info.tongrenlu.service.HomeMusicService;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -44,15 +29,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @Component
 public class MusicAlbumParser {
-
-    public static final String ARTIST = "artist";
-    public static final String EVENT = "event";
-    public static final String M_ARTICLE = "m_article";
-    private final ArticleMapper articleMapper;
-    private final TrackMapper trackMapper;
-    private final TagMapper tagMapper;
-    private final ArticleTagMapper articleTagMapper;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final HomeMusicService homeMusicService;
 
     public List<MusicTrack> parseMusicAlbumFile(String filePath) throws IOException {
         List<MusicTrack> tracks = new ArrayList<>();
@@ -69,8 +46,7 @@ public class MusicAlbumParser {
                 if (line.isEmpty()) continue;
 
                 // 跳过ROOT行和其他非数据行
-                if (line.startsWith("ROOT=") || line.equals("-error.txt") ||
-                        line.endsWith(".7z")) {
+                if (line.startsWith("ROOT=") || line.equals("-error.txt") || line.endsWith(".7z")) {
                     continue;
                 }
 
@@ -162,17 +138,7 @@ public class MusicAlbumParser {
             String trackName = matcher.group(2).trim();
             String fileName = content;
 
-            return new MusicTrack(
-                    artistName,
-                    album.albumName,
-                    album.albumCode,
-                    album.releaseEvent,
-                    album.releaseDate,
-                    currentDisc,
-                    trackNumber,
-                    trackName,
-                    fileName
-            );
+            return new MusicTrack(artistName, album.albumName, album.albumCode, album.releaseEvent, album.releaseDate, currentDisc, trackNumber, trackName, fileName);
         }
 
         return null;
@@ -181,244 +147,116 @@ public class MusicAlbumParser {
     @Transactional(rollbackFor = Exception.class)
     public void saveArticle(MusicAlbumContext context) {
         List<MusicTrack> musicTracks = context.getMusicTracks();
-        musicTracks.stream().findFirst()
-                .ifPresent(track -> {
-                    log.info("# 专辑名称: {}", track.getAlbumName());
-                    ArticleBean articleBean = toMusicBean(track);
-                    if (articleBean.getCloudMusicId() != null) {
-                        return;
-                    }
-                    if (articleBean.getPublishFlg().equals("2")) {
-                        return;
-                    }
-                    //album search
-                    CloudMusicAlbum cloudMusicAlbum = getCloudMusicAlbum(articleBean);
-                    if (cloudMusicAlbum != null) {
-                        articleBean.setCloudMusicId(cloudMusicAlbum.getId());
-                        articleBean.setCloudMusicPicUrl(cloudMusicAlbum.getPicUrl());
-                        articleBean.setDescription(cloudMusicAlbum.getDescription());
-                    }else {
-                        articleBean.setPublishFlg("0");
-                    }
-                    articleMapper.insertOrUpdate(articleBean);
+        musicTracks.stream().findFirst().ifPresent(track -> {
+            log.info("# 专辑名称: {}", track.getAlbumName());
+            ArticleBean articleBean = toMusicBean(track);
+            //album search
+            if (articleBean.getPublishFlg() == null || articleBean.getPublishFlg().equals("0")) {
+                CloudMusicAlbum cloudMusicAlbum = getCloudMusicAlbum(articleBean);
+                if (cloudMusicAlbum != null) {
+                    articleBean.setCloudMusicId(cloudMusicAlbum.getId());
+                    articleBean.setCloudMusicPicUrl(cloudMusicAlbum.getPicUrl());
+                    articleBean.setDescription(cloudMusicAlbum.getDescription());
+                    articleBean.setPublishFlg("1");
+                }
+            }
 
-                    if (cloudMusicAlbum != null) {
-                        cloudMusicAlbum.getArtists().forEach(artist -> {
-                            TagBean artistTag = getTagByType(artist.getName(), ARTIST);
-                            saveArticleTag(articleBean, artistTag);
-                        });
-                    } else {
-                        TagBean artistTag = getTagByType(track.getArtistName(), ARTIST);
-                        saveArticleTag(articleBean, artistTag);
-                    }
+            homeMusicService.insertOrUpdate(articleBean);
+
+            if (articleBean.getCloudMusicId() != null) {
+                CloudMusicAlbum cloudMusicAlbum = homeMusicService.getCloudMusicAlbumById(articleBean.getCloudMusicId());
+                if (cloudMusicAlbum != null) {
+                    articleBean.setCloudMusicName(cloudMusicAlbum.getName());
+                    homeMusicService.insertOrUpdate(articleBean);
+                    log.info("# 云音乐专辑名称: {}", cloudMusicAlbum.getName());
+
+                    cloudMusicAlbum.getArtists().forEach(artist -> {
+                        TagBean artistTag = homeMusicService.getTagByType(artist.getName(), HomeMusicService.ARTIST);
+                        homeMusicService.saveArticleTag(articleBean, artistTag);
+                    });
+
+                    List<CloudMusicTrack> songs = cloudMusicAlbum.getSongs();
+                    homeMusicService.saveCloudMusicTrackList(songs, articleBean);
+                }
+            } else {
+                saveTrackBeanList(musicTracks, articleBean);
+            }
+
+            TagBean artistTag = homeMusicService.getTagByType(track.getArtistName(), HomeMusicService.ARTIST);
+            homeMusicService.saveArticleTag(articleBean, artistTag);
+            TagBean eventTag = homeMusicService.getTagByType(track.getReleaseEvent(), HomeMusicService.EVENT);
+            homeMusicService.saveArticleTag(articleBean, eventTag);
 
 
-                    TagBean eventTag = getTagByType(track.getReleaseEvent(), EVENT);
-                    saveArticleTag(articleBean, eventTag);
-
-                    if (cloudMusicAlbum != null) {
-                        List<CloudMusicTrack> songs = cloudMusicAlbum.getSongs();
-                        saveCloudMusicTrackList(songs, articleBean);
-                    } else {
-                        saveTrackBeanList(musicTracks, articleBean);
-                    }
-
-                    context.setArticleBean(articleBean);
-                });
-    }
-
-    @SneakyThrows
-    private void saveCloudMusicTrackList(List<CloudMusicTrack> songs, ArticleBean musicBean) {
-        LambdaQueryWrapper<TrackBean> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TrackBean::getArticleId, musicBean.getId());
-        trackMapper.delete(queryWrapper);
-
-        songs.forEach(track -> {
-            log.info("* 曲目名称: {}.{}", track.getNo(), track.getName());
-            TrackBean trackBean = new TrackBean();
-            trackBean.setArticleId(musicBean.getId());
-            trackBean.setName(track.getName());
-            trackBean.setCloudMusicId(track.getId());
-            trackBean.setDisc(track.getCd());
-            trackBean.setTrackNumber(track.getNo());
-            trackBean.setOriginal(String.join(", ", track.getAlia()));
-
-//            String url = UriComponentsBuilder.fromUriString("https://api.kxzjoker.cn/api/163_music")
-//                    .queryParam("ids", track.getId())
-//                    .queryParam("level", "jymaster")
-//                    .queryParam("type", "json")
-//                    .build()
-//                    .toString();
-//
-//            CloudMusicDetailResponse musicDetailResponse;
-//            try(HttpResponse response = HttpRequest.get(url).execute()) {
-//                String json = response.body();
-//                musicDetailResponse = new ObjectMapper().readValue(json, CloudMusicDetailResponse.class);
-//                trackBean.setCloudMusicUrl(musicDetailResponse.getUrl());
-//                trackBean.setCloudMusicLevel(musicDetailResponse.getLevel());
-//                trackBean.setLyric(musicDetailResponse.getLyric());
-//                trackBean.setAlbum(musicDetailResponse.getAlName());
-//                trackBean.setArtist(musicDetailResponse.getArName());
-//            }catch (IOException e) {
-//                log.error("get {} error",url, e);
-//            }
-            trackMapper.insertOrUpdate(trackBean);
+            context.setArticleBean(articleBean);
         });
     }
 
     private CloudMusicAlbum getCloudMusicAlbum(ArticleBean articleBean) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
-                .queryParam("keywords", URLEncoder.encode(articleBean.getTitle(), StandardCharsets.UTF_8))
-                .queryParam("keywords", URLEncoder.encode(articleBean.getArtist(), StandardCharsets.UTF_8))
-                .queryParam("limit", 30)
-                .queryParam("offset", 0)
-                .queryParam("type", 10)
-                .build()
-                .toString();
-
-        try(HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
-            CloudAlbumSearchResponse musicDetailResponse = new ObjectMapper().readValue(json, CloudAlbumSearchResponse.class);
-            if (musicDetailResponse == null){
-                return null;
-            }
-
-            int code = musicDetailResponse.getCode();
-            if (code != 200) {
-                return null;
-            }
-
-            CloudAlbumSearchResult result = musicDetailResponse.getResult();
-            List<CloudMusicAlbum> albums = result.getAlbums();
-            if (CollectionUtils.isEmpty(albums)) {
-                return null;
-            }
-            return albums.stream()
-                    .filter(album -> {
-                        if (articleBean.getTitle().equals(album.getName())) {
-                            return true;
-                        }
-
-                        long publishTime = Long.parseLong(album.getPublishTime());
-                        Date publishDate = new Date(publishTime);
-                        return DateUtils.isSameDay(publishDate, articleBean.getPublishDate());
-                    })
-                    .findFirst()
-                    .map(CloudMusicAlbum::getId)
-                    .map(this::getCloudMusicAlbumById)
-                    .orElse( null);
-        }catch (IOException e){
-            log.error("get {} error",url, e);
+        CloudAlbumSearchResponse musicDetailResponse = homeMusicService.searchCloudMusicAlbum(new String[]{articleBean.getTitle(), articleBean.getArtist()}, 30, 0, 10);
+        if (musicDetailResponse == null) {
+            return null;
         }
-        return null;
-    }
 
-    private CloudMusicAlbum getCloudMusicAlbumById(Long id) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/album")
-                .queryParam("id", id)
-                .build()
-                .toString();
-
-        CloudAlbumDetailResponse musicDetailResponse;
-        try(HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
-            musicDetailResponse = new ObjectMapper().readValue(json, CloudAlbumDetailResponse.class);
-            if (musicDetailResponse == null){
-                return null;
-            }
-            int code = musicDetailResponse.getCode();
-            if (code != 200) {
-                return null;
-            }
-
-            CloudMusicAlbum album = musicDetailResponse.getAlbum();
-            album.setSongs(musicDetailResponse.getSongs());
-            return album;
-        }catch (IOException e){
-            log.error("get {} error",url, e);
+        int code = musicDetailResponse.getCode();
+        if (code != 200) {
+            return null;
         }
-        return null;
+
+        CloudAlbumSearchResult result = musicDetailResponse.getResult();
+        List<CloudMusicAlbum> albums = result.getAlbums();
+        if (albums == null || albums.isEmpty()) {
+            return null;
+        }
+
+        return albums.stream()
+                .filter(album -> {
+                    if (articleBean.getTitle().equals(album.getName())) {
+                        return true;
+                    }
+                    long publishTime = Long.parseLong(album.getPublishTime());
+                    Date publishDate = new Date(publishTime);
+                    return DateUtils.isSameDay(publishDate, articleBean.getPublishDate());
+                })
+                .findFirst()
+                .map(CloudMusicAlbum::getId)
+                .map(homeMusicService::getCloudMusicAlbumById)
+                .orElse(null);
     }
 
     private void saveTrackBeanList(List<MusicTrack> albumTracks, ArticleBean musicBean) {
-        List<TrackBean> trackBeanList = albumTracks.stream()
-                .map(track -> {
-                    log.info("* 曲目名称: {}.{}", track.getTrackNumber(), track.getTrackName());
-                    TrackBean trackBean = new TrackBean();
-                    trackBean.setArticleId(musicBean.getId());
-                    trackBean.setName(track.getTrackName());
-                    trackBean.setAlbum(track.getAlbumName());
-                    trackBean.setArtist(track.getArtistName());
-                    trackBean.setDisc(track.getDiscNumber());
-                    trackBean.setTrackNumber(Integer.parseInt(track.getTrackNumber()));
-                    trackBean.setCloudMusicId(-1L);
-                    return trackBean;
-                })
-                .toList();
+        List<TrackBean> trackBeanList = albumTracks.stream().map(track -> {
+            log.info("* 曲目名称: {}.{}", track.getTrackNumber(), track.getTrackName());
+            TrackBean trackBean = new TrackBean();
+            trackBean.setArticleId(musicBean.getId());
+            trackBean.setName(track.getTrackName());
+            trackBean.setAlbum(track.getAlbumName());
+            trackBean.setArtist(track.getArtistName());
+            trackBean.setDisc(track.getDiscNumber());
+            trackBean.setTrackNumber(Integer.parseInt(track.getTrackNumber()));
+            trackBean.setCloudMusicId(-1L);
+            return trackBean;
+        }).toList();
 
-        trackBeanList.stream()
-                .map(trackBean -> {
-                    LambdaQueryWrapper<TrackBean> queryWrapper = new LambdaQueryWrapper<>();
-                    queryWrapper.eq(TrackBean::getArticleId, trackBean.getArticleId());
-                    queryWrapper.eq(StringUtils.isNotBlank(trackBean.getDisc()), TrackBean::getDisc, trackBean.getDisc());
-                    queryWrapper.eq(TrackBean::getTrackNumber, trackBean.getTrackNumber());
-                    List<TrackBean> trackBeans = trackMapper.selectList(queryWrapper);
-                    if (trackBeans.size() != 1) {
-                        trackMapper.delete(queryWrapper);
-                    }
-                    return trackBeans.stream().findFirst().orElse(trackBean);
-                })
-                .forEach(trackMapper::insertOrUpdate);
+        homeMusicService.saveTrackBeanList(trackBeanList);
     }
 
     private ArticleBean toMusicBean(MusicTrack track) {
-        LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ArticleBean::getTitle, track.getAlbumName());
-        ArticleBean articleBean = Optional.ofNullable(articleMapper.selectOne(queryWrapper))
-                .orElseGet(ArticleBean::new);
+        ArticleBean articleBean = Optional.ofNullable(homeMusicService.getByTitle(track.getAlbumName())).orElseGet(() -> Optional.ofNullable(homeMusicService.getByArtistAndCode(track.getArtistName(), track.getAlbumCode())).orElseGet(ArticleBean::new));
+        if (articleBean.getCloudMusicId() != null) {
+            articleBean.setPublishFlg("1");
+        } else {
+            articleBean.setDescription(track.getReleaseEvent());
+            try {
+                articleBean.setPublishDate(DateUtils.parseDate(track.getReleaseDate(), "yyyy.MM.dd"));
+            } catch (ParseException ignored) {
+            }
+        }
         articleBean.setTitle(track.getAlbumName());
         articleBean.setArtist(track.getArtistName());
         articleBean.setCode(track.getAlbumCode());
-        articleBean.setDescription(track.getFileName());
-        articleBean.setPublishFlg("1");
-        try {
-            articleBean.setPublishDate(DateUtils.parseDate(track.getReleaseDate(), "yyyy.MM.dd"));
-        } catch (ParseException ignored) {
-        }
         articleBean.setAccessCount(0);
         return articleBean;
-    }
-
-    private void saveArticleTag(ArticleBean musicBean, TagBean tagBean) {
-        LambdaQueryWrapper<ArticleTagBean> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ArticleTagBean::getArticleId, musicBean.getId());
-        queryWrapper.eq(ArticleTagBean::getTagId, tagBean.getId());
-        ArticleTagBean articleTagBean = Optional.ofNullable(articleTagMapper.selectOne(queryWrapper))
-                .orElseGet(() -> {
-                    ArticleTagBean bean = new ArticleTagBean();
-                    bean.setArticleId(musicBean.getId());
-                    bean.setTagId(tagBean.getId());
-                    return bean;
-                });
-
-        articleTagBean.setType(M_ARTICLE);
-        articleTagMapper.insertOrUpdate(articleTagBean);
-    }
-
-    private TagBean getTagByType(String tag, String type) {
-        LambdaQueryWrapper<TagBean> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TagBean::getTag, tag);
-        queryWrapper.eq(TagBean::getType, type);
-        TagBean artistTag = Optional.ofNullable(tagMapper.selectOne(queryWrapper))
-                .orElseGet(() -> {
-                    TagBean tagBean = new TagBean();
-                    tagBean.setTag(tag);
-                    tagBean.setType(type);
-                    return tagBean;
-                });
-
-        tagMapper.insertOrUpdate(artistTag);
-        return artistTag;
     }
 
 }

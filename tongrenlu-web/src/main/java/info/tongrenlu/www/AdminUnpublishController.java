@@ -1,9 +1,6 @@
 package info.tongrenlu.www;
 
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.model.CloudAlbumSearchResponse;
 import info.tongrenlu.model.CloudAlbumSearchResult;
@@ -13,11 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,9 +36,7 @@ public class AdminUnpublishController {
      * @return 分页的未发布专辑列表
      */
     @GetMapping("/unpublished-list")
-    public ResponseEntity<Map<String, Object>> getUnpublishedList(
-            @RequestParam(defaultValue = "1") int pageNumber,
-            @RequestParam(defaultValue = "20") int pageSize) {
+    public ResponseEntity<Map<String, Object>> getUnpublishedList(@RequestParam(defaultValue = "1") int pageNumber, @RequestParam(defaultValue = "10") int pageSize) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -69,48 +60,38 @@ public class AdminUnpublishController {
      * 根据关键词搜索专辑/音乐
      *
      * @param keyword 搜索关键词
-     * @return 搜索结果列表
+     * @param page    页码，从1开始
+     * @return 分页搜索结果
      */
     @GetMapping("/search-cloud-music")
-    public ResponseEntity<Map<String, Object>> searchCloudMusic(@RequestParam String keyword) {
+    public ResponseEntity<Map<String, Object>> searchCloudMusic(@RequestParam String keyword, @RequestParam(defaultValue = "1") int page) {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
-                    .queryParam("keywords", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
-                    .queryParam("limit", 30)
-                    .queryParam("offset", 0)
-                    .queryParam("type", 10)
-                    .build()
-                    .toString();
+            int limit = 10;
+            int offset = (page - 1) * limit;
 
-            log.info("Searching cloud music: {}", url);
-
-            try (HttpResponse httpResponse = HttpRequest.get(url).execute()) {
-                String json = httpResponse.body();
-
-                ObjectMapper objectMapper = new ObjectMapper();
-                CloudAlbumSearchResponse musicDetailResponse = objectMapper.readValue(json, CloudAlbumSearchResponse.class);
-                if (musicDetailResponse == null) {
-                    return null;
-                }
-
-                int code = musicDetailResponse.getCode();
-                if (code != 200) {
-                    return null;
-                }
-                CloudAlbumSearchResult result = musicDetailResponse.getResult();
-                List<CloudMusicAlbum> albums = result.getAlbums();
-                response.put("success", true);
-                response.put("data", albums != null ? albums : List.of());
-                return ResponseEntity.ok(response);
+            CloudAlbumSearchResponse musicDetailResponse = musicService.searchCloudMusicAlbum(new String[]{keyword}, limit, offset, limit);
+            if (musicDetailResponse == null) {
+                return null;
             }
 
-        } catch (IOException e) {
-            log.error("Error searching cloud music", e);
-            response.put("success", false);
-            response.put("message", "搜索失败:" + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
+            int code = musicDetailResponse.getCode();
+            if (code != 200) {
+                return null;
+            }
+            CloudAlbumSearchResult result = musicDetailResponse.getResult();
+            List<CloudMusicAlbum> albums = result.getAlbums();
+            // 构建分页响应
+            Map<String, Object> pageData = new HashMap<>();
+            pageData.put("records", albums != null ? albums : List.of());
+            pageData.put("pages", result.getAlbumCount() != null ? (int) Math.ceil((double) result.getAlbumCount() / limit) : 1);
+            pageData.put("current", page);
+
+            response.put("success", true);
+            response.put("data", pageData);
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             log.error("Unexpected error", e);
             response.put("success", false);
@@ -130,11 +111,7 @@ public class AdminUnpublishController {
      * @return 操作结果
      */
     @PostMapping("/update-album")
-    public ResponseEntity<Map<String, Object>> updateAlbum(
-            @RequestParam Long albumId,
-            @RequestParam Long cloudMusicId,
-            @RequestParam String title,
-            @RequestParam(required = false) String cloudMusicPicUrl) {
+    public ResponseEntity<Map<String, Object>> updateAlbum(@RequestParam Long albumId, @RequestParam Long cloudMusicId, @RequestParam String title, @RequestParam(required = false) String cloudMusicPicUrl) {
 
         Map<String, Object> response = new HashMap<>();
 
