@@ -2,8 +2,8 @@ package info.tongrenlu.www;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import info.tongrenlu.domain.ArticleBean;
-import info.tongrenlu.model.CloudAlbumSearchResponse;
-import info.tongrenlu.model.CloudAlbumSearchResult;
+import info.tongrenlu.model.CloudMusicSearchAlbumResponse;
+import info.tongrenlu.model.CloudMusicSearchAlbumResult;
 import info.tongrenlu.model.CloudMusicAlbum;
 import info.tongrenlu.service.HomeMusicService;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +71,7 @@ public class AdminUnpublishController {
             int limit = 10;
             int offset = (page - 1) * limit;
 
-            CloudAlbumSearchResponse musicDetailResponse = musicService.searchCloudMusicAlbum(new String[]{keyword}, limit, offset, limit);
+            CloudMusicSearchAlbumResponse musicDetailResponse = musicService.searchCloudMusicAlbum(new String[]{keyword}, limit, offset);
             if (musicDetailResponse == null) {
                 return null;
             }
@@ -80,7 +80,7 @@ public class AdminUnpublishController {
             if (code != 200) {
                 return null;
             }
-            CloudAlbumSearchResult result = musicDetailResponse.getResult();
+            CloudMusicSearchAlbumResult result = musicDetailResponse.getResult();
             List<CloudMusicAlbum> albums = result.getAlbums();
             // 构建分页响应
             Map<String, Object> pageData = new HashMap<>();

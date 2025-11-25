@@ -29,13 +29,6 @@ public class ApiMusicController {
 
     private final HomeMusicService musicService;
 
-    @GetMapping("popular")
-    public Page<ArticleBean> popular(@RequestParam(defaultValue = "30") int pageSize) {
-        return this.musicService.getMusicTopping(pageSize);
-    }
-
-
-
     @GetMapping("search")
     public Page<ArticleBean> search(
             @RequestParam(required = false) String keyword,

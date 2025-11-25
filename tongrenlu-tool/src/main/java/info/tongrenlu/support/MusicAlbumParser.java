@@ -1,18 +1,25 @@
 package info.tongrenlu.support;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.domain.ArticleBean;
+import info.tongrenlu.domain.ArtistBean;
 import info.tongrenlu.domain.TagBean;
 import info.tongrenlu.domain.TrackBean;
-import info.tongrenlu.model.CloudAlbumSearchResponse;
-import info.tongrenlu.model.CloudAlbumSearchResult;
-import info.tongrenlu.model.CloudMusicAlbum;
-import info.tongrenlu.model.CloudMusicTrack;
+import info.tongrenlu.model.*;
+import info.tongrenlu.service.ArticleService;
+import info.tongrenlu.service.ArtistService;
 import info.tongrenlu.service.HomeMusicService;
+import info.tongrenlu.service.TagService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -24,12 +31,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class MusicAlbumParser {
     private final HomeMusicService homeMusicService;
+    private final ArticleService articleService;
+    private final ArtistService artistService;
+    private final TagService tagService;
 
     public List<MusicTrack> parseMusicAlbumFile(String filePath) throws IOException {
         List<MusicTrack> tracks = new ArrayList<>();
@@ -171,8 +182,9 @@ public class MusicAlbumParser {
                     log.info("# 云音乐专辑名称: {}", cloudMusicAlbum.getName());
 
                     cloudMusicAlbum.getArtists().forEach(artist -> {
-                        TagBean artistTag = homeMusicService.getTagByType(artist.getName(), HomeMusicService.ARTIST);
-                        homeMusicService.saveArticleTag(articleBean, artistTag);
+                        saveArtist(artist);
+                        TagBean artistTag = homeMusicService.getTagByType(artist.getName(), HomeMusicService.ARTIST, null);
+                        homeMusicService.saveArticleTag(articleBean, artistTag.getId());
                     });
 
                     List<CloudMusicTrack> songs = cloudMusicAlbum.getSongs();
@@ -182,18 +194,76 @@ public class MusicAlbumParser {
                 saveTrackBeanList(musicTracks, articleBean);
             }
 
-            TagBean artistTag = homeMusicService.getTagByType(track.getArtistName(), HomeMusicService.ARTIST);
-            homeMusicService.saveArticleTag(articleBean, artistTag);
-            TagBean eventTag = homeMusicService.getTagByType(track.getReleaseEvent(), HomeMusicService.EVENT);
-            homeMusicService.saveArticleTag(articleBean, eventTag);
-
+            TagBean artistTag = homeMusicService.getTagByType(track.getArtistName(), HomeMusicService.ARTIST, null);
+            homeMusicService.saveArticleTag(articleBean, artistTag.getId());
+            TagBean eventTag = homeMusicService.getTagByType(track.getReleaseEvent(), HomeMusicService.EVENT, null);
+            homeMusicService.saveArticleTag(articleBean, eventTag.getId());
 
             context.setArticleBean(articleBean);
         });
     }
 
+    public void saveArtist(CloudMusicArtist artist) {
+        ArtistBean artistBean = new ArtistBean();
+        artistBean.setName(artist.getName());
+
+        long cloudMusicArtistId = artist.getId();
+        artistBean.setCloudMusicId(cloudMusicArtistId);
+        artistBean.setCloudMusicName(artist.getName());
+        artistBean.setCloudMusicPicUrl(artist.getPicUrl());
+
+        String description = getDescription(cloudMusicArtistId);
+        artistBean.setDescription(description);
+
+        TagBean tagBean = homeMusicService.getTagByType(artist.getName(), description, HomeMusicService.ARTIST);
+        artistBean.setTagId(tagBean.getId());
+
+        LambdaQueryWrapper<ArtistBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArtistBean::getCloudMusicId, artistBean.getCloudMusicId());
+        ArtistBean bean = Optional.ofNullable(artistService.getBaseMapper().selectOne(queryWrapper)).orElse(artistBean);
+        artistService.saveOrUpdate(bean);
+    }
+
+    private String getDescription(long id) {
+        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/artist/desc")
+                .queryParam("id", id)
+                .build()
+                .toString();
+        log.info("Artist desc: {}", url);
+
+        try (HttpResponse response = HttpRequest.get(url).execute()) {
+            String json = response.body();
+            CloudMusicArtistDetailResponse artistDetailResponse = new ObjectMapper().readValue(json, CloudMusicArtistDetailResponse.class);
+            if (artistDetailResponse == null) {
+                return null;
+            }
+            int code = artistDetailResponse.getCode();
+            if (code != 200) {
+                return null;
+            }
+
+
+            CloudMusicText brief = new CloudMusicText();
+            brief.setTi("简介");
+            brief.setText(artistDetailResponse.getBriefDesc());
+
+            StringBuilder markDownBuilder = new StringBuilder();
+            Stream.concat(Stream.of(brief), artistDetailResponse.getIntroduction().stream())
+                    .filter(desc -> StringUtils.isNotBlank(desc.getTi()))
+                    .filter(desc -> StringUtils.isNotBlank(desc.getText()))
+                    .forEach(desc -> {
+                        markDownBuilder.append("# ").append(desc.getTi()).append("\n");
+                        markDownBuilder.append(" ").append(desc.getText()).append("\n\n");
+                    });
+            return markDownBuilder.toString();
+        } catch (IOException e) {
+            log.error("get {} error", url, e);
+        }
+        return null;
+    }
+
     private CloudMusicAlbum getCloudMusicAlbum(ArticleBean articleBean) {
-        CloudAlbumSearchResponse musicDetailResponse = homeMusicService.searchCloudMusicAlbum(new String[]{articleBean.getTitle(), articleBean.getArtist()}, 30, 0, 10);
+        CloudMusicSearchAlbumResponse musicDetailResponse = homeMusicService.searchCloudMusicAlbum(new String[]{articleBean.getTitle(), articleBean.getArtist()}, 30, 0);
         if (musicDetailResponse == null) {
             return null;
         }
@@ -203,7 +273,7 @@ public class MusicAlbumParser {
             return null;
         }
 
-        CloudAlbumSearchResult result = musicDetailResponse.getResult();
+        CloudMusicSearchAlbumResult result = musicDetailResponse.getResult();
         List<CloudMusicAlbum> albums = result.getAlbums();
         if (albums == null || albums.isEmpty()) {
             return null;

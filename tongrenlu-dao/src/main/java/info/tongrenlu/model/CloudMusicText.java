@@ -9,9 +9,7 @@ import java.util.List;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CloudMusicArtist {
-    private long id;
-    private String name;
-    private String picUrl;
-    private List<String> alias;
+public class CloudMusicText {
+    private String ti;
+    private String text;
 }

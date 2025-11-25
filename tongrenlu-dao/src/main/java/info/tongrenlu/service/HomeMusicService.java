@@ -1,5 +1,6 @@
 package info.tongrenlu.service;
 
+import ch.qos.logback.core.util.StringUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -11,10 +12,7 @@ import info.tongrenlu.mapper.ArticleMapper;
 import info.tongrenlu.mapper.ArticleTagMapper;
 import info.tongrenlu.mapper.TagMapper;
 import info.tongrenlu.mapper.TrackMapper;
-import info.tongrenlu.model.CloudAlbumDetailResponse;
-import info.tongrenlu.model.CloudAlbumSearchResponse;
-import info.tongrenlu.model.CloudMusicAlbum;
-import info.tongrenlu.model.CloudMusicTrack;
+import info.tongrenlu.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -36,16 +34,13 @@ public class HomeMusicService {
     public static final String ARTIST = "artist";
     public static final String EVENT = "event";
     public static final String M_ARTICLE = "m_article";
+    public static final int SEARCH_TYPE_ALNUM = 10;
+    public static final int SEARCH_TYPE_ARTIST = 100;
 
     private final ArticleMapper articleMapper;
     private final TrackMapper trackMapper;
     private final TagMapper tagMapper;
     private final ArticleTagMapper articleTagMapper;
-
-    public Page<ArticleBean> getMusicTopping(final int pageSize) {
-        LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
-        return this.articleMapper.selectPage(new PageDTO<>(1, pageSize), queryWrapper);
-    }
 
     public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize) {
         LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
@@ -214,12 +209,13 @@ public class HomeMusicService {
             CloudMusicAlbum cloudMusicAlbum = getCloudMusicAlbumById(cloudMusicId);
             if (cloudMusicAlbum != null) {
                 articleBean.setCloudMusicName(cloudMusicAlbum.getName());
+                articleBean.setDescription(cloudMusicAlbum.getDescription());
                 articleMapper.insertOrUpdate(articleBean);
                 log.info("# 云音乐专辑名称: {}", cloudMusicAlbum.getName());
 
                 cloudMusicAlbum.getArtists().forEach(artist -> {
-                    TagBean artistTag = getTagByType(artist.getName(), ARTIST);
-                    saveArticleTag(articleBean, artistTag);
+                    TagBean artistTag = getTagByType(artist.getName(), ARTIST, null);
+                    saveArticleTag(articleBean, artistTag.getId());
                 });
 
                 List<CloudMusicTrack> songs = cloudMusicAlbum.getSongs();
@@ -260,7 +256,7 @@ public class HomeMusicService {
         });
     }
 
-    public TagBean getTagByType(String tag, String type) {
+    public TagBean getTagByType(String tag, String type, String description) {
         LambdaQueryWrapper<TagBean> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(TagBean::getTag, tag);
         queryWrapper.eq(TagBean::getType, type);
@@ -271,7 +267,9 @@ public class HomeMusicService {
                     tagBean.setType(type);
                     return tagBean;
                 });
-
+        if (StringUtils.isNotBlank(description)) {
+            artistTag.setText(description);
+        }
         tagMapper.insertOrUpdate(artistTag);
         return artistTag;
     }
@@ -282,10 +280,10 @@ public class HomeMusicService {
                 .build()
                 .toString();
 
-        CloudAlbumDetailResponse musicDetailResponse;
+        CloudMusicAlbumDetailResponse musicDetailResponse;
         try (HttpResponse response = HttpRequest.get(url).execute()) {
             String json = response.body();
-            musicDetailResponse = new ObjectMapper().readValue(json, CloudAlbumDetailResponse.class);
+            musicDetailResponse = new ObjectMapper().readValue(json, CloudMusicAlbumDetailResponse.class);
             if (musicDetailResponse == null) {
                 return null;
             }
@@ -304,15 +302,15 @@ public class HomeMusicService {
     }
 
 
-    public void saveArticleTag(ArticleBean musicBean, TagBean tagBean) {
+    public void saveArticleTag(ArticleBean musicBean, Long tagId) {
         LambdaQueryWrapper<ArticleTagBean> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ArticleTagBean::getArticleId, musicBean.getId());
-        queryWrapper.eq(ArticleTagBean::getTagId, tagBean.getId());
+        queryWrapper.eq(ArticleTagBean::getTagId, tagId);
         ArticleTagBean articleTagBean = Optional.ofNullable(articleTagMapper.selectOne(queryWrapper))
                 .orElseGet(() -> {
                     ArticleTagBean bean = new ArticleTagBean();
                     bean.setArticleId(musicBean.getId());
-                    bean.setTagId(tagBean.getId());
+                    bean.setTagId(tagId);
                     return bean;
                 });
 
@@ -382,22 +380,47 @@ public class HomeMusicService {
         return articleMapper.selectOne(queryWrapper);
     }
 
-    public CloudAlbumSearchResponse searchCloudMusicAlbum(String[] keywords, int limit, int offset, int type) {
+    public CloudMusicSearchAlbumResponse searchCloudMusicAlbum(String[] keywords, int limit, int offset) {
         String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
                 .queryParam("keywords", Arrays.stream(keywords).map(keyword -> URLEncoder.encode(keyword, StandardCharsets.UTF_8)).toArray())
                 .queryParam("limit", limit)
                 .queryParam("offset", offset)
-                .queryParam("type", type)
+                .queryParam("type", SEARCH_TYPE_ALNUM)
                 .build()
                 .toString();
         log.info("Searching cloud music: {}", url);
 
         try (HttpResponse response = HttpRequest.get(url).execute()) {
             String json = response.body();
-            return new ObjectMapper().readValue(json, CloudAlbumSearchResponse.class);
+            return new ObjectMapper().readValue(json, CloudMusicSearchAlbumResponse.class);
         } catch (IOException e) {
             log.error("get {} error", url, e);
         }
         return null;
+    }
+
+    public CloudMusicSearchArtistResponse searchCloudMusicArtist(String[] keywords, int limit, int offset) {
+        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
+                .queryParam("keywords", Arrays.stream(keywords).map(keyword -> URLEncoder.encode(keyword, StandardCharsets.UTF_8)).toArray())
+                .queryParam("limit", limit)
+                .queryParam("offset", offset)
+                .queryParam("type", SEARCH_TYPE_ARTIST)
+                .build()
+                .toString();
+        log.info("Searching cloud music: {}", url);
+
+        try (HttpResponse response = HttpRequest.get(url).execute()) {
+            String json = response.body();
+            return new ObjectMapper().readValue(json, CloudMusicSearchArtistResponse.class);
+        } catch (IOException e) {
+            log.error("get {} error", url, e);
+        }
+        return null;
+    }
+
+    public List<TagBean> getTagListByType(String type) {
+        LambdaQueryWrapper<TagBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(TagBean::getType, type);
+        return this.tagMapper.selectList(queryWrapper);
     }
 }
