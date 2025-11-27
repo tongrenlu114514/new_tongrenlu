@@ -6,14 +6,24 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 歌手
+ */
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CloudMusicArtist {
-    private long id;
-    private String name;
-    private String trans;
-    private String picUrl;
+public class CloudMusicArtistDetail {
+    private long albumSize;
     private List<String> alias;
+    private String avatar;
+    private String briefDesc;
+    private String cover;
+    private long id;
+    private List<String> identifyTag;
+    private List<String> identities;
+    private long musicSize;
+    private long mvSize;
+    private String name;
     private List<String> transNames;
 }

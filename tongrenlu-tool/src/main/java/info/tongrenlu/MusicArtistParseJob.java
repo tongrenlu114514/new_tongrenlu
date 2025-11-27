@@ -34,13 +34,13 @@ public class MusicArtistParseJob implements CommandLineRunner {
         } catch (Exception ignored) {
         }
 
-        List<ArticleBean> artistList = musicArtistParser.parseMusicArtistList();
+        List<ArticleBean> articleBeans = musicArtistParser.parseMusicArtistList();
         while (true) {
             try {
-                if (lastProgress > artistList.size()) {
+                if (lastProgress > articleBeans.size()) {
                     break;
                 }
-                artistList.stream()
+                articleBeans.stream()
                         .skip(lastProgress)
                         .findFirst()
                         .ifPresent(musicArtistParser::saveArtist);
@@ -55,7 +55,7 @@ public class MusicArtistParseJob implements CommandLineRunner {
             }
         }
 
-        log.info("处理结束，已处理：{}", artistList.size());
+        log.info("处理结束，已处理：{}", articleBeans.size());
         FileUtils.writeStringToFile(new File("E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\artist_progress.txt"),
                 String.valueOf(0),
                 StandardCharsets.UTF_8);

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>艺人管理 - 东方同人录</title>
+    <link href="components/admin/admin.css" rel="stylesheet">
+    <link href="components/admin/artist.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="components/shared/image-loader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>管理后台 - 艺人管理</h1>
+                <div class="nav-links">
+                    <a href="unpublish.html" class="admin-nav-item">未发布专辑</a>
+                    <a href="artist.html" class="admin-nav-item active">艺人管理</a>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="card">
+
+                <div id="artistContainer">
+                    <div class="loading" id="loading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> 加载中...
+                    </div>
+                    <div class="artist-grid" id="artistGrid"></div>
+                    <div class="no-results" id="noResults" style="display: none;">
+                        暂无搜索结果
+                    </div>
+                </div>
+
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="artistModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeModal"><i class="fas fa-times"></i></button>
+            <div class="modal-header">
+                <h2 id="modalArtistName">艺人详情</h2>
+            </div>
+            <div class="modal-body">
+                <div class="artist-detail">
+                    <div class="artist-detail-pic" id="artistPic"></div>
+                    <div class="artist-detail-info">
+                        <h2 id="artistName"></h2>
+                        <p id="artistAlias"></p>
+                        <p>专辑总数: <span id="albumCount"></span></p>
+                    </div>
+                </div>
+
+                <h3>专辑列表</h3>
+                <div class="loading" id="albumLoading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> 加载专辑中...
+                </div>
+                <div class="album-grid" id="albumGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="components/admin/artist.js"></script>
+</body>
+</html>

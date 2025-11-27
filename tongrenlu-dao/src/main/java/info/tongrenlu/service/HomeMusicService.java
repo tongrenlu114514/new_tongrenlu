@@ -1,6 +1,5 @@
 package info.tongrenlu.service;
 
-import ch.qos.logback.core.util.StringUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -25,6 +24,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Stream;
 
 @Service
 @Transactional
@@ -34,13 +34,14 @@ public class HomeMusicService {
     public static final String ARTIST = "artist";
     public static final String EVENT = "event";
     public static final String M_ARTICLE = "m_article";
-    public static final int SEARCH_TYPE_ALNUM = 10;
+    public static final int SEARCH_TYPE_ALBUM = 10;
     public static final int SEARCH_TYPE_ARTIST = 100;
 
     private final ArticleMapper articleMapper;
     private final TrackMapper trackMapper;
     private final TagMapper tagMapper;
     private final ArticleTagMapper articleTagMapper;
+    private final ArtistService artistService;
 
     public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize) {
         LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
@@ -385,7 +386,7 @@ public class HomeMusicService {
                 .queryParam("keywords", Arrays.stream(keywords).map(keyword -> URLEncoder.encode(keyword, StandardCharsets.UTF_8)).toArray())
                 .queryParam("limit", limit)
                 .queryParam("offset", offset)
-                .queryParam("type", SEARCH_TYPE_ALNUM)
+                .queryParam("type", SEARCH_TYPE_ALBUM)
                 .build()
                 .toString();
         log.info("Searching cloud music: {}", url);
@@ -418,9 +419,118 @@ public class HomeMusicService {
         return null;
     }
 
-    public List<TagBean> getTagListByType(String type) {
-        LambdaQueryWrapper<TagBean> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TagBean::getType, type);
-        return this.tagMapper.selectList(queryWrapper);
+    public void saveCloudMusicAlbum(Long cloudMusicId) {
+        CloudMusicAlbum cloudMusicAlbum = this.getCloudMusicAlbumById(cloudMusicId);
+        if (cloudMusicAlbum == null) {
+            return;
+        }
+
+        ArticleBean articleBean = new ArticleBean();
+        articleBean.setTitle(cloudMusicAlbum.getName());
+        articleBean.setAccessCount(0);
+        articleBean.setCloudMusicName(cloudMusicAlbum.getName());
+        articleBean.setCloudMusicId(cloudMusicAlbum.getId());
+        articleBean.setCloudMusicPicUrl(cloudMusicAlbum.getPicUrl());
+        articleBean.setDescription(cloudMusicAlbum.getDescription());
+        articleBean.setPublishFlg("1");
+
+        this.insertOrUpdate(articleBean);
+
+        cloudMusicAlbum.getArtists().forEach(artist -> {
+            this.saveArtist(artist);
+            TagBean artistTag = this.getTagByType(artist.getName(), HomeMusicService.ARTIST, null);
+            this.saveArticleTag(articleBean, artistTag.getId());
+        });
+
+        List<CloudMusicTrack> songs = cloudMusicAlbum.getSongs();
+        this.saveCloudMusicTrackList(songs, articleBean);
+    }
+
+    public void saveArtist(CloudMusicArtist artist) {
+        ArtistBean artistBean = new ArtistBean();
+        artistBean.setName(artist.getName());
+
+        long cloudMusicArtistId = artist.getId();
+        artistBean.setCloudMusicId(cloudMusicArtistId);
+        artistBean.setCloudMusicName(artist.getName());
+        artistBean.setCloudMusicPicUrl(artist.getPicUrl());
+
+        String description = getDescription(cloudMusicArtistId);
+        artistBean.setDescription(description);
+
+        TagBean tagBean = getTagByType(artist.getName(), HomeMusicService.ARTIST, description);
+        artistBean.setTagId(tagBean.getId());
+
+        LambdaQueryWrapper<ArtistBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArtistBean::getCloudMusicId, artistBean.getCloudMusicId());
+        ArtistBean bean = Optional.ofNullable(artistService.getBaseMapper().selectOne(queryWrapper)).orElse(artistBean);
+        artistService.saveOrUpdate(bean);
+    }
+
+    public String getDescription(long id) {
+        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/artist/desc")
+                .queryParam("id", id)
+                .build()
+                .toString();
+        log.info("Artist desc: {}", url);
+
+        try (HttpResponse response = HttpRequest.get(url).execute()) {
+            String json = response.body();
+            CloudMusicArtistDescResponse artistDetailResponse = new ObjectMapper().readValue(json, CloudMusicArtistDescResponse.class);
+            if (artistDetailResponse == null) {
+                return null;
+            }
+            int code = artistDetailResponse.getCode();
+            if (code != 200) {
+                return null;
+            }
+
+
+            CloudMusicText brief = new CloudMusicText();
+            brief.setTi("简介");
+            brief.setText(artistDetailResponse.getBriefDesc());
+
+            StringBuilder markDownBuilder = new StringBuilder();
+            Stream.concat(Stream.of(brief), artistDetailResponse.getIntroduction().stream())
+                    .filter(desc -> StringUtils.isNotBlank(desc.getTi()))
+                    .filter(desc -> StringUtils.isNotBlank(desc.getText()))
+                    .forEach(desc -> {
+                        markDownBuilder.append("# ").append(desc.getTi()).append("\n");
+                        markDownBuilder.append(" ").append(desc.getText()).append("\n\n");
+                    });
+            return markDownBuilder.toString();
+        } catch (IOException e) {
+            log.error("get {} error", url, e);
+        }
+        return null;
+    }
+
+    public CloudMusicArtistDetail getArtistDetail(long id) {
+        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/artist/detail")
+                .queryParam("id", id)
+                .build()
+                .toString();
+        log.info("Artist detail: {}", url);
+
+        try (HttpResponse response = HttpRequest.get(url).execute()) {
+            String json = response.body();
+            CloudMusicArtistDetailResponse artistDetailResponse = new ObjectMapper().readValue(json, CloudMusicArtistDetailResponse.class);
+            if (artistDetailResponse == null) {
+                return null;
+            }
+            int code = artistDetailResponse.getCode();
+            if (code != 200) {
+                return null;
+            }
+
+            CloudMusicArtistDetailData data = artistDetailResponse.getData();
+            if (data == null) {
+                return null;
+            }
+            return data.getArtist();
+        } catch (IOException e) {
+            log.error("get {} error", url, e);
+        }
+        return null;
     }
 }

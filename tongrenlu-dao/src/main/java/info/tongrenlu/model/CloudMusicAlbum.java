@@ -20,4 +20,6 @@ public class CloudMusicAlbum {
     private String description ;
 
     private List<CloudMusicTrack> songs;
+
+    private boolean existsInDb;
 }
