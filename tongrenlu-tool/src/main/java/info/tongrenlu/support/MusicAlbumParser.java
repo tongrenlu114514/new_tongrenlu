@@ -245,7 +245,9 @@ public class MusicAlbumParser {
     }
 
     private ArticleBean toMusicBean(MusicTrack track) {
-        ArticleBean articleBean = Optional.ofNullable(homeMusicService.getByTitle(track.getAlbumName())).orElseGet(() -> Optional.ofNullable(homeMusicService.getByArtistAndCode(track.getArtistName(), track.getAlbumCode())).orElseGet(ArticleBean::new));
+        ArticleBean articleBean = Optional.ofNullable(homeMusicService.getByTitle(track.getAlbumName()))
+                .orElseGet(() -> Optional.ofNullable(homeMusicService.getByArtistAndCode(track.getArtistName(), track.getAlbumCode()))
+                        .orElseGet(ArticleBean::new));
         if (articleBean.getCloudMusicId() != null) {
             articleBean.setPublishFlg("1");
         } else {

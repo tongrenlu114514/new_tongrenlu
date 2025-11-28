@@ -107,7 +107,7 @@ public class ArtistController {
     public ResponseEntity<Map<String, Object>> getArtistList(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "30") int limit) {
+            @RequestParam(defaultValue = "10") int limit) {
 
         Map<String, Object> response = new HashMap<>();
 
