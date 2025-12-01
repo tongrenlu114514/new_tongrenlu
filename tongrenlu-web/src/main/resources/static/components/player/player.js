@@ -214,22 +214,9 @@ $(function () {
             if (card.length) {
                 const albumId = card.attr('data-album-id');
                 if (albumId) {
-                    // 获取专辑详情并播放
-                    $.ajax({
-                        url: `api/music/detail?albumId=${albumId}`,
-                        method: 'GET',
-                        dataType: 'json',
-                        success: function (albumDetail) {
-                            if (isPlayIcon) {
-                                playMusic(albumDetail, 0); // 播放专辑第一首
-                            } else {
-                                pauseMusic();
-                            }
-                        },
-                        error: function (error) {
-                            console.error('获取专辑详情失败:', error);
-                        }
-                    });
+                    // 打开全屏播放器页面
+                    const playerUrl = `player.html?album=${albumId}`;
+                    window.open(playerUrl, '_blank');
                 }
             }
         }
@@ -240,22 +227,9 @@ $(function () {
             const albumId = $('.album-title').closest('.modal').find('.album-art').parent().attr('data-album-id');
 
             if (albumId) {
-                // 获取专辑详情并播放指定曲目
-                $.ajax({
-                    url: `api/music/detail?albumId=${albumId}`,
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function (albumDetail) {
-                        if (isPlayIcon) {
-                            playMusic(albumDetail, trackIndex);
-                        } else {
-                            pauseMusic();
-                        }
-                    },
-                    error: function (error) {
-                        console.error('获取专辑详情失败:', error);
-                    }
-                });
+                // 打开全屏播放器页面并指定曲目
+                const playerUrl = `player.html?album=${albumId}`;
+                window.open(playerUrl, '_blank');
             }
         }
         // 如果是播放器的播放/暂停按钮

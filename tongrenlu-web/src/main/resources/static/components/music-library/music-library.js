@@ -52,6 +52,9 @@ async function updateAlbumModal(albumId) {
         // 更新专辑封面 - 使用本地缓存和缩略图优化
         const albumArtElement = $('.album-art');
         if (albumArtElement.length > 0) {
+            // 设置专辑ID属性，供播放按钮使用
+            albumArtElement.attr('data-album-id', albumId);
+
             if (albumDetail.cloudMusicPicUrl) {
                 // 使用缓存机制加载图片
                 loadImageWithCache(albumArtElement[0], albumDetail.cloudMusicPicUrl, 300, 300);
@@ -76,7 +79,7 @@ async function updateAlbumModal(albumId) {
                     const trackTitle = track.name || `曲目 ${index + 1}`;
 
                     // 检查是否有音乐URL，如果没有则显示无法播放的提示
-                    const hasMusicUrl = track.url || track.mp3Url || track.musicUrl || track.fileUrl || track.cloudMusicUrl;
+                    const hasMusicUrl = track.cloudMusicId;
 
                     if (hasMusicUrl) {
                         tracksHtml += `
@@ -141,29 +144,18 @@ async function updateAlbumModal(albumId) {
 
             const icon = $(this).find('i');
             if (icon.hasClass('fa-play')) {
-                // 播放当前曲目
-                icon.removeClass('fa-play').addClass('fa-pause');
-
-                // 获取当前曲目索引
+                // 打开全屏播放器
                 const track = $(this).closest('.track');
                 if (track.length > 0) {
                     const trackIndex = track.siblings().addBack().index(track);
                     const albumArt = $('.album-art');
                     const albumId = albumArt.attr('data-album-id');
 
-                    // 获取专辑详情并播放指定曲目
+                    // 打开全屏播放器页面
                     if (albumId) {
-                        $.ajax({
-                            url: `api/music/detail?albumId=${albumId}`,
-                            method: 'GET',
-                            dataType: 'json',
-                            success: function (albumDetail) {
-                                playMusic(albumDetail, trackIndex); // 播放指定曲目
-                            },
-                            error: function (error) {
-                                console.error('获取专辑详情失败:', error);
-                            }
-                        });
+                        // 构建全屏播放器URL
+                        const playerUrl = `player.html?album=${albumId}`;
+                        window.open(playerUrl, '_blank');
                     }
                 }
             } else {
@@ -311,28 +303,14 @@ function renderSearchResults(data) {
 
         const icon = $(this).find('i');
         if (icon.hasClass('fa-play')) {
-            // 播放专辑第一首音乐
-            icon.removeClass('fa-play').addClass('fa-pause');
-
-            // 获取专辑信息并播放
+            // 打开全屏播放器并播放专辑第一首音乐
             const card = $(this).closest('.music-card');
             if (card.length > 0) {
                 const albumId = card.data('album-id');
                 if (albumId) {
-                    // 获取专辑详情并播放
-                    $.ajax({
-                        url: `api/music/detail?albumId=${albumId}`,
-                        method: 'GET',
-                        dataType: 'json',
-                        success: function (albumDetail) {
-                            playMusic(albumDetail, 0); // 播放专辑第一首
-                        },
-                        error: function (error) {
-                            console.error('获取专辑详情失败:', error);
-                            // 恢复按钮状态
-                            icon.removeClass('fa-pause').addClass('fa-play');
-                        }
-                    });
+                    // 打开全屏播放器页面
+                    const playerUrl = `player.html?album=${albumId}`;
+                    window.open(playerUrl, '_blank');
                 }
             }
         } else {

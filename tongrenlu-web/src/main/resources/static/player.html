@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>全屏播放器 - 东方同人录</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700&display=swap"
+          rel="stylesheet">
+    <link href="webjars/font-awesome/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/player-fullscreen.css" rel="stylesheet">
+</head>
+<body>
+<div class="player-container">
+    <!-- 专辑图片区域 -->
+    <div class="album-section">
+        <div class="album-cover">
+            <img alt="专辑图片" id="albumImage" src=""/>
+            <div class="floating-notes">
+                <i class="fas fa-music note"></i>
+                <i class="fas fa-music note"></i>
+                <i class="fas fa-music note"></i>
+            </div>
+        </div>
+        <div class="album-info">
+            <h1 class="album-title" id="albumTitle">正在加载...</h1>
+            <p class="album-artist" id="albumArtist">未知艺术家</p>
+        </div>
+    </div>
+
+    <!-- 播放列表区域 -->
+    <div class="playlist-section">
+        <div class="playlist-header">
+            <h2>播放列表</h2>
+            <div class="playlist-actions">
+                <button class="action-btn" id="shuffleBtn">
+                    <i class="fas fa-random"></i>
+                </button>
+                <button class="action-btn" id="repeatBtn">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="playlist-container">
+            <ul class="playlist" id="playlist">
+            </ul>
+        </div>
+    </div>
+
+    <!-- 播放器控制栏 -->
+    <div class="player-controls">
+        <div class="left-controls">
+            <button class="control-btn" id="prevBtn">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button class="control-btn play-btn" id="playBtn">
+                <i class="fas fa-play"></i>
+            </button>
+            <button class="control-btn" id="nextBtn">
+                <i class="fas fa-step-forward"></i>
+            </button>
+        </div>
+
+        <div class="center-controls">
+            <div class="progress-container">
+                <span class="time-display" id="currentTime">0:00</span>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <span class="time-display" id="totalTime">0:00</span>
+            </div>
+        </div>
+
+        <div class="right-controls">
+            <div class="volume-container">
+                <i class="fas fa-volume-up" id="volumeIcon"></i>
+                <div class="volume-slider" id="volumeSlider">
+                    <div class="volume-level" id="volumeLevel"></div>
+                </div>
+            </div>
+            <button class="control-btn" id="fullscreenBtn">
+                <i class="fas fa-compress"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 返回按钮 -->
+<button class="back-btn" id="backBtn">
+    <i class="fas fa-arrow-left"></i>
+</button>
+
+<audio id="audioPlayer" style="display: none;"></audio>
+
+<script src="webjars/jquery/jquery.min.js"></script>
+<script src="components/player/player-fullscreen.js"></script>
+</body>
+</html>
