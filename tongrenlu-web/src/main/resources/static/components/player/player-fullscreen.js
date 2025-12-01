@@ -16,13 +16,48 @@ $(function () {
 
     console.log('Album ID:', albumId);
 
+    // 加载随机专辑数据
+    function loadRandomAlbum() {
+        // 显示加载状态
+        $('#albumTitle').html('<span style="color: rgba(255,255,255,0.7);">加载随机专辑...</span>');
+
+        $.ajax({
+            url: 'api/music/random',
+            method: 'GET',
+            dataType: 'json',
+            success: function (albumData) {
+                console.log('随机专辑数据加载成功:', albumData);
+
+                if (!albumData || !albumData.tracks || albumData.tracks.length === 0) {
+                    $('#albumTitle').text('没有找到专辑');
+                    return;
+                }
+
+                currentMusicData = albumData;
+
+                // 更新专辑信息
+                $('#albumTitle').text(albumData.title || '未知专辑');
+                $('#albumArtist').text(albumData.artist || '未知艺术家');
+                $('#albumImage').attr('src', albumData.cloudMusicPicUrl || albumData.image || 'assets/images/default-album.png');
+
+                // 生成播放列表
+                generatePlaylist(albumData.tracks);
+
+                // 显示播放覆盖层（强制用户交互）
+                showPlayOverlay();
+
+                // 播放第一首（将尝试自动播放，但会被浏览器阻止，自动显示覆盖层）
+                playTrack(0);
+            },
+            error: function (error) {
+                console.error('加载随机专辑数据失败:', error);
+                $('#albumTitle').text('加载随机专辑失败');
+            }
+        });
+    }
+
     // 加载音乐数据
     function loadMusicData() {
-        if (!albumId) {
-            $('#albumTitle').text('未找到专辑参数');
-            return;
-        }
-
         // 显示加载状态
         $('#albumTitle').html('<span style="color: rgba(255,255,255,0.7);">加载中...</span>');
 
@@ -76,10 +111,14 @@ $(function () {
                 // 生成播放列表
                 generatePlaylist(testAlbumData.tracks);
 
-                // 播放第一首
+                // 显示播放覆盖层（强制用户交互）
+                showPlayOverlay();
+
+                // 播放第一首（将尝试自动播放，但会被浏览器阻止，自动显示覆盖层）
                 playTrack(0);
             }, 500);
-        } else {
+        } else if (albumId) {
+            // 如果有album参数，加载指定专辑
             $.ajax({
                 url: `api/music/detail?albumId=${albumId}`,
                 method: 'GET',
@@ -102,7 +141,10 @@ $(function () {
                     // 生成播放列表
                     generatePlaylist(albumData.tracks);
 
-                    // 播放第一首
+                    // 显示播放覆盖层（强制用户交互）
+                    showPlayOverlay();
+
+                    // 播放第一首（将尝试自动播放，但会被浏览器阻止，自动显示覆盖层）
                     playTrack(0);
                 },
                 error: function (error) {
@@ -110,6 +152,10 @@ $(function () {
                     $('#albumTitle').text('加载失败');
                 }
             });
+        } else {
+            // 如果没有album参数，加载随机专辑
+            console.log('未找到专辑参数，加载随机专辑');
+            loadRandomAlbum();
         }
     }
 
@@ -223,6 +269,51 @@ $(function () {
         }
     }
 
+    // 显示播放覆盖层
+    function showPlayOverlay() {
+        const $overlay = $('#playOverlay');
+        if ($overlay.length === 0) {
+            // 创建覆盖层 HTML
+            const overlayHtml = `
+                <div class="play-overlay" id="playOverlay">
+                    <div class="overlay-content">
+                        <i class="fas fa-play-circle play-overlay-icon"></i>
+                        <h2>点击播放您的音乐</h2>
+                        <p>请与页面交互以开始播放</p>
+                        <button class="play-overlay-btn" id="overlayPlayBtn">开始播放</button>
+                    </div>
+                </div>
+            `;
+            $('body').append(overlayHtml);
+
+            // 绑定点击事件
+            $('#overlayPlayBtn').click(function() {
+                hidePlayOverlay();
+                // 尝试播放当前曲目
+                if (currentTrackIndex >= 0 && currentMusicData && currentMusicData.tracks) {
+                    playTrack(currentTrackIndex);
+                }
+            });
+
+            // 点击覆盖层也可以关闭（可选）
+            $('#playOverlay').click(function(e) {
+                if (e.target.id === 'playOverlay') {
+                    hidePlayOverlay();
+                    if (currentTrackIndex >= 0 && currentMusicData && currentMusicData.tracks) {
+                        playTrack(currentTrackIndex);
+                    }
+                }
+            });
+        }
+
+        $('#playOverlay').fadeIn(300);
+    }
+
+    // 隐藏播放覆盖层
+    function hidePlayOverlay() {
+        $('#playOverlay').fadeOut(300);
+    }
+
     // 尝试播放音频并处理自动播放限制
     function attemptPlayAudio(track) {
         audioPlayer.play().then(() => {
@@ -232,6 +323,8 @@ $(function () {
             updatePlayButton();
             updatePlaylistActive();
             document.title = `${track.name || '播放中'} - 全屏播放器`;
+            // 隐藏覆盖层（如果显示）
+            hidePlayOverlay();
 
             console.log('开始播放:', track.name);
         }).catch(error => {
@@ -242,7 +335,8 @@ $(function () {
             // 处理浏览器自动播放限制
             if (error.name === 'NotAllowedError') {
                 $('#albumTitle').html(`${track.name || '未命名曲目'}<span class="hint">点击底部播放按钮开始播放</span>`);
-                // 显示提示信息，用户需要点击播放按钮
+                // 显示覆盖层和大按钮
+                showPlayOverlay();
                 console.log('需要用户交互才能播放音频');
             } else {
                 $('#albumTitle').text(track.name || '播放失败');

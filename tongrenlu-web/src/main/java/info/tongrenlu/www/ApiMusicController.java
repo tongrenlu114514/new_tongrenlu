@@ -110,6 +110,15 @@ public class ApiMusicController {
         }
     }
 
+    @GetMapping("/random")
+    public ResponseEntity<AlbumDetailBean> getRandomAlbum() {
+        AlbumDetailBean randomAlbum = this.musicService.getRandomAlbum();
+        if (randomAlbum == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(randomAlbum);
+    }
+
     private CloudMusicDetailResponse getMusicDetailResponseKXZ(TrackBean track) {
         String url = UriComponentsBuilder.fromUriString("https://api.kxzjoker.cn/api/163_music")
                     .queryParam("ids", track.getCloudMusicId())

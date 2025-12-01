@@ -84,22 +84,7 @@ public class HomeMusicService {
         albumDetail.setCloudMusicId(article.getCloudMusicId());
         albumDetail.setCloudMusicPicUrl(article.getCloudMusicPicUrl());
         albumDetail.setTracks(tracks);
-
-        // 从文章标题中提取艺术家信息（这里使用一个简单的逻辑）
-        // 实际项目中可能需要更复杂的逻辑来从其他字段获取
-        String title = article.getTitle();
-        if (title != null && title.contains(" - ")) {
-            // 假设格式为 "艺术家 - 专辑名"
-            String[] parts = title.split(" - ", 2);
-            if (parts.length == 2) {
-                albumDetail.setArtist(parts[0].trim());
-            } else {
-                albumDetail.setArtist("未知艺术家");
-            }
-        } else {
-            albumDetail.setArtist("未知艺术家");
-        }
-
+        albumDetail.setArtist(article.getArtist());
         return albumDetail;
     }
 
@@ -328,7 +313,7 @@ public class HomeMusicService {
      * @return 操作是否成功
      */
     @Async
-    @Transactional(rollbackFor =  Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public boolean markAsNoMatch(Long albumId) {
         try {
             ArticleBean article = this.articleMapper.selectById(albumId);
@@ -422,7 +407,7 @@ public class HomeMusicService {
     }
 
     @Async
-    @Transactional(rollbackFor =  Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public void saveCloudMusicAlbum(Long cloudMusicId) {
         CloudMusicAlbum cloudMusicAlbum = this.getCloudMusicAlbumById(cloudMusicId);
         if (cloudMusicAlbum == null) {
@@ -536,5 +521,38 @@ public class HomeMusicService {
             log.error("get {} error", url, e);
         }
         return null;
+    }
+
+    /**
+     * 随机获取一个已发布的专辑
+     *
+     * @return 随机专辑详情，如果没有已发布专辑则返回null
+     */
+    public AlbumDetailBean getRandomAlbum() {
+        // 查询已发布的专辑总数
+        LambdaQueryWrapper<ArticleBean> countQuery = new LambdaQueryWrapper<>();
+        countQuery.eq(ArticleBean::getPublishFlg, "1");
+        long publishedCount = articleMapper.selectCount(countQuery);
+
+        if (publishedCount == 0) {
+            return null;
+        }
+
+        // 随机选择一个偏移量
+        int randomOffset = new Random().nextInt((int) publishedCount);
+
+        // 查询该随机位置的一个专辑
+        LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArticleBean::getPublishFlg, "1");
+        queryWrapper.orderByAsc(ArticleBean::getId);
+        queryWrapper.last("LIMIT " + randomOffset + ", 1");
+
+        ArticleBean randomArticle = articleMapper.selectOne(queryWrapper);
+
+        if (randomArticle == null) {
+            return null;
+        }
+
+        return getAlbumDetail(randomArticle.getId());
     }
 }
