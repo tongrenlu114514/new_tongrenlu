@@ -123,7 +123,7 @@ async function updateAlbumModal(albumId) {
         // 更新错误报告按钮的albumId属性
         const errorButton = $('.report-error-btn');
         if (errorButton.length > 0) {
-            errorButton.attr('data-album-id', albumId);
+            errorButton.data('album-id', albumId);
             // 重置按钮状态
             errorButton.prop('disabled', false);
             errorButton.html('<i class="fas fa-flag"></i> 报告错误');

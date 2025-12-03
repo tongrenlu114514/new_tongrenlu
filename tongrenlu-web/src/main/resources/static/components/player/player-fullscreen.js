@@ -483,9 +483,9 @@ $(function () {
                     playTrack(currentTrackIndex);
                 }
             } else {
-                // 最后一首播放完毕
-                isPlaying = false;
-                updatePlayButton();
+                // 最后一首播放完毕，自动刷新随机专辑
+                console.log('当前专辑播放结束，加载新的随机专辑');
+                loadRandomAlbum();
             }
         }
     });

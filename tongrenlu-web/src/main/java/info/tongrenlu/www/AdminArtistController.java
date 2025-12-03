@@ -2,6 +2,7 @@ package info.tongrenlu.www;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.ArtistBean;
@@ -28,7 +29,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/api/artist")
 @Slf4j
-public class ArtistController {
+public class AdminArtistController {
 
     private static final String CLOUD_MUSIC_API = "https://apis.netstart.cn/music";
     private static final int SEARCH_TYPE_ARTIST = 100;
@@ -112,8 +113,7 @@ public class ArtistController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            com.baomidou.mybatisplus.extension.plugins.pagination.Page<ArtistBean> resultPage =
-                    artistService.getArtistList(keyword, page, limit);
+            Page<ArtistBean> resultPage = artistService.getArtistList(keyword, page, limit);
 
             Map<String, Object> pageData = new HashMap<>();
             pageData.put("records", resultPage.getRecords());

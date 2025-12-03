@@ -66,21 +66,26 @@ $(document).ready(function () {
     function renderArtists(artists) {
         const $artistGrid = $('#artistGrid');
 
-        const html = artists.map(artist => `
-            <div class="artist-card" data-artist='${JSON.stringify(artist)}'>
-                <div class="artist-pic album-cover"
-                     data-original-url="${artist.cloudMusicPicUrl || ''}"
-                     data-width="200"
-                     data-height="200">
-                </div>
-                <div class="artist-info">
-                    <div class="artist-name" title="${artist.name}">${artist.name}</div>
-                    ${artist.cloudMusicName ? `<div class="artist-alias" title="${artist.cloudMusicName}">${artist.cloudMusicName}</div>` : ''}
-                </div>
-            </div>
-        `).join('');
+        $artistGrid.empty();
 
-        $artistGrid.html(html);
+        artists.forEach(artist => {
+            const $card = $('<div class="artist-card"></div>');
+            $card.data('artist', artist);
+
+            const $pic = $(`<div class="artist-pic album-cover"
+                             data-original-url="${artist.cloudMusicPicUrl || ''}"></div>`);
+
+            const $info = $('<div class="artist-info"></div>');
+            $info.append(`<div class="artist-name" title="${artist.name}">${artist.name}</div>`);
+
+            if (artist.cloudMusicName) {
+                $info.append(`<div class="artist-alias" title="${artist.cloudMusicName}">${artist.cloudMusicName}</div>`);
+            }
+
+            $card.append($pic);
+            $card.append($info);
+            $artistGrid.append($card);
+        });
 
         // 触发懒加载
         setTimeout(lazyLoadAlbumCovers, 100);
@@ -210,33 +215,38 @@ $(document).ready(function () {
             return;
         }
 
-        const html = albums.map(album => {
+        const $albumContainer = append ? $albumGrid : $([]);
+        if (!append) {
+            $albumGrid.empty();
+        }
+
+        albums.forEach(album => {
             const publishDate = album.publishTime ? new Date(parseInt(album.publishTime)).toLocaleDateString('zh-CN') : '未知';
             const existsInDb = album.existsInDb || false;
 
-            return `
-                <div class="album-card">
-                    <div class="album-pic album-cover"
-                         data-original-url="${album.picUrl || ''}"
-                         data-width="200"
-                         data-height="200">
-                    </div>
-                    <div class="album-info">
-                        <div class="album-name" title="${album.name}">${album.name}</div>
-                        <div class="album-date">${publishDate}</div>
-                    </div>
-                    <div class="album-status ${existsInDb ? 'saved' : 'unsaved'}" data-album='${JSON.stringify(album)}'>
-                        ${existsInDb ? '已保存' : '保存到库里'}
-                    </div>
-                </div>
-            `;
-        }).join('');
+            const $albumCard = $('<div class="album-card"></div>');
 
-        if (append) {
-            $albumGrid.append(html);
-        } else {
-            $albumGrid.html(html);
-        }
+            const $albumPic = $(`<div class="album-pic album-cover"
+                                  data-original-url="${album.picUrl || ''}"></div>`);
+
+            const $albumInfo = $('<div class="album-info"></div>');
+            $albumInfo.append(`<div class="album-name" title="${album.name}">${album.name}</div>`);
+            $albumInfo.append(`<div class="album-date">${publishDate}</div>`);
+
+            const $albumStatus = $(`<div class="album-status ${existsInDb ? 'saved' : 'unsaved'}"></div>`);
+            $albumStatus.data('album', album);
+            $albumStatus.text(existsInDb ? '已保存' : '保存到库里');
+
+            $albumCard.append($albumPic);
+            $albumCard.append($albumInfo);
+            $albumCard.append($albumStatus);
+
+            if (append) {
+                $albumContainer.append($albumCard);
+            } else {
+                $albumGrid.append($albumCard);
+            }
+        });
 
         // 触发懒加载
         setTimeout(lazyLoadAlbumCovers, 100);

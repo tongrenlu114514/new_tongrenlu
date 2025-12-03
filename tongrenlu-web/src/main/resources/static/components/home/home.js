@@ -16,10 +16,11 @@ $(function () {
         });
     });
 
-    // "开始探索"按钮点击事件 - 优化事件处理
+    // "开始探索"按钮点击事件 - 打开全屏播放器随机播放
     $('#start-explore-btn').on('click', function (e) {
         e.preventDefault();
-        switchToPage('music');
+        // 打开全屏播放器页面（无album参数，会自动加载随机专辑）
+        window.open('player.html', '_blank');
     });
 
     // 其他CTA按钮点击事件 - 简化处理

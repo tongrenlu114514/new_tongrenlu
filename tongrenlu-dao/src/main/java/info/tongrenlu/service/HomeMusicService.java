@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -312,7 +311,6 @@ public class HomeMusicService {
      * @param albumId 专辑ID
      * @return 操作是否成功
      */
-    @Async
     @Transactional(rollbackFor = Exception.class)
     public boolean markAsNoMatch(Long albumId) {
         try {
@@ -406,7 +404,6 @@ public class HomeMusicService {
         return null;
     }
 
-    @Async
     @Transactional(rollbackFor = Exception.class)
     public void saveCloudMusicAlbum(Long cloudMusicId) {
         CloudMusicAlbum cloudMusicAlbum = this.getCloudMusicAlbumById(cloudMusicId);
@@ -433,6 +430,8 @@ public class HomeMusicService {
 
         List<CloudMusicTrack> songs = cloudMusicAlbum.getSongs();
         this.saveCloudMusicTrackList(songs, articleBean);
+
+        log.info("save cloud music album: {}", cloudMusicAlbum.getName());
     }
 
     public void saveArtist(CloudMusicArtist artist) {
