@@ -223,11 +223,16 @@ $(document).ready(function () {
         albums.forEach(album => {
             const publishDate = album.publishTime ? new Date(parseInt(album.publishTime)).toLocaleDateString('zh-CN') : '未知';
             const existsInDb = album.existsInDb || false;
+            const company = album.company || '暂无发行商';
 
             const $albumCard = $('<div class="album-card"></div>');
 
             const $albumPic = $(`<div class="album-pic album-cover"
-                                  data-original-url="${album.picUrl || ''}"></div>`);
+                                  data-original-url="${album.picUrl || ''}">
+                                  <div class="album-description-overlay">
+                                      <div class="album-description-text">${company}</div>
+                                  </div>
+                              </div>`);
 
             const $albumInfo = $('<div class="album-info"></div>');
             $albumInfo.append(`<div class="album-name" title="${album.name}">${album.name}</div>`);

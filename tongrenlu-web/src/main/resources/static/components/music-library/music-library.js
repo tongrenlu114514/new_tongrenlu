@@ -279,10 +279,14 @@ function renderSearchResults(data) {
 
     let html = '';
     $.each(data.records, (index, music) => {
+        const description = music.description || '暂无描述';
         html += `
-        <div class="music-card" data-index="${index}" data-title="${music.title || '未知专辑'}" data-description="${music.description || '暂无描述'}" data-access-count="${music.accessCount || 0}" data-cover-url="${music.cloudMusicPicUrl || ''}" data-album-id="${music.id || ''}">
+        <div class="music-card" data-index="${index}" data-title="${music.title || '未知专辑'}" data-description="${description}" data-access-count="${music.accessCount || 0}" data-cover-url="${music.cloudMusicPicUrl || ''}" data-album-id="${music.id || ''}">
             <div class="album-cover" data-original-url="${music.cloudMusicPicUrl || ''}">
                 ${music.cloudMusicPicUrl ? '' : '<div class="fallback-content">🎵</div>'}
+                <div class="album-description-overlay">
+                    <div class="album-description-text">${description}</div>
+                </div>
             </div>
             <div class="card-content">
                 <h3 class="card-title">${music.title || '未知专辑'}</h3>
