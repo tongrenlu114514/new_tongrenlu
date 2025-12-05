@@ -775,3 +775,106 @@ body::before {
 .playlist-item:hover::before {
     left: 100%;
 }
+
+/* 歌词显示样式 */
+.lyrics-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px 20px 20px;
+    display: none;
+    position: relative;
+}
+
+.lyrics-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.lyrics-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.lyrics-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.lyrics-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.lyrics {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.lyric-line {
+    padding: 12px 16px;
+    margin: 8px 0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 90%;
+    position: relative;
+}
+
+.lyric-line.active {
+    color: white;
+    font-size: 18px;
+    font-weight: 500;
+    background: rgba(0, 210, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.lyric-line.active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 80%;
+    background: #00d2ff;
+    border-radius: 2px;
+}
+
+.lyric-line.no-lyrics {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 16px;
+    text-align: center;
+}
+
+.lyric-line.past {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+}
+
+.lyric-line.future {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+}
+
+.lyric-origin {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.lyric-line.active .lyric-origin {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+}
+
+/* 歌词切换按钮激活状态 */
+#lyricBtn i.active {
+    color: #00d2ff;
+    text-shadow: 0 0 8px rgba(0, 210, 255, 0.7);
+}

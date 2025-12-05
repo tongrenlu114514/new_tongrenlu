@@ -71,6 +71,9 @@
         <div class="playlist-header">
             <h2>播放列表</h2>
             <div class="playlist-actions">
+                <button class="action-btn" id="lyricBtn">
+                    <i class="fas fa-align-left"></i>
+                </button>
                 <button class="action-btn" id="shuffleBtn">
                     <i class="fas fa-random"></i>
                 </button>
@@ -80,9 +83,16 @@
             </div>
         </div>
 
-        <div class="playlist-container">
+        <div class="playlist-container" id="playlistContainer">
             <ul class="playlist" id="playlist">
             </ul>
+        </div>
+
+        <!-- 歌词显示区域 -->
+        <div class="lyrics-container" id="lyricsContainer">
+            <div class="lyrics" id="lyrics">
+                <div class="lyric-line no-lyrics">暂无歌词</div>
+            </div>
         </div>
     </div>
 </div>
@@ -94,7 +104,37 @@
 
 <audio id="audioPlayer" style="display: none;"></audio>
 
+<!-- 播放覆盖层 -->
+<div class="play-overlay" id="playOverlay">
+    <div class="overlay-content">
+        <i class="fas fa-play-circle play-overlay-icon"></i>
+        <h2>点击播放您的音乐</h2>
+        <p>请与页面交互以开始播放</p>
+        <button class="play-overlay-btn" id="overlayPlayBtn">开始播放</button>
+    </div>
+</div>
+
 <script src="webjars/jquery/jquery.min.js"></script>
+<!-- 工具函数 -->
+<script src="components/player/player-utils.js"></script>
+<!-- 数据加载 -->
+<script src="components/player/player-data.js"></script>
+<!-- 初始化变量 -->
+<script src="components/player/player-fullscreen-init.js"></script>
+<!-- 基础UI控制 -->
+<script src="components/player/player-base-ui.js"></script>
+<!-- UI控制 -->
+<script src="components/player/player-ui.js"></script>
+<!-- 歌词模块 -->
+<script src="components/player/player-lyrics.js"></script>
+<!-- 播放控制 -->
+<script src="components/player/player-controls.js"></script>
+<!-- 导航控制 -->
+<script src="components/player/player-navigation.js"></script>
+<!-- 事件处理 -->
+<script src="components/player/player-events.js"></script>
+<script src="components/player/player-fullscreen-events.js"></script>
+<!-- 主逻辑 -->
 <script src="components/player/player-fullscreen.js"></script>
 </body>
 </html>

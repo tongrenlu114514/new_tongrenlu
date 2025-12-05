@@ -443,15 +443,15 @@ public class HomeMusicService {
         artistBean.setCloudMusicName(artist.getName());
         artistBean.setCloudMusicPicUrl(artist.getPicUrl());
 
-        String description = getDescription(cloudMusicArtistId);
-        artistBean.setDescription(description);
-
-        TagBean tagBean = getTagByType(artist.getName(), HomeMusicService.ARTIST, description);
-        artistBean.setTagId(tagBean.getId());
-
         LambdaQueryWrapper<ArtistBean> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ArtistBean::getCloudMusicId, artistBean.getCloudMusicId());
         ArtistBean bean = Optional.ofNullable(artistService.getBaseMapper().selectOne(queryWrapper)).orElse(artistBean);
+        if (bean.getDescription() == null) {
+            String description = getDescription(cloudMusicArtistId);
+            bean.setDescription(description);
+            TagBean tagBean = getTagByType(artist.getName(), HomeMusicService.ARTIST, description);
+            artistBean.setTagId(tagBean.getId());
+        }
         artistService.saveOrUpdate(bean);
     }
 
