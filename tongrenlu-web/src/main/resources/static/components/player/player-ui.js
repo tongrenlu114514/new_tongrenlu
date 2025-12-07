@@ -5,38 +5,6 @@
 
 // 显示播放覆盖层
 function showPlayOverlay() {
-    const $overlay = $('#playOverlay');
-    if ($overlay.length === 0) {
-        console.error('播放覆盖层元素未找到');
-        return;
-    }
-
-    // 绑定点击事件（只绑定一次）
-    if ($('#overlayPlayBtn').data('events-bound') !== true) {
-        $('#overlayPlayBtn').click(function() {
-            hidePlayOverlay();
-            // 尝试播放当前曲目
-            if (window.currentTrackIndex >= 0 && window.currentMusicData && window.currentMusicData.tracks) {
-                playTrack(window.currentTrackIndex);
-            }
-        });
-
-        // 点击覆盖层也可以关闭
-        $('#playOverlay').click(function(e) {
-            if (e.target.id === 'playOverlay') {
-                hidePlayOverlay();
-                if (window.currentTrackIndex >= 0 && window.currentMusicData && window.currentMusicData.tracks) {
-                    playTrack(window.currentTrackIndex);
-                }
-            }
-        });
-
-        // 标记事件已绑定
-        $('#overlayPlayBtn').data('events-bound', true);
-    }
-
-    // 显示覆盖层
-    $overlay.addClass('show');
 }
 
 // 隐藏播放覆盖层

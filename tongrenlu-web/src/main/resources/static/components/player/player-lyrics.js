@@ -47,11 +47,7 @@ function loadLyrics(trackIdOrLyric) {
     const $lyrics = $('#lyrics');
     $lyrics.empty();
     $lyrics.html('<div class="lyric-line no-lyrics">加载歌词中...</div>');
-    if (typeof trackIdOrLyric === 'string' && trackIdOrLyric.trim()) {
-        window.currentLyrics = parseLrc(trackIdOrLyric) || trackIdOrLyric;
-    } else {
-        window.currentLyrics = trackIdOrLyric;
-    }
+    window.currentLyrics = parseLrc(trackIdOrLyric) || trackIdOrLyric;
     displayLyrics(window.currentLyrics);
     scrollToTop();
 }

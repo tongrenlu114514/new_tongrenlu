@@ -41,13 +41,14 @@ function loadRandomAlbum(apiEndpoint, callback) {
 
             if (callback) {
                 callback(albumData);
+            } else {
+
+                // 显示播放覆盖层
+                showPlayOverlay();
+
+                // 播放第一首
+                // playFirstTrack();
             }
-
-            // 显示播放覆盖层
-            showPlayOverlay();
-
-            // 播放第一首
-            playFirstTrack();
         },
         error: function (error) {
             console.error('加载随机专辑数据失败:', error);
@@ -82,7 +83,7 @@ function loadAlbumDetail(albumId, callback) {
             showPlayOverlay();
 
             // 播放第一首
-            playTrack(0);
+            //playTrack(0);
         },
         error: function (error) {
             console.error('加载专辑数据失败:', error);
@@ -144,14 +145,14 @@ function generatePlaylist(tracks, playlistContainer) {
 }
 
 // 获取音频URL (需要audioPlayer, track)
-function loadTrackUrl(trackId, track, audioPlayer) {
+function loadTrackUrl(track) {
     return new Promise((resolve, reject) => {
         // 显示加载状态
         $('#albumTitle').html(`${track.name || '加载中...'}<span style="color: rgba(255,255,255,0.7);"> (加载中)</span>`);
 
         // 调用API获取音频URL
         $.ajax({
-            url: `api/music/track?id=${trackId}`,
+            url: `api/music/track?id=${track.id}`,
             method: 'GET',
             dataType: 'json',
             success: function (data) {
@@ -165,16 +166,7 @@ function loadTrackUrl(trackId, track, audioPlayer) {
             },
             error: function (error) {
                 console.error('获取音频URL失败:', error);
-
-                // 尝试使用备用URL
-                const fallbackUrl = track.cloudMusicUrl || track.url || track.mp3Url || track.musicUrl || track.fileUrl;
-
-                if (fallbackUrl) {
-                    console.log('使用备用URL:', fallbackUrl);
-                    resolve({ url: fallbackUrl });
-                } else {
-                    reject(new Error('获取音频资源失败'));
-                }
+                reject(new Error('获取音频资源失败'));
             }
         });
     });

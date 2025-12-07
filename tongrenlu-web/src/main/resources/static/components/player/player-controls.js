@@ -16,18 +16,15 @@ function playTrack(trackIndex) {
     const track = window.currentMusicData.tracks[trackIndex];
 
     console.log('播放曲目:', track);
-
     // 更新播放列表激活状态
     updatePlaylistActive(window.currentTrackIndex);
-
     // 显示加载状态
     showLoadingStatus('正在加载音频...');
-
     // 更新当前曲目信息
     updateCurrentTrackInfo(track, window.currentMusicData, false);
 
     // 加载音频URL
-    loadTrackUrl(track.id || track.trackId, track, window.audioPlayer)
+    loadTrackUrl(track)
         .then(audioData => {
             console.log('音频URL加载成功:', audioData.url);
 
