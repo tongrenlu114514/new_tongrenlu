@@ -68,9 +68,13 @@ function handleTrackEnd() {
         } else if (window.currentTrackIndex < window.currentMusicData.tracks.length - 1) {
             newIndex = window.currentTrackIndex + 1;
         } else {
-            // 播放完毕
+            // 播放列表播放完毕，加载新的随机专辑
             window.isPlaying = false;
             updatePlayButton(false);
+            showMessage('播放列表结束，正在加载新的专辑...', 3000);
+            setTimeout(() => {
+                loadNewRandomAlbum();
+            }, 1000);
             return;
         }
     }
@@ -155,6 +159,66 @@ function toggleLyricsMode() {
     }
 }
 
+// 显示临时消息
+function showMessage(message, duration = 3000) {
+    console.log('显示消息:', message);
+    const $albumTitle = $('#albumTitle');
+    const originalHtml = $albumTitle.html();
+
+    // 设置消息
+    $albumTitle.html(`<span style="color: rgba(255,255,255,0.7);">${message}</span>`);
+
+    // 定时恢复原始内容
+    setTimeout(() => {
+        if (window.currentMusicData && window.currentMusicData.title) {
+            $albumTitle.text(window.currentMusicData.title);
+        } else {
+            $albumTitle.text('');
+        }
+    }, duration);
+}
+
+// 加载新的随机专辑
+function loadNewRandomAlbum() {
+    console.log('开始加载新的随机专辑...');
+
+    // 清理当前播放状态
+    if (window.audioPlayer) {
+        window.audioPlayer.pause();
+        window.audioPlayer.src = '';
+        window.audioPlayer.load();
+    }
+
+    window.currentTrackIndex = 0;
+    window.currentLyrics = null;
+    window.currentLyricIndex = -1;
+    window.isPlaying = false;
+
+    // 显示加载状态
+    showMessage('正在加载随机专辑...', 5000);
+
+    // 加载随机专辑
+    loadRandomAlbum('api/music/random', (albumData) => {
+        console.log('新随机专辑加载成功:', albumData);
+
+        // updateAlbumInfo 应该在 loadRandomAlbum 回调中执行
+        updateAlbumInfo(albumData);
+        generatePlaylist(albumData.tracks, $('#playlist'));
+
+        // 显示播放覆盖层
+        showPlayOverlay();
+
+        // 更新播放按钮状态
+        updatePlayButton(false);
+
+        playFirstTrack();
+        // 显示完成消息
+        setTimeout(() => {
+            showMessage(`已加载专辑: ${albumData.title}`, 3000);
+        }, 500);
+    });
+}
+
 // 导出函数（如果使用ES6模块）
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -164,6 +228,8 @@ if (typeof module !== 'undefined' && module.exports) {
         togglePlayPause,
         toggleShuffle,
         toggleRepeat,
-        toggleLyricsMode
+        toggleLyricsMode,
+        showMessage,
+        loadNewRandomAlbum
     };
 }
