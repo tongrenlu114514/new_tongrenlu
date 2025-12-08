@@ -26,59 +26,7 @@ function loadMusicData() {
     // 显示加载状态
     $('#albumTitle').html('<span style="color: rgba(255,255,255,0.7);">加载中...</span>');
 
-    // 如果是测试模式
-    if (albumId === 'test001') {
-        const testAlbumData = {
-            id: "test001",
-            title: "东方红魔乡",
-            artist: "上海爱丽丝幻乐团",
-            coverUrl: "https://p1.music.126.net/24234234/test-album.jpg",
-            cloudMusicPicUrl: "https://p1.music.126.net/24234234/test-album.jpg",
-            tracks: [
-                {
-                    id: "track001",
-                    trackId: "track001",
-                    name: "梦月仙境",
-                    duration: 285,
-                    url: "https://example.com/music/dream-moon.mp3"
-                },
-                {
-                    id: "track002",
-                    trackId: "track002",
-                    name: "红色的迷路少女",
-                    duration: 198,
-                    url: "https://example.com/music/red-girl.mp3"
-                },
-                {
-                    id: "track003",
-                    trackId: "track003",
-                    name: "上海红茶馆 ~ Chinese Tea",
-                    duration: 245,
-                    url: "https://example.com/music/shanghai-tea.mp3"
-                },
-                {
-                    id: "track004",
-                    trackId: "track004",
-                    name: "明治十七年的上海爱丽丝",
-                    duration: 312,
-                    url: "https://example.com/music/meiji-shanghai.mp3"
-                }
-            ]
-        };
-
-        setTimeout(function () {
-            console.log('测试专辑数据加载成功:', testAlbumData);
-            currentMusicData = testAlbumData;
-            updateAlbumInfo(testAlbumData);
-            generatePlaylist(testAlbumData.tracks, $('#playlist'));
-
-            // 显示播放覆盖层
-            showPlayOverlay();
-
-            // 播放第一首
-            playFirstTrack();
-        }, 500);
-    } else if (albumId) {
+    if (albumId) {
         // 加载指定专辑
         $.ajax({
             url: `api/music/detail?albumId=${albumId}`,

@@ -131,6 +131,7 @@ $(document).ready(function() {
     checkAutoplayPolicy();
 
     // 根据URL参数或加载随机专辑
+    loadMusicData();
 
     console.log('播放器初始化完成');
 });

@@ -92,27 +92,6 @@ function loadAlbumDetail(albumId, callback) {
     });
 }
 
-// 加载测试专辑数据
-function loadTestAlbum(testAlbumData, callback) {
-    setTimeout(function () {
-        console.log('测试专辑数据加载成功:', testAlbumData);
-
-        // 将数据存储到全局变量
-        window.currentMusicData = testAlbumData;
-        console.log('已设置window.currentMusicData:', window.currentMusicData);
-
-        if (callback) {
-            callback(testAlbumData);
-        }
-
-        // 显示播放覆盖层
-        showPlayOverlay();
-
-        // 播放第一首
-        playFirstTrack();
-    }, 500);
-}
-
 // 生成播放列表
 function generatePlaylist(tracks, playlistContainer) {
     const $playlist = playlistContainer;
@@ -177,7 +156,6 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         loadRandomAlbum,
         loadAlbumDetail,
-        loadTestAlbum,
         generatePlaylist,
         loadTrackUrl
     };

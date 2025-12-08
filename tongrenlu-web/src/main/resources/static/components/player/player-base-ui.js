@@ -65,7 +65,7 @@ function updatePlayerUI(title, artist, playing) {
 // 初始化播放器
 function initializePlayer() {
     // 调用初始化函数
-    // loadMusicData();
+    loadMusicData();
     initPlayerEvents();
     setupKeyboardShortcuts();
     setupAudioEvents();
