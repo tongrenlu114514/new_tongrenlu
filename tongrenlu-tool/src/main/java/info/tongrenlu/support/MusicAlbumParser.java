@@ -4,10 +4,7 @@ import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.TagBean;
 import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.model.*;
-import info.tongrenlu.service.ArticleService;
-import info.tongrenlu.service.ArtistService;
 import info.tongrenlu.service.HomeMusicService;
-import info.tongrenlu.service.TagService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
@@ -30,9 +27,6 @@ import java.util.regex.Pattern;
 @Component
 public class MusicAlbumParser {
     private final HomeMusicService homeMusicService;
-    private final ArticleService articleService;
-    private final ArtistService artistService;
-    private final TagService tagService;
 
     public List<MusicTrack> parseMusicAlbumFile(String filePath) throws IOException {
         List<MusicTrack> tracks = new ArrayList<>();
@@ -217,8 +211,7 @@ public class MusicAlbumParser {
                     if (articleBean.getTitle().equals(album.getName())) {
                         return true;
                     }
-                    long publishTime = Long.parseLong(album.getPublishTime());
-                    Date publishDate = new Date(publishTime);
+                    Date publishDate = new Date(album.getPublishTime());
                     return DateUtils.isSameDay(publishDate, articleBean.getPublishDate());
                 })
                 .findFirst()

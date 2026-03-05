@@ -419,6 +419,7 @@ public class HomeMusicService {
         articleBean.setCloudMusicPicUrl(cloudMusicAlbum.getPicUrl());
         articleBean.setDescription(cloudMusicAlbum.getDescription());
         articleBean.setPublishFlg("1");
+        articleBean.setPublishDate(new Date(cloudMusicAlbum.getPublishTime()));
 
         this.insertOrUpdate(articleBean);
 

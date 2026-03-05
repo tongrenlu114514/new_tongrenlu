@@ -13,7 +13,7 @@ public class CloudMusicAlbum {
 
     private long id;
     private String name;
-    private String publishTime;
+    private Long publishTime;
     private String picUrl;
     private List<CloudMusicArtist> artists ;
     private String company ;

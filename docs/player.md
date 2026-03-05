@@ -124,7 +124,7 @@ window.currentMusicData = {
       id: "曲目ID",
       trackId: "曲目ID（兼容字段）",
       name: "曲目名称",
-      duration: 时长（秒）,
+      duration: "时长（秒）",
       url: "音频URL"
     }
   ]
