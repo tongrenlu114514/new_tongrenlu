@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="webjars/font-awesome/css/all.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/home-redesign.css" rel="stylesheet">
 </head>
 <body>
     <!-- 星空粒子背景 -->
@@ -21,25 +22,40 @@
             <a href="#">艺术家</a>
             <a href="#">关于我们</a>
         </div>
+        <div class="nav-stats">
+            <span class="nav-stats__number" id="navAlbumCount">--</span>
+            <span class="nav-stats__label">张专辑</span>
+        </div>
     </nav>
     
     <!-- 首页内容 -->
     <div class="home-content" id="homePage">
-        <!-- Hero区域 -->
-        <section class="hero">
-            <h1 class="hero-title">发现东方Project同人音乐的魅力</h1>
-            <p class="hero-subtitle">汇聚最优质的同人音乐作品，连接创作者与爱好者，感受二次创作的独特魅力</p>
-
-            <!-- 专辑发布进度条 -->
-            <div class="album-progress-container">
-                <div class="progress-text" id="progressText">加载中...</div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill" id="albumProgressBar"></div>
-                </div>
-                <div class="progress-info" id="progressInfo">专辑发布进度：已发布 0 / 0 张</div>
+        <!-- 图片画廊 Hero 区域 -->
+        <section class="home-hero-gallery">
+            <div class="home-gallery-grid" id="galleryGrid">
+                <!-- 动态加载专辑封面 -->
             </div>
+        </section>
 
-            <button class="cta-button" id="start-explore-btn">开始探索</button>
+        <!-- 最新专辑轮播区域 -->
+        <section class="home-section">
+            <h2 class="home-section__title">最新专辑</h2>
+            <div class="home-carousel" id="latestAlbumsCarousel">
+                <button class="home-carousel__btn home-carousel__btn--prev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="home-carousel__wrapper">
+                    <div class="home-carousel__track" id="latestAlbumsTrack">
+                        <!-- 动态加载 -->
+                        <div class="home-loading">
+                            <div class="home-loading__spinner"></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="home-carousel__btn home-carousel__btn--next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
         </section>
     </div>
     
@@ -121,8 +137,8 @@
     </div>
     
     <!-- 页脚 -->
-    <footer>
-        <p>&copy; 2025 东方Project同人音乐网站. 本站所有内容版权归原作者所有.</p>
+    <footer class="home-footer">
+        <p>&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
         <p>本网站仅为学习交流使用，不涉及任何商业用途</p>
     </footer>
     
@@ -173,8 +189,12 @@
     <!-- 外部JavaScript文件 -->
     <script src="webjars/jquery/jquery.min.js"></script>
     <script src="components/shared/page-switch.js"></script>
+    <script src="components/home/gallery-hero.js"></script>
     <script src="components/home/home.js"></script>
     <script src="components/home/stats.js"></script>
+    <script src="components/home/latest-albums.js"></script>
+    <script src="components/home/popular-albums.js"></script>
+    <script src="components/home/artist-recommendation.js"></script>
     <script src="components/shared/image-loader.js"></script>
     <script src="components/music-library/music-library.js"></script>
     <script src="components/player/player-base-core.js"></script>

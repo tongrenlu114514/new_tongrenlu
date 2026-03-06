@@ -71,6 +71,27 @@ nav {
     font-weight: bold;
 }
 
+/* 导航栏统计 */
+.nav-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    color: white;
+}
+
+.nav-stats__number {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.nav-stats__label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
 /* 主内容区 - 首页样式 */
 .home-content {
     margin-top: 80px;
@@ -239,9 +260,27 @@ nav {
 /* 音乐卡片网格 */
 .music-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 1.5rem;
     max-width: 100%;
+}
+
+@media (max-width: 1600px) {
+    .music-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+@media (max-width: 1200px) {
+    .music-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .music-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
 .music-card {
@@ -1159,7 +1198,7 @@ footer {
     }
 
     .music-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
@@ -1188,7 +1227,7 @@ footer {
     }
 
     .music-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 1rem;
     }
 
@@ -1247,7 +1286,7 @@ footer {
     }
 
     .music-grid {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .card-content {

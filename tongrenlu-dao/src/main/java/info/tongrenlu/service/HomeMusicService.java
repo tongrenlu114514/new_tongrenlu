@@ -555,4 +555,35 @@ public class HomeMusicService {
 
         return getAlbumDetail(randomArticle.getId());
     }
+
+    /**
+     * 随机获取多个已发布专辑的封面信息
+     * 用于首页 hero 区域展示，只返回必要字段（id, title, cloudMusicPicUrl）
+     *
+     * @param count 需要获取的专辑数量
+     * @return 随机专辑列表
+     */
+    public List<ArticleBean> getRandomAlbums(int count) {
+        // 查询已发布的专辑总数
+        LambdaQueryWrapper<ArticleBean> countQuery = new LambdaQueryWrapper<>();
+        countQuery.eq(ArticleBean::getPublishFlg, "1");
+        countQuery.isNotNull(ArticleBean::getCloudMusicPicUrl);
+        long publishedCount = articleMapper.selectCount(countQuery);
+
+        if (publishedCount == 0) {
+            return Collections.emptyList();
+        }
+
+        // 限制最大数量
+        int actualCount = (int) Math.min(count, publishedCount);
+
+        // 使用 ORDER BY RAND() 获取随机专辑
+        // 对于大数据量可考虑优化为应用层随机
+        LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArticleBean::getPublishFlg, "1");
+        queryWrapper.isNotNull(ArticleBean::getCloudMusicPicUrl);
+        queryWrapper.last("ORDER BY RAND() LIMIT " + actualCount);
+
+        return articleMapper.selectList(queryWrapper);
+    }
 }

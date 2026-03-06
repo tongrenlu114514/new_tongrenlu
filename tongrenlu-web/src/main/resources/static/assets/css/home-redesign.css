@@ -1,0 +1,568 @@
+/**
+ * 同人录主页重设计样式
+ * 使用 .home- 前缀避免与现有样式冲突
+ */
+
+/* ========================================
+   图片画廊 Hero 区域
+   ======================================== */
+
+.home-hero-gallery {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: #0a0a0a;
+}
+
+/* 画廊网格 */
+.home-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 4px;
+    width: 100%;
+    height: 100vh;
+    padding: 4px;
+}
+
+/* 画廊图片项 */
+.home-gallery-item {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    background: #1a1a1a;
+}
+
+.home-gallery-item__cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.5s ease, opacity 0.3s ease;
+    opacity: 0.85;
+}
+
+.home-gallery-item:hover .home-gallery-item__cover {
+    transform: scale(1.08);
+    opacity: 1;
+}
+
+/* 专辑标题悬停显示 */
+.home-gallery-item::after {
+    content: attr(data-title);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: all 0.3s ease;
+}
+
+.home-gallery-item:hover::after {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 大尺寸图片 */
+.home-gallery-item--large {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+.home-gallery-item--wide {
+    grid-column: span 2;
+}
+
+.home-gallery-item--tall {
+    grid-row: span 2;
+}
+
+/* ========================================
+   最新专辑轮播区域
+   ======================================== */
+
+.home-section {
+    padding: 4rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.home-section__title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 2rem;
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.home-section__title::after {
+    content: "";
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: var(--secondary-color);
+    margin: 0.5rem auto 0;
+    border-radius: 2px;
+}
+
+/* 轮播容器 */
+.home-carousel {
+    position: relative;
+    padding: 0 3rem;
+}
+
+.home-carousel__wrapper {
+    overflow: hidden;
+    margin: 0 -0.5rem;
+}
+
+.home-carousel__track {
+    display: flex;
+    gap: 1.5rem;
+    transition: transform 0.5s ease;
+    scroll-snap-type: x mandatory;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 1rem 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.home-carousel__track::-webkit-scrollbar {
+    display: none;
+}
+
+/* 轮播导航按钮 */
+.home-carousel__btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: white;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.home-carousel__btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.home-carousel__btn--prev {
+    left: 0;
+}
+
+.home-carousel__btn--next {
+    right: 0;
+}
+
+/* ========================================
+   专辑卡片
+   ======================================== */
+
+.home-album-card {
+    flex: 0 0 220px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    scroll-snap-align: start;
+    cursor: pointer;
+}
+
+.home-album-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.home-album-card__cover {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-color: #f0f0f0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-album-card__cover-fallback {
+    font-size: 4rem;
+    color: #ccc;
+}
+
+.home-album-card__play-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-album-card:hover .home-album-card__play-btn {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.home-album-card__play-btn:hover {
+    background: var(--download-color);
+    transform: scale(1.1);
+}
+
+.home-album-card__info {
+    padding: 1rem;
+}
+
+.home-album-card__title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.home-album-card__artist {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ========================================
+   热门推荐区域
+   ======================================== */
+
+.home-popular {
+    background: #f8f9fa;
+    padding: 4rem 2rem;
+}
+
+.home-popular__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ========================================
+   艺术家推荐区域
+   ======================================== */
+
+.home-artists {
+    padding: 4rem 2rem;
+}
+
+.home-artists__grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.home-artist-card {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.home-artist-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.home-artist-card__avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    transition: all 0.3s ease;
+    background-size: cover;
+    background-position: center;
+}
+
+.home-artist-card:hover .home-artist-card__avatar {
+    border: 3px solid var(--accent-color);
+}
+
+.home-artist-card__name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.home-artist-card__count {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ========================================
+   页脚
+   ======================================== */
+
+.home-footer {
+    text-align: center;
+    padding: 2rem;
+    background: #f5f5f5;
+    border-top: 1px solid #e9ecef;
+}
+
+.home-footer p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.home-footer p:last-child {
+    margin-bottom: 0;
+}
+
+/* ========================================
+   响应式布局
+   ======================================== */
+
+/* 平板端 */
+@media (max-width: 1024px) {
+    .home-gallery-grid {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+    }
+
+    .home-gallery-item--large {
+        grid-column: span 2;
+        grid-row: span 1;
+    }
+
+    .home-gallery-overlay__title {
+        font-size: 2.5rem;
+    }
+
+    .home-gallery-overlay__subtitle {
+        font-size: 1.1rem;
+    }
+
+    .home-popular__grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .home-artists__grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* 移动端 */
+@media (max-width: 768px) {
+    .home-hero-gallery {
+        min-height: 70vh;
+    }
+
+    .home-gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+    }
+
+    .home-gallery-item--large,
+    .home-gallery-item--wide,
+    .home-gallery-item--tall {
+        grid-column: span 1;
+        grid-row: span 1;
+    }
+
+    .home-gallery-overlay__title {
+        font-size: 2rem;
+    }
+
+    .home-gallery-overlay__subtitle {
+        font-size: 0.9rem;
+        padding: 0 1rem;
+    }
+
+    .home-gallery-overlay__stats-number {
+        font-size: 1.5rem;
+    }
+
+    .home-gallery-overlay__cta-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .home-section {
+        padding: 3rem 1rem;
+    }
+
+    .home-section__title {
+        font-size: 1.5rem;
+    }
+
+    .home-carousel {
+        padding: 0 1rem;
+    }
+
+    .home-carousel__btn {
+        display: none;
+    }
+
+    .home-album-card {
+        flex: 0 0 160px;
+    }
+
+    .home-album-card__cover {
+        height: 150px;
+    }
+
+    .home-popular__grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .home-artists__grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+
+    .home-artist-card {
+        padding: 1rem;
+    }
+
+    .home-artist-card__avatar {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+}
+
+/* 小屏幕移动端 */
+@media (max-width: 480px) {
+    .home-hero-gallery {
+        min-height: 60vh;
+    }
+
+    .home-gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+    }
+
+    .home-gallery-overlay__title {
+        font-size: 1.5rem;
+    }
+
+    .home-album-card {
+        flex: 0 0 140px;
+    }
+
+    .home-album-card__cover {
+        height: 130px;
+    }
+
+    .home-artists__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ========================================
+   加载状态
+   ======================================== */
+
+.home-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.home-loading__spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--accent-color);
+    border-radius: 50%;
+    animation: home-spin 1s linear infinite;
+}
+
+@keyframes home-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 骨架屏 */
+.home-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: home-skeleton-loading 1.5s infinite;
+}
+
+@keyframes home-skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.home-skeleton-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.home-skeleton-card__cover {
+    height: 200px;
+    background: #f0f0f0;
+}
+
+.home-skeleton-card__info {
+    padding: 1rem;
+}
+
+.home-skeleton-card__title {
+    height: 16px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    width: 80%;
+}
+
+.home-skeleton-card__artist {
+    height: 12px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    width: 60%;
+}

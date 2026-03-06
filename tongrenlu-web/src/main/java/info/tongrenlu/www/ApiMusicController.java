@@ -19,6 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -117,6 +118,13 @@ public class ApiMusicController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(randomAlbum);
+    }
+
+    @GetMapping("/random-albums")
+    public ResponseEntity<List<ArticleBean>> getRandomAlbums(
+            @RequestParam(defaultValue = "15") int count) {
+        List<ArticleBean> randomAlbums = this.musicService.getRandomAlbums(count);
+        return ResponseEntity.ok(randomAlbums);
     }
 
     private CloudMusicDetailResponse getMusicDetailResponseKXZ(TrackBean track) {
