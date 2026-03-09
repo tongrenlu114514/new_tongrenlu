@@ -34,7 +34,7 @@ public class PlaylistImportJob implements CommandLineRunner {
     /**
      * 默认歌单ID（可通过命令行参数覆盖）
      */
-    private static final Long DEFAULT_PLAYLIST_ID = 2640199933L;
+    private static final Long DEFAULT_PLAYLIST_ID = 149405221L;
 
     @Override
     public void run(String... args) throws Exception {
