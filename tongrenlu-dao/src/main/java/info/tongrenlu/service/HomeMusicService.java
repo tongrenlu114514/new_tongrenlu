@@ -586,4 +586,86 @@ public class HomeMusicService {
 
         return articleMapper.selectList(queryWrapper);
     }
+
+    // ==================== 歌单专辑导入相关方法 ====================
+
+    /**
+     * 获取歌单曲目列表（单页）
+     *
+     * @param playlistId 歌单ID
+     * @param limit      每页数量
+     * @param offset     偏移量
+     * @return 歌单曲目响应
+     */
+    public CloudMusicPlaylistResponse getCloudMusicPlaylistTracks(Long playlistId, int limit, int offset) {
+        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/playlist/track/all")
+                .queryParam("id", playlistId)
+                .queryParam("limit", limit)
+                .queryParam("offset", offset)
+                .build()
+                .toString();
+        log.info("Fetching playlist tracks: {}", url);
+
+        try (HttpResponse response = HttpRequest.get(url).execute()) {
+            String json = response.body();
+            CloudMusicPlaylistResponse playlistResponse = new ObjectMapper().readValue(json, CloudMusicPlaylistResponse.class);
+            if (playlistResponse == null) {
+                return null;
+            }
+            int code = playlistResponse.getCode();
+            if (code != 200) {
+                log.warn("Playlist API returned code: {}", code);
+                return null;
+            }
+            return playlistResponse;
+        } catch (IOException e) {
+            log.error("Error fetching playlist tracks: {}", url, e);
+        }
+        return null;
+    }
+
+    /**
+     * 获取歌单中所有专辑ID（去重）
+     * 分页获取所有歌曲，提取专辑ID并去重
+     *
+     * @param playlistId 歌单ID
+     * @return 去重后的专辑ID列表
+     */
+    public List<Long> getAllPlaylistAlbumIds(Long playlistId) {
+        Set<Long> albumIds = new LinkedHashSet<>();
+        int offset = 0;
+        int pageSize = 500;
+
+        while (true) {
+            CloudMusicPlaylistResponse response = getCloudMusicPlaylistTracks(playlistId, pageSize, offset);
+            if (response == null || response.getSongs() == null || response.getSongs().isEmpty()) {
+                break;
+            }
+
+            for (CloudMusicPlaylistTrack track : response.getSongs()) {
+                if (track.getAl() != null && track.getAl().getId() > 0) {
+                    albumIds.add(track.getAl().getId());
+                }
+            }
+
+            log.info("Fetched playlist tracks: offset={}, count={}, albums so far={}",
+                    offset, response.getSongs().size(), albumIds.size());
+
+            if (response.getSongs().size() < pageSize) {
+                break;
+            }
+            offset += pageSize;
+
+            // 添加请求间隔，避免触发限流
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        log.info("Total unique albums in playlist {}: {}", playlistId, albumIds.size());
+        return albumIds.stream().distinct().toList();
+    }
 }
