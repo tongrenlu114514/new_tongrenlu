@@ -260,26 +260,26 @@ nav {
 /* 音乐卡片网格 */
 .music-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 1.5rem;
     max-width: 100%;
 }
 
 @media (max-width: 1600px) {
     .music-grid {
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 
 @media (max-width: 1200px) {
     .music-grid {
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
 @media (max-width: 1024px) {
     .music-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -505,51 +505,48 @@ nav {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     z-index: 2000;
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(5px);
 }
 
 .modal-content {
-    background: #fff;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
     width: 90%;
-    max-width: 900px;
+    max-width: 800px;
     max-height: 90vh;
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
     display: flex;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    flex-direction: column;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+    display: flex;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1a1540 100%);
+    color: white;
 }
 
 .album-art {
-
-    width: 300px;
-
-    height: 300px;
-
+    width: 180px;
+    height: 180px;
+    min-width: 180px;
     background-size: cover;
-
     background-position: center;
-
     background-repeat: no-repeat;
-
-    background-color: transparent; /* 改为透明背景，避免覆盖动态加载的图片 */
-
+    background-color: rgba(255, 255, 255, 0.1);
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
-    font-size: 5rem;
-
-    margin: 2rem;
-
-    border-radius: 8px;
-
+    font-size: 4rem;
+    border-radius: 12px;
     position: relative;
-
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .album-art::before {
@@ -559,8 +556,8 @@ nav {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
 }
 
 .album-art .fallback-content {
@@ -570,104 +567,208 @@ nav {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.album-info {
+.album-header-info {
     flex: 1;
-    padding: 2rem 2rem 2rem 0;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
 }
 
 .album-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
+    line-height: 1.3;
 }
 
 .album-artist {
-    color: var(--accent-color);
-    font-size: 1.2rem;
+    color: var(--secondary-color);
+    font-size: 1.1rem;
     margin-bottom: 1rem;
+    font-weight: 500;
 }
 
 .album-meta {
     display: flex;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-    color: var(--text-secondary);
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.meta-item i {
     font-size: 0.9rem;
 }
 
-.track-list {
-    margin-top: 2rem;
+.album-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.play-all-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0 0.8rem;
+    background: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    height: 40px;
+    line-height: 40px;
+    box-sizing: border-box;
+}
+
+.play-all-btn:hover {
+    background: #e07070;
+}
+
+.report-error-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    margin: 0;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.report-error-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.modal-body {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+}
+
+.album-description {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
 }
 
 .track-list h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+.track-list h3 i {
+    font-size: 0.9rem;
 }
 
 .tracks {
     list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .track {
     display: flex;
     align-items: center;
-    padding: 0.8rem 0;
-    border-bottom: 1px solid #eee;
+    padding: 0.7rem 0.8rem;
+    border-radius: 8px;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.track:hover {
+    background: #f5f5f5;
 }
 
 .track-number {
-    width: 30px;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    width: 28px;
+    color: #999;
+    font-size: 0.85rem;
+    text-align: center;
 }
 
 .track-title {
     flex: 1;
-    padding: 0 1rem;
+    padding: 0 0.8rem;
+    font-size: 0.95rem;
+    color: #333;
 }
 
 .track-duration {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    color: #999;
+    font-size: 0.85rem;
 }
 
 .track-play-btn {
     background: none;
     border: none;
-    color: #666;
+    color: #999;
     cursor: pointer;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 10px;
+    transition: all 0.2s;
+}
+
+.track:hover .track-play-btn {
+    color: var(--secondary-color);
+    background: rgba(223, 136, 136, 0.15);
 }
 
 .track-play-btn:hover {
-    color: var(--download-color);
-    background: #eee;
+    color: var(--secondary-color);
+    background: rgba(223, 136, 136, 0.2);
 }
 
 .close-modal {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    background: #eee;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.2);
     border: none;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    color: #333;
+    color: white;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1rem;
+    transition: all 0.2s;
+    z-index: 10;
 }
 
 .close-modal:hover {
-    background: var(--download-color);
-    color: white;
+    background: rgba(255, 255, 255, 0.35);
+    transform: rotate(90deg);
 }
 
 /* 底部音乐播放器 */
@@ -1198,7 +1299,7 @@ footer {
     }
 
     .music-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -1227,7 +1328,7 @@ footer {
     }
 
     .music-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
 
@@ -1236,18 +1337,45 @@ footer {
     }
 
     .modal-content {
-        flex-direction: column;
         width: 95%;
+        max-height: 85vh;
+    }
+
+    .modal-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem;
     }
 
     .album-art {
-        width: 200px;
-        height: 200px;
-        margin: 1rem auto;
+        width: 140px;
+        height: 140px;
+        min-width: 140px;
+        margin: 0 auto 1rem;
     }
 
-    .album-info {
+    .album-title {
+        font-size: 1.4rem;
+    }
+
+    .album-artist {
+        font-size: 1rem;
+    }
+
+    .album-meta {
+        justify-content: center;
+    }
+
+    .album-actions {
+        justify-content: center;
+    }
+
+    .modal-body {
         padding: 1rem;
+    }
+
+    .album-description {
+        font-size: 0.9rem;
     }
 
     .player {
@@ -1312,6 +1440,348 @@ footer {
     }
 
     .volume-controls {
+        justify-content: center;
+    }
+}
+
+/* ==================== 搜索建议面板 ==================== */
+
+.search-box-wrapper {
+    position: relative;
+}
+
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.suggestions-list {
+    padding: 0.5rem 0;
+}
+
+.suggestions-header {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: #999;
+    border-bottom: 1px solid #eee;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover,
+.suggestion-item.highlighted {
+    background-color: #f5f5f5;
+}
+
+.suggestion-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 0.8rem;
+    flex-shrink: 0;
+}
+
+.suggestion-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.suggestion-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestion-artist {
+    font-size: 0.8rem;
+    color: #999;
+    margin-top: 2px;
+}
+
+.history-item .suggestion-icon {
+    background: #e0e0e0;
+    color: #666;
+}
+
+.history-delete {
+    background: none;
+    border: none;
+    color: #999;
+    padding: 0.5rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.history-item:hover .history-delete {
+    opacity: 1;
+}
+
+.history-delete:hover {
+    color: #ff4444;
+}
+
+/* ==================== 筛选和排序行 ==================== */
+
+.filter-sort-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.sort-wrapper {
+    flex-shrink: 0;
+}
+
+.sort-select {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 0.9rem;
+    color: #333;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sort-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 166, 235, 0.1);
+}
+
+/* ==================== 骨架屏加载效果 ==================== */
+
+.skeleton-card {
+    pointer-events: none;
+}
+
+.skeleton-cover {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeleton-title {
+    height: 16px;
+    width: 80%;
+    background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin: 1rem 0 0.5rem;
+}
+
+.skeleton-stats {
+    height: 12px;
+    width: 40%;
+    background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* ==================== 增强分页控件 ==================== */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 2rem 0;
+}
+
+.pagination-info {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #333;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+.page-btn.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-ellipsis {
+    padding: 0 0.5rem;
+    color: #999;
+}
+
+.pagination-jump {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.jump-input {
+    width: 60px;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.jump-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.jump-btn {
+    padding: 0.4rem 0.8rem;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.jump-btn:hover {
+    background: #0090cc;
+}
+
+/* ==================== 移动端响应式优化 ==================== */
+
+@media (max-width: 768px) {
+    .filter-sort-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-tags {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    
+    .filter-tags::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .tag {
+        flex-shrink: 0;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .sort-wrapper {
+        width: 100%;
+    }
+    
+    .sort-select {
+        width: 100%;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .search-suggestions {
+        max-height: 300px;
+    }
+    
+    .suggestion-item {
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .page-btn {
+        min-width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+    
+    .pagination-jump {
+        flex-wrap: wrap;
         justify-content: center;
     }
 }

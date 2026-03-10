@@ -1,21 +1,97 @@
 // 音乐库相关功能
-// 打开专辑详情模态框
+
+// ==================== 全局状态 ====================
+let currentKeyword = '';
+let currentPage = 1;
+let currentOrderBy = 'publishDate';
+let currentTag = '';
+let totalPages = 1;
+let totalRecords = 0;
+
+// 搜索建议相关状态
+let debounceTimer = null;
+let suggestionsData = [];
+let highlightedIndex = -1;
+
+// ==================== 工具函数 ====================
+
+// 防抖函数
+function debounce(func, wait) {
+    return function executedFunction(...args) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// localStorage 安全操作
+const searchHistory = {
+    STORAGE_KEY: 'tongrenlu_search_history',
+    MAX_ITEMS: 10,
+    
+    get() {
+        try {
+            const data = localStorage.getItem(this.STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.warn('读取搜索历史失败:', e);
+            return [];
+        }
+    },
+    
+    save(keyword) {
+        try {
+            let history = this.get();
+            // 移除重复项
+            history = history.filter(item => item !== keyword);
+            // 添加到开头
+            history.unshift(keyword);
+            // 限制数量
+            history = history.slice(0, this.MAX_ITEMS);
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(history));
+            return true;
+        } catch (e) {
+            console.warn('保存搜索历史失败:', e);
+            return false;
+        }
+    },
+    
+    remove(keyword) {
+        try {
+            let history = this.get();
+            history = history.filter(item => item !== keyword);
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(history));
+            return true;
+        } catch (e) {
+            console.warn('删除搜索历史失败:', e);
+            return false;
+        }
+    },
+    
+    clear() {
+        try {
+            localStorage.removeItem(this.STORAGE_KEY);
+            return true;
+        } catch (e) {
+            console.warn('清除搜索历史失败:', e);
+            return false;
+        }
+    }
+};
+
+// ==================== 模态框功能 ====================
+
 function openAlbumModal() {
     $('#albumModal').css('display', 'flex');
 }
 
-// 关闭专辑详情模态框
 function closeAlbumModal() {
     $('#albumModal').css('display', 'none');
 }
 
-// 更新专辑详情模态框内容
 async function updateAlbumModal(albumId) {
     try {
-        // 显示加载状态
         showLoadingState();
 
-        // 调用后端接口获取专辑详情
         const albumDetail = await new Promise((resolve, reject) => {
             $.ajax({
                 url: `api/music/detail?albumId=${albumId}`,
@@ -28,20 +104,15 @@ async function updateAlbumModal(albumId) {
             });
         });
 
-        // 更新标题
+        // 更新标题和艺术家
         $('.album-title').text(albumDetail.title || '未知专辑');
-
-        // 更新艺术家
         $('.album-artist').text(albumDetail.artist || '未知艺术家');
 
-        // 更新元信息
-        const metaElements = $('.album-meta span');
-        if (metaElements.length >= 3) {
-            const publishDate = albumDetail.publishDate ? new Date(albumDetail.publishDate) : null;
-            metaElements.eq(0).text(publishDate ? publishDate.getFullYear() + '年' : '未知');
-            metaElements.eq(2).text(albumDetail.tracks && albumDetail.tracks.length > 0 ?
-                `${albumDetail.tracks.length}首曲目` : '10首曲目');
-        }
+        // 更新元信息 - 新结构
+        const publishDate = albumDetail.publishDate ? new Date(albumDetail.publishDate) : null;
+        $('.meta-item').eq(0).html(`<i class="far fa-calendar"></i> ${publishDate ? publishDate.getFullYear() + '年' : '未知'}`);
+        $('.meta-item').eq(1).html(`<i class="fas fa-music"></i> ${albumDetail.tracks && albumDetail.tracks.length > 0 ? albumDetail.tracks.length + '首曲目' : '未知'}`);
+        $('.meta-item').eq(2).html(`<i class="fas fa-headphones"></i> <span class="access-count">${albumDetail.accessCount || 0}</span> 次播放`);
 
         // 更新描述
         const descriptionElement = $('.album-description');
@@ -49,17 +120,14 @@ async function updateAlbumModal(albumId) {
             descriptionElement.text(albumDetail.description || '暂无专辑描述');
         }
 
-        // 更新专辑封面 - 使用本地缓存和缩略图优化
+        // 更新专辑封面
         const albumArtElement = $('.album-art');
         if (albumArtElement.length > 0) {
-            // 设置专辑ID属性，供播放按钮使用
             albumArtElement.attr('data-album-id', albumId);
 
             if (albumDetail.cloudMusicPicUrl) {
-                // 使用缓存机制加载图片
                 loadImageWithCache(albumArtElement[0], albumDetail.cloudMusicPicUrl, 300, 300);
             } else {
-                // 如果没有封面图片，显示默认图标
                 if (albumArtElement.find('.fallback-content').length === 0) {
                     albumArtElement.html('<div class="fallback-content">🎵</div>');
                 }
@@ -72,13 +140,10 @@ async function updateAlbumModal(albumId) {
             let tracksHtml = '';
 
             if (albumDetail.tracks && albumDetail.tracks.length > 0) {
-                // 使用真实的曲目列表
                 $.each(albumDetail.tracks, (index, track) => {
                     const trackNumber = (index + 1).toString().padStart(2, '0');
                     const duration = track.duration || '0:00';
                     const trackTitle = track.name || `曲目 ${index + 1}`;
-
-                    // 检查是否有音乐URL，如果没有则显示无法播放的提示
                     const hasMusicUrl = track.cloudMusicId;
 
                     if (hasMusicUrl) {
@@ -102,7 +167,6 @@ async function updateAlbumModal(albumId) {
                     }
                 });
             } else {
-                // 如果没有曲目数据，显示模拟数据
                 const trackCount = 10;
                 const title = albumDetail.title || '未知专辑';
                 for (let i = 1; i <= trackCount; i++) {
@@ -120,40 +184,44 @@ async function updateAlbumModal(albumId) {
             tracksContainer.html(tracksHtml);
         }
 
-        // 更新错误报告按钮的albumId属性
+        // 更新错误报告按钮
         const errorButton = $('.report-error-btn');
         if (errorButton.length > 0) {
             errorButton.data('album-id', albumId);
-            // 重置按钮状态
             errorButton.prop('disabled', false);
-            errorButton.html('<i class="fas fa-flag"></i> 报告错误');
+            errorButton.html('<i class="fas fa-flag"></i>');
             errorButton.removeClass('loading', 'success', 'error');
         }
 
-        // 隐藏加载状态
+        // 更新播放全部按钮
+        const playAllBtn = $('.play-all-btn');
+        if (playAllBtn.length > 0) {
+            playAllBtn.off('click').on('click', function() {
+                const albumId = $('.album-art').attr('data-album-id');
+                if (albumId) {
+                    const playerUrl = `player.html?album=${albumId}`;
+                    window.open(playerUrl, '_blank');
+                }
+            });
+        }
+
         hideLoadingState();
 
-        // 重新绑定播放按钮事件
         $('.track-play-btn').off('click').on('click', function (e) {
-            e.stopPropagation(); // 阻止事件冒泡
+            e.stopPropagation();
 
-            // 如果按钮被禁用，不执行任何操作
             if ($(this).prop('disabled')) {
                 return;
             }
 
             const icon = $(this).find('i');
             if (icon.hasClass('fa-play')) {
-                // 打开全屏播放器
                 const track = $(this).closest('.track');
                 if (track.length > 0) {
-                    const trackIndex = track.siblings().addBack().index(track);
                     const albumArt = $('.album-art');
                     const albumId = albumArt.attr('data-album-id');
 
-                    // 打开全屏播放器页面
                     if (albumId) {
-                        // 构建全屏播放器URL
                         const playerUrl = `player.html?album=${albumId}`;
                         window.open(playerUrl, '_blank');
                     }
@@ -166,16 +234,11 @@ async function updateAlbumModal(albumId) {
 
     } catch (error) {
         console.error('获取专辑详情失败:', error);
-
-        // 隐藏加载状态
         hideLoadingState();
-
-        // 显示错误状态
         showErrorState('加载专辑详情失败，请稍后重试');
     }
 }
 
-// 显示加载状态
 function showLoadingState() {
     const albumTitle = $('.album-title');
     const albumArtElement = $('.album-art');
@@ -199,73 +262,182 @@ function showLoadingState() {
     }
 }
 
-// 隐藏加载状态
 function hideLoadingState() {
-    // 这个函数会由数据更新时自动处理
+    // 由数据更新时自动处理
 }
 
-// 显示错误状态
 function showErrorState(message) {
-    // 关闭模态框（如果需要）
     const modal = $('#albumModal');
     if (modal.length > 0) {
         modal.css('display', 'none');
     }
-
-    // 显示错误消息
     alert(message);
 }
 
-// 点击模态框外部关闭
-$(window).on('click', function (event) {
-    const modal = $('#albumModal');
-    if (event.target === modal[0]) {
-        modal.css('display', 'none');
+// ==================== 搜索建议功能 ====================
+
+// 渲染搜索建议
+function renderSuggestions(items) {
+    const $list = $('#suggestionsList');
+    
+    if (items.length === 0) {
+        $list.html('');
+        return;
     }
-});
+    
+    let html = '';
+    items.forEach((item, index) => {
+        html += `
+            <div class="suggestion-item" data-index="${index}" data-title="${item.title}">
+                <div class="suggestion-icon"><i class="fas fa-music"></i></div>
+                <div class="suggestion-content">
+                    <div class="suggestion-title">${item.title}</div>
+                    <div class="suggestion-artist">${item.artist || '未知艺术家'}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    $list.html(html);
+    $('#searchSuggestions').show();
+    highlightedIndex = -1;
+    suggestionsData = items;
+}
 
-// 页面加载完成后初始化音乐数据
-$(function () {
-    // 初始化时加载所有音乐数据
-    searchMusic('');
-});
-
-// 搜索功能
-$('.search-button').on('click', function () {
-    const searchTerm = $('.search-input').val();
-    if (searchTerm.trim() !== '') {
-        searchMusic(searchTerm);
+// 渲染搜索历史
+function renderSearchHistory() {
+    const history = searchHistory.get();
+    const $list = $('#suggestionsList');
+    
+    if (history.length === 0) {
+        $list.html('');
+        return;
     }
-});
+    
+    let html = '<div class="suggestions-header"><span>搜索历史</span></div>';
+    history.forEach((keyword, index) => {
+        html += `
+            <div class="suggestion-item history-item" data-index="${index}" data-keyword="${keyword}">
+                <div class="suggestion-icon"><i class="fas fa-history"></i></div>
+                <div class="suggestion-content">
+                    <div class="suggestion-title">${keyword}</div>
+                </div>
+                <button class="history-delete" data-keyword="${keyword}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    $list.html(html);
+    $('#searchSuggestions').show();
+    highlightedIndex = -1;
+    suggestionsData = [];
+}
 
-// 音乐搜索函数
-function searchMusic(keyword, page = 1) {
-    // 显示加载状态
-    const musicGrid = $('.music-grid');
-    musicGrid.html('<div class="loading">搜索中...</div>');
+// 隐藏搜索建议
+function hideSuggestions() {
+    $('#searchSuggestions').hide();
+    highlightedIndex = -1;
+}
 
-    // 构建查询参数
+// 高亮建议项
+function highlightSuggestion(index) {
+    const $items = $('.suggestion-item');
+    $items.removeClass('highlighted');
+    
+    if (index >= 0 && index < $items.length) {
+        $items.eq(index).addClass('highlighted');
+        highlightedIndex = index;
+    }
+}
+
+// 获取搜索建议
+const fetchSuggestions = debounce(function(keyword) {
+    if (!keyword || keyword.trim().length < 1) {
+        hideSuggestions();
+        return;
+    }
+    
+    $.ajax({
+        url: `api/music/search?keyword=${encodeURIComponent(keyword)}&pageNumber=1&pageSize=5&orderBy=publishDate`,
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            if (data.records && data.records.length > 0) {
+                const suggestions = data.records.map(item => ({
+                    title: item.title || '未知专辑',
+                    artist: item.artist || '未知艺术家'
+                }));
+                renderSuggestions(suggestions);
+            } else {
+                hideSuggestions();
+            }
+        },
+        error: function() {
+            hideSuggestions();
+        }
+    });
+}, 300);
+
+// ==================== 搜索功能 ====================
+
+function searchMusic(keyword, page = 1, orderBy = currentOrderBy, tag = currentTag) {
+    currentKeyword = keyword;
+    currentPage = page;
+    currentOrderBy = orderBy;
+    currentTag = tag;
+    
+    // 保存搜索历史
+    if (keyword && keyword.trim()) {
+        searchHistory.save(keyword.trim());
+    }
+    
+    // 显示骨架屏
+    renderSkeletonScreen();
+    
     const params = new URLSearchParams();
     params.append('keyword', keyword);
     params.append('pageNumber', page.toString());
     params.append('pageSize', '16');
-
-    // 发送请求到后端API
+    params.append('orderBy', orderBy);
+    if (tag) {
+        params.append('tag', tag);
+    }
+    
     $.ajax({
         url: `api/music/search?${params.toString()}`,
         method: 'GET',
         dataType: 'json',
-        success: function (data) {
-            // 渲染搜索结果
+        success: function(data) {
             renderSearchResults(data);
-            // 渲染分页控件
             renderPagination(data, keyword);
         },
-        error: function (xhr, status, error) {
+        error: function(xhr, status, error) {
             console.error('搜索出错:', error);
-            musicGrid.html('<div class="error">搜索出错，请稍后重试</div>');
+            $('.music-grid').html('<div class="error">搜索出错，请稍后重试</div>');
         }
     });
+}
+
+// 渲染骨架屏
+function renderSkeletonScreen() {
+    const musicGrid = $('.music-grid');
+    let html = '';
+    
+    for (let i = 0; i < 16; i++) {
+        html += `
+            <div class="music-card skeleton-card">
+                <div class="skeleton-cover"></div>
+                <div class="card-content">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-stats"></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    musicGrid.html(html);
 }
 
 // 渲染搜索结果
@@ -301,126 +473,306 @@ function renderSearchResults(data) {
 
     musicGrid.html(html);
 
-    // 重新绑定播放按钮事件
+    // 绑定播放按钮事件
     $('.play-button').off('click').on('click', function (e) {
-        e.stopPropagation(); // 阻止事件冒泡，避免触发卡片点击事件
+        e.stopPropagation();
 
-        const icon = $(this).find('i');
-        if (icon.hasClass('fa-play')) {
-            // 打开全屏播放器并播放专辑第一首音乐
-            const card = $(this).closest('.music-card');
-            if (card.length > 0) {
-                const albumId = card.data('album-id');
-                if (albumId) {
-                    // 打开全屏播放器页面
-                    const playerUrl = `player.html?album=${albumId}`;
-                    window.open(playerUrl, '_blank');
-                }
+        const card = $(this).closest('.music-card');
+        if (card.length > 0) {
+            const albumId = card.data('album-id');
+            if (albumId) {
+                const playerUrl = `player.html?album=${albumId}`;
+                window.open(playerUrl, '_blank');
             }
-        } else {
-            icon.removeClass('fa-pause').addClass('fa-play');
-            pauseMusic();
         }
     });
 
-    // 为音乐卡片添加点击事件，打开模态框
+    // 绑定卡片点击事件
     $('.music-card').off('click').on('click', function (e) {
-        // 如果点击的是播放按钮，则不打开模态框
         if ($(e.target).closest('.play-button').length > 0) {
             return;
         }
 
-        // 获取专辑信息
         const albumId = $(this).data('album-id');
 
         if (albumId) {
-            // 更新模态框内容
             updateAlbumModal(albumId);
-
-            // 打开模态框
             openAlbumModal();
-        } else {
-            console.error('未找到专辑ID');
         }
     });
 
-    // 触发懒加载
     triggerLazyLoadAfterSearch();
 }
 
-// 渲染分页控件
+// ==================== 分页功能 ====================
+
 function renderPagination(data, keyword) {
-    const paginationContainer = $('.pagination');
-    if (paginationContainer.length === 0) return;
+    totalPages = data.pages || 1;
+    totalRecords = data.total || 0;
+    currentPage = data.current || 1;
+    
+    // 更新分页信息
+    $('#paginationInfo').text(`共 ${totalRecords} 条，第 ${currentPage} 页 / 共 ${totalPages} 页`);
+    
+    // 更新跳转输入框
+    $('#jumpInput').attr('max', totalPages).val(currentPage);
+    
+    // 渲染分页按钮
+    renderPaginationButtons(currentPage, totalPages, keyword);
+}
 
-    let paginationHtml = '';
-
+function renderPaginationButtons(current, pages, keyword) {
+    const $controls = $('#paginationControls');
+    let html = '';
+    
     // 上一页按钮
-    if (data.current > 1) {
-        paginationHtml += `<button class="page-btn" data-page="${data.current - 1}" data-keyword="${keyword}">‹</button>`;
+    if (current > 1) {
+        html += `<button class="page-btn" data-page="${current - 1}"><i class="fas fa-chevron-left"></i></button>`;
+    } else {
+        html += `<button class="page-btn" disabled><i class="fas fa-chevron-left"></i></button>`;
     }
-
-    // 页码按钮
-    const startPage = Math.max(1, data.current - 2);
-    const endPage = Math.min(data.pages, data.current + 2);
-
-    for (let i = startPage; i <= endPage; i++) {
-        if (i === data.current) {
-            paginationHtml += `<button class="page-btn active" data-page="${i}" data-keyword="${keyword}">${i}</button>`;
-        } else {
-            paginationHtml += `<button class="page-btn" data-page="${i}" data-keyword="${keyword}">${i}</button>`;
+    
+    // 页码按钮（智能省略）
+    const maxVisible = 5;
+    let startPage = Math.max(1, current - Math.floor(maxVisible / 2));
+    let endPage = Math.min(pages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage < maxVisible - 1) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    // 第一页
+    if (startPage > 1) {
+        html += `<button class="page-btn" data-page="1">1</button>`;
+        if (startPage > 2) {
+            html += `<span class="page-ellipsis">...</span>`;
         }
     }
-
-    // 下一页按钮
-    if (data.current < data.pages) {
-        paginationHtml += `<button class="page-btn" data-page="${data.current + 1}" data-keyword="${keyword}">›</button>`;
+    
+    // 中间页码
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === current) {
+            html += `<button class="page-btn active" data-page="${i}">${i}</button>`;
+        } else {
+            html += `<button class="page-btn" data-page="${i}">${i}</button>`;
+        }
     }
-
-    paginationContainer.html(paginationHtml);
-
-    // 重新绑定分页按钮事件
-    $('.page-btn').off('click').on('click', function () {
+    
+    // 最后一页
+    if (endPage < pages) {
+        if (endPage < pages - 1) {
+            html += `<span class="page-ellipsis">...</span>`;
+        }
+        html += `<button class="page-btn" data-page="${pages}">${pages}</button>`;
+    }
+    
+    // 下一页按钮
+    if (current < pages) {
+        html += `<button class="page-btn" data-page="${current + 1}"><i class="fas fa-chevron-right"></i></button>`;
+    } else {
+        html += `<button class="page-btn" disabled><i class="fas fa-chevron-right"></i></button>`;
+    }
+    
+    $controls.html(html);
+    
+    // 绑定分页按钮事件
+    $('.page-btn[data-page]').off('click').on('click', function() {
+        if ($(this).prop('disabled')) return;
         const page = $(this).data('page');
-        const keyword = $(this).data('keyword');
-        searchMusic(keyword, page);
+        searchMusic(currentKeyword, page, currentOrderBy, currentTag);
     });
 }
 
-// 回车搜索
-$('.search-input').on('keypress', function (e) {
-    if (e.key === 'Enter') {
-        $('.search-button').click();
-    }
-});
+// ==================== 动态标签功能 ====================
 
-// 标签切换
-$('.tag').on('click', function () {
-    $('.tag').removeClass('active');
-    $(this).addClass('active');
-});
+function loadPopularTags() {
+    $.ajax({
+        url: 'api/music/tags?limit=10',
+        method: 'GET',
+        dataType: 'json',
+        success: function(tags) {
+            renderTags(tags);
+        },
+        error: function() {
+            // 降级：只显示"全部"
+            renderTags([]);
+        }
+    });
+}
 
-// 排序按钮切换
-$('.sort-btn').on('click', function () {
-    $('.sort-btn').removeClass('active');
-    $(this).addClass('active');
-});
-
-// 分页按钮切换
-$('.page-btn').on('click', function () {
-    if (!$(this).text().includes('...')) {
-        $('.page-btn').removeClass('active');
+function renderTags(tags) {
+    const $filterTags = $('#filterTags');
+    
+    // 始终保留"全部"选项
+    let html = '<div class="tag active" data-tag="">全部</div>';
+    
+    // 添加后端返回的标签
+    tags.forEach(tag => {
+        html += `<div class="tag" data-tag="${tag.tag}">${tag.tag}</div>`;
+    });
+    
+    $filterTags.html(html);
+    
+    // 绑定标签点击事件
+    $('.tag').off('click').on('click', function() {
+        $('.tag').removeClass('active');
         $(this).addClass('active');
+        const tag = $(this).data('tag') || '';
+        searchMusic(currentKeyword, 1, currentOrderBy, tag);
+    });
+}
+
+// ==================== 初始化和事件绑定 ====================
+
+$(window).on('click', function (event) {
+    const modal = $('#albumModal');
+    if (event.target === modal[0]) {
+        modal.css('display', 'none');
+    }
+    
+    // 点击外部关闭搜索建议
+    if (!$(event.target).closest('.search-box-wrapper').length) {
+        hideSuggestions();
     }
 });
 
-// 每次搜索结果更新后触发懒加载
+$(function () {
+    // 初始化：加载标签和音乐数据
+    loadPopularTags();
+    searchMusic('', 1, 'publishDate', '');
+    
+    // 设置排序默认值
+    $('#sortSelect').val('publishDate');
+    
+    // 从 URL 读取状态
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('keyword')) {
+        currentKeyword = urlParams.get('keyword');
+        $('.search-input').val(currentKeyword);
+    }
+    if (urlParams.has('orderBy')) {
+        currentOrderBy = urlParams.get('orderBy');
+        $('#sortSelect').val(currentOrderBy);
+    }
+    if (urlParams.has('page')) {
+        currentPage = parseInt(urlParams.get('page')) || 1;
+    }
+});
+
+// 搜索按钮点击
+$('.search-button').on('click', function () {
+    const searchTerm = $('.search-input').val();
+    hideSuggestions();
+    searchMusic(searchTerm, 1, currentOrderBy, currentTag);
+});
+
+// 搜索输入框事件
+$('.search-input').on('input', function() {
+    const keyword = $(this).val().trim();
+    
+    if (keyword.length > 0) {
+        fetchSuggestions(keyword);
+    } else {
+        renderSearchHistory();
+    }
+});
+
+// 搜索输入框聚焦
+$('.search-input').on('focus', function() {
+    const keyword = $(this).val().trim();
+    
+    if (keyword.length === 0) {
+        renderSearchHistory();
+    }
+});
+
+// 键盘导航
+$('.search-input').on('keydown', function(e) {
+    const $items = $('.suggestion-item');
+    const itemCount = $items.length;
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlightSuggestion((highlightedIndex + 1) % itemCount);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlightSuggestion(highlightedIndex <= 0 ? itemCount - 1 : highlightedIndex - 1);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        
+        if (highlightedIndex >= 0 && highlightedIndex < itemCount) {
+            const $selected = $items.eq(highlightedIndex);
+            
+            if ($selected.hasClass('history-item')) {
+                const keyword = $selected.data('keyword');
+                $('.search-input').val(keyword);
+                hideSuggestions();
+                searchMusic(keyword, 1, currentOrderBy, currentTag);
+            } else {
+                const title = $selected.data('title');
+                $('.search-input').val(title);
+                hideSuggestions();
+                searchMusic(title, 1, currentOrderBy, currentTag);
+            }
+        } else {
+            hideSuggestions();
+            searchMusic($(this).val(), 1, currentOrderBy, currentTag);
+        }
+    } else if (e.key === 'Escape') {
+        hideSuggestions();
+    }
+});
+
+// 搜索建议点击
+$(document).on('click', '.suggestion-item:not(.history-item)', function() {
+    const title = $(this).data('title');
+    $('.search-input').val(title);
+    hideSuggestions();
+    searchMusic(title, 1, currentOrderBy, currentTag);
+});
+
+// 搜索历史点击
+$(document).on('click', '.history-item', function(e) {
+    if ($(e.target).closest('.history-delete').length) return;
+    
+    const keyword = $(this).data('keyword');
+    $('.search-input').val(keyword);
+    hideSuggestions();
+    searchMusic(keyword, 1, currentOrderBy, currentTag);
+});
+
+// 删除历史项
+$(document).on('click', '.history-delete', function(e) {
+    e.stopPropagation();
+    const keyword = $(this).data('keyword');
+    searchHistory.remove(keyword);
+    renderSearchHistory();
+});
+
+// 排序选择
+$('#sortSelect').on('change', function() {
+    currentOrderBy = $(this).val();
+    searchMusic(currentKeyword, 1, currentOrderBy, currentTag);
+});
+
+// 分页跳转
+$('#jumpBtn').on('click', function() {
+    const page = parseInt($('#jumpInput').val()) || 1;
+    const validPage = Math.max(1, Math.min(page, totalPages));
+    searchMusic(currentKeyword, validPage, currentOrderBy, currentTag);
+});
+
+$('#jumpInput').on('keypress', function(e) {
+    if (e.key === 'Enter') {
+        $('#jumpBtn').click();
+    }
+});
+
+// 触发懒加载
 function triggerLazyLoadAfterSearch() {
     setTimeout(() => {
         if (typeof lazyLoadAlbumCovers === 'function') {
             lazyLoadAlbumCovers();
-        } else {
-            console.warn('lazyLoadAlbumCovers function is not available');
         }
     }, 100);
 }
@@ -441,20 +793,17 @@ async function reportAlbumError() {
         return;
     }
 
-    // 显示确认对话框
     const isConfirmed = confirm('确定要报告这个专辑的错误吗？我们会尽快处理。');
 
     if (!isConfirmed) {
-        return; // 用户取消操作
+        return;
     }
 
     try {
-        // 禁用按钮并显示加载状态
         errorButton.prop('disabled', true);
         errorButton.html('<i class="fas fa-spinner fa-spin"></i> 提交中...');
         errorButton.addClass('loading');
 
-        // 发送POST请求到后端API
         await $.ajax({
             url: `api/music/report-error?albumId=${albumId}`,
             method: 'POST',
@@ -464,27 +813,22 @@ async function reportAlbumError() {
             }
         });
 
-        // 显示成功状态
         errorButton.html('<i class="fas fa-check"></i> 已报告');
         errorButton.removeClass('loading');
         errorButton.addClass('success');
 
-        // 显示成功消息
         alert('错误报告已提交，感谢您的反馈！我们会尽快处理。');
 
     } catch (error) {
         console.error('报告错误失败:', error);
 
-        // 显示错误状态
         errorButton.html('<i class="fas fa-exclamation-triangle"></i> 报告失败');
         errorButton.removeClass('loading');
         errorButton.addClass('error');
 
-        // 显示错误消息
         alert('提交失败，请稍后重试。如果问题持续存在，请联系管理员。');
 
     } finally {
-        // 3秒后恢复按钮状态
         setTimeout(() => {
             if (errorButton.length > 0) {
                 errorButton.prop('disabled', false);

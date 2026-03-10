@@ -43,13 +43,47 @@ public class HomeMusicService {
     private final ArticleTagMapper articleTagMapper;
     private final ArtistService artistService;
 
-    public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize) {
+    public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize, String orderBy, String tag) {
         LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.isNotNull(ArticleBean::getCloudMusicId);
         queryWrapper.eq(ArticleBean::getPublishFlg, "1")
                 .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper.like(ArticleBean::getTitle, keyword)
                         .or().like(ArticleBean::getDescription, keyword));
-        queryWrapper.orderByDesc(ArticleBean::getId);
+
+        // 根据标签筛选
+        if (StringUtils.isNotBlank(tag)) {
+            // 通过标签ID筛选专辑
+            LambdaQueryWrapper<ArticleTagBean> tagQueryWrapper = new LambdaQueryWrapper<>();
+            LambdaQueryWrapper<TagBean> tagNameQuery = new LambdaQueryWrapper<>();
+            tagNameQuery.eq(TagBean::getTag, tag);
+            TagBean tagBean = tagMapper.selectOne(tagNameQuery);
+            if (tagBean != null) {
+                tagQueryWrapper.eq(ArticleTagBean::getTagId, tagBean.getId());
+                tagQueryWrapper.eq(ArticleTagBean::getType, M_ARTICLE);
+                List<ArticleTagBean> articleTags = articleTagMapper.selectList(tagQueryWrapper);
+                List<Long> articleIds = articleTags.stream()
+                        .map(ArticleTagBean::getArticleId)
+                        .toList();
+                if (!articleIds.isEmpty()) {
+                    queryWrapper.in(ArticleBean::getId, articleIds);
+                } else {
+                    // 如果没有匹配的专辑，返回空结果
+                    queryWrapper.eq(ArticleBean::getId, -1L);
+                }
+            } else {
+                // 标签不存在，返回空结果
+                queryWrapper.eq(ArticleBean::getId, -1L);
+            }
+        }
+
+        // 根据排序字段设置排序规则
+        switch (orderBy) {
+            case "accessCount" -> queryWrapper.orderByDesc(ArticleBean::getAccessCount);
+            case "title" -> queryWrapper.orderByAsc(ArticleBean::getTitle);
+            case "publishDate" -> queryWrapper.orderByDesc(ArticleBean::getPublishDate);
+            default -> queryWrapper.orderByDesc(ArticleBean::getId);
+        }
+
         return this.articleMapper.selectPage(new PageDTO<>(pageNumber, pageSize), queryWrapper);
     }
 
@@ -71,6 +105,12 @@ public class HomeMusicService {
         int likeCount = getLikeCount(albumId);
         int commentCount = getCommentCount(albumId);
 
+        // 获取艺术家名称：优先从 article 获取，否则从标签关联表获取
+        String artist = article.getArtist();
+        if (artist == null || artist.isBlank()) {
+            artist = this.articleTagMapper.findArtistNameByArticleId(albumId);
+        }
+
         // 构建专辑详情对象
         AlbumDetailBean albumDetail = new AlbumDetailBean();
         albumDetail.setId(article.getId());
@@ -83,7 +123,7 @@ public class HomeMusicService {
         albumDetail.setCloudMusicId(article.getCloudMusicId());
         albumDetail.setCloudMusicPicUrl(article.getCloudMusicPicUrl());
         albumDetail.setTracks(tracks);
-        albumDetail.setArtist(article.getArtist());
+        albumDetail.setArtist(artist);
         return albumDetail;
     }
 
@@ -667,5 +707,16 @@ public class HomeMusicService {
 
         log.info("Total unique albums in playlist {}: {}", playlistId, albumIds.size());
         return albumIds.stream().distinct().toList();
+    }
+
+    /**
+     * 获取热门标签列表
+     * 返回被最多专辑使用的标签（按使用次数降序）
+     *
+     * @param limit 返回数量限制
+     * @return 热门标签列表
+     */
+    public List<Map<String, Object>> getPopularTags(int limit) {
+        return articleTagMapper.getPopularTags(limit);
     }
 }

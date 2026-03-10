@@ -65,18 +65,28 @@
             <!-- 中央内容区域 -->
             <main class="content-area">
                 <div class="search-section">
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="搜索音乐、艺术家、专辑...">
-                        <button class="search-button"><i class="fas fa-search"></i></button>
+                    <div class="search-box-wrapper">
+                        <div class="search-box">
+                            <input type="text" class="search-input" placeholder="搜索音乐、艺术家、专辑..." autocomplete="off">
+                            <button class="search-button"><i class="fas fa-search"></i></button>
+                        </div>
+                        <!-- 搜索建议面板 -->
+                        <div class="search-suggestions" id="searchSuggestions" style="display: none;">
+                            <div class="suggestions-list" id="suggestionsList"></div>
+                        </div>
                     </div>
                     
-                    <div class="filter-tags">
-                        <div class="tag active">全部</div>
-                        <div class="tag">最新</div>
-                        <div class="tag">热门</div>
-                        <div class="tag">摇滚</div>
-                        <div class="tag">电子</div>
-                        <div class="tag">古典</div>
+                    <div class="filter-sort-row">
+                        <div class="filter-tags" id="filterTags">
+                            <div class="tag active" data-tag="">全部</div>
+                        </div>
+                        <div class="sort-wrapper">
+                            <select class="sort-select" id="sortSelect">
+                                <option value="publishDate">最新发布</option>
+                                <option value="accessCount">最多播放</option>
+                                <option value="title">标题排序</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 
@@ -87,13 +97,18 @@
                 <div class="music-grid">
                 </div>
                 
-                <div class="pagination">
-                    <button class="page-btn active">1</button>
-                    <button class="page-btn">2</button>
-                    <button class="page-btn">3</button>
-                    <button class="page-btn">...</button>
-                    <button class="page-btn">10</button>
-                    <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                <div class="pagination" id="pagination">
+                    <div class="pagination-info">
+                        <span id="paginationInfo">第 1 页 / 共 1 页</span>
+                    </div>
+                    <div class="pagination-controls" id="paginationControls">
+                    </div>
+                    <div class="pagination-jump">
+                        <span>跳转到</span>
+                        <input type="number" class="jump-input" id="jumpInput" min="1" value="1">
+                        <span>页</span>
+                        <button class="jump-btn" id="jumpBtn">GO</button>
+                    </div>
                 </div>
             </main>
         </div>
@@ -102,26 +117,28 @@
         <div class="modal" id="albumModal">
             <button class="close-modal" onclick="closeAlbumModal()"><i class="fas fa-times"></i></button>
             <div class="modal-content">
-                <div class="album-art">🎵</div>
-                <div class="album-info">
-                    <h2 class="album-title">东方红魔乡</h2>
-                    <p class="album-artist">上海爱丽丝幻乐团</p>
-                    <div class="album-meta">
-                        <span>2002年</span>
-                        <span>•</span>
-                        <span>15首曲目</span>
-                        <span>•</span>
-                        <span>专辑</span>
+                <div class="modal-header">
+                    <div class="album-art">🎵</div>
+                    <div class="album-header-info">
+                        <h2 class="album-title">东方红魔乡</h2>
+                        <p class="album-artist">上海爱丽丝幻乐团</p>
+                        <div class="album-meta">
+                            <span class="meta-item"><i class="far fa-calendar"></i> 2002年</span>
+                            <span class="meta-item"><i class="fas fa-music"></i> 15首曲目</span>
+                            <span class="meta-item"><i class="fas fa-headphones"></i> <span class="access-count">0</span> 次播放</span>
+                        </div>
+                        <div class="album-actions">
+                            <button class="play-all-btn"><i class="fas fa-play"></i> 播放全部</button>
+                            <button class="report-error-btn" onclick="reportAlbumError()" data-album-id="">
+                                <i class="fas fa-flag"></i>
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div class="modal-body">
                     <p class="album-description">《东方红魔乡 ～ the Embodiment of Scarlet Devil.》是东方Project系列的第六个作品，也是第一个发布在Windows平台上的作品。该作品奠定了东方Project在同人音乐界的地位。</p>
-
-                    <button class="report-error-btn" onclick="reportAlbumError()" data-album-id="">
-                        <i class="fas fa-flag"></i>
-                        报告错误
-                    </button>
-
                     <div class="track-list">
-                        <h3>曲目列表</h3>
+                        <h3><i class="fas fa-list"></i> 曲目列表</h3>
                         <ul class="tracks">
                             <li class="track">
                                 <button class="track-play-btn"><i class="fas fa-play"></i></button>

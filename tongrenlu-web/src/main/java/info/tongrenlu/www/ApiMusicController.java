@@ -34,8 +34,10 @@ public class ApiMusicController {
     public Page<ArticleBean> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false, defaultValue = "1") int pageNumber,
-            @RequestParam(required = false, defaultValue = "30") int pageSize) {
-        return this.musicService.searchMusic(keyword, pageNumber, pageSize);
+            @RequestParam(required = false, defaultValue = "30") int pageSize,
+            @RequestParam(required = false, defaultValue = "publishDate") String orderBy,
+            @RequestParam(required = false) String tag) {
+        return this.musicService.searchMusic(keyword, pageNumber, pageSize, orderBy, tag);
     }
 
     @GetMapping("detail")
@@ -125,6 +127,13 @@ public class ApiMusicController {
             @RequestParam(defaultValue = "15") int count) {
         List<ArticleBean> randomAlbums = this.musicService.getRandomAlbums(count);
         return ResponseEntity.ok(randomAlbums);
+    }
+
+    @GetMapping("/tags")
+    public ResponseEntity<List<Map<String, Object>>> getPopularTags(
+            @RequestParam(defaultValue = "10") int limit) {
+        List<Map<String, Object>> tags = this.musicService.getPopularTags(limit);
+        return ResponseEntity.ok(tags);
     }
 
     private CloudMusicDetailResponse getMusicDetailResponseKXZ(TrackBean track) {
