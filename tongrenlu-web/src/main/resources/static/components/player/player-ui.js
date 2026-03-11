@@ -5,6 +5,11 @@
 
 // 显示播放覆盖层
 function showPlayOverlay() {
+    const $overlay = $('#playOverlay');
+    if ($overlay.length > 0) {
+        $overlay.addClass('show');
+        console.log('播放覆盖层已显示');
+    }
 }
 
 // 隐藏播放覆盖层

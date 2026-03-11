@@ -27,6 +27,13 @@ function startFloatingAnimation() {
 
 // 检查浏览器自动播放策略
 function checkAutoplayPolicy() {
+    // 如果没有音频源，直接显示覆盖层等待用户交互
+    if (!window.audioPlayer.src) {
+        console.log('音频源为空，显示覆盖层等待用户交互');
+        showPlayOverlay();
+        return;
+    }
+
     const playPromise = window.audioPlayer.play();
 
     if (playPromise !== undefined) {

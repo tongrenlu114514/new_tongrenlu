@@ -47,11 +47,8 @@ function loadMusicData() {
                 updateAlbumInfo(albumData);
                 generatePlaylist(albumData.tracks, $('#playlist'));
 
-                // 显示播放覆盖层
+                // 显示播放覆盖层，等待用户点击开始播放
                 showPlayOverlay();
-
-                // 播放第一首
-                playFirstTrack();
             },
             error: function (error) {
                 console.error('加载专辑数据失败:', error);
@@ -66,11 +63,8 @@ function loadMusicData() {
             updateAlbumInfo(albumData);
             generatePlaylist(albumData.tracks, $('#playlist'));
 
-            // 显示播放覆盖层
+            // 显示播放覆盖层，等待用户点击开始播放
             showPlayOverlay();
-
-            // 播放第一首
-            playFirstTrack();
         });
     }
 }

@@ -210,6 +210,16 @@ function setupUIEvents() {
     });
     console.log('歌词按钮事件已绑定');
 
+    // 覆盖层播放按钮
+    $('#overlayPlayBtn').click(function () {
+        console.log('点击覆盖层播放按钮');
+        hidePlayOverlay();
+        if (window.currentMusicData && window.currentMusicData.tracks && window.currentMusicData.tracks.length > 0) {
+            playTrack(window.currentTrackIndex || 0);
+        }
+    });
+    console.log('覆盖层播放按钮事件已绑定');
+
     console.log('UI事件监听设置完成');
 }
 

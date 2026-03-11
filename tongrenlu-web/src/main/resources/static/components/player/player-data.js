@@ -42,12 +42,8 @@ function loadRandomAlbum(apiEndpoint, callback) {
             if (callback) {
                 callback(albumData);
             } else {
-
-                // 显示播放覆盖层
+                // 显示播放覆盖层，等待用户点击开始播放
                 showPlayOverlay();
-
-                // 播放第一首
-                // playFirstTrack();
             }
         },
         error: function (error) {
@@ -79,11 +75,8 @@ function loadAlbumDetail(albumId, callback) {
                 callback(albumData);
             }
 
-            // 显示播放覆盖层
+            // 显示播放覆盖层，等待用户点击开始播放
             showPlayOverlay();
-
-            // 播放第一首
-            //playTrack(0);
         },
         error: function (error) {
             console.error('加载专辑数据失败:', error);

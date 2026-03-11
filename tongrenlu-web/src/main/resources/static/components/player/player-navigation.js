@@ -205,13 +205,12 @@ function loadNewRandomAlbum() {
         updateAlbumInfo(albumData);
         generatePlaylist(albumData.tracks, $('#playlist'));
 
-        // 显示播放覆盖层
+        // 显示播放覆盖层，等待用户点击开始播放
         showPlayOverlay();
 
         // 更新播放按钮状态
         updatePlayButton(false);
 
-        playFirstTrack();
         // 显示完成消息
         setTimeout(() => {
             showMessage(`已加载专辑: ${albumData.title}`, 3000);
