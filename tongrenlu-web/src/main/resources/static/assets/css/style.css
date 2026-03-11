@@ -1,14 +1,90 @@
 :root {
-    --primary-color: #302363;
-    --secondary-color: #df8888;
-    --accent-color: #00a6eb;
-    --download-color: #C51D1D;
-    --background-gradient-start: #120F33;
-    --background-gradient-end: #2A235A;
-    --text-primary: #333;
-    --text-secondary: #666;
-    --card-bg: #f0f0f0;
+    /* ========================================
+       黑白红经典配色方�?       ======================================== */
+    
+    /* 主色�?- 红色�?*/
+    --primary-color: #DC2626;
+    --primary-light: #EF4444;
+    --primary-lighter: #FCA5A5;
+    --primary-dark: #B91C1C;
+    --primary-darker: #7F1D1D;
+    
+    /* 次要�?- 深红色系 */
+    --secondary-color: #991B1B;
+    --secondary-light: #DC2626;
+    --secondary-lighter: #FECACA;
+    --secondary-dark: #7F1D1D;
+    
+    /* 强调�?- 黑色�?*/
+    --accent-color: #171717;
+    --accent-light: #404040;
+    --accent-lighter: #737373;
+    --accent-dark: #0A0A0A;
+    
+    /* 功能�?*/
+    --success-color: #16A34A;
+    --success-light: #22C55E;
+    --warning-color: #CA8A04;
+    --warning-light: #EAB308;
+    --download-color: #DC2626;
+    --download-light: #EF4444;
+    --error-color: #DC2626;
+    
+    /* 背景渐变 - 纯白到浅�?*/
+    --background-gradient-start: #FAFAFA;
+    --background-gradient-end: #F5F5F5;
+    --background-alt: #FFFFFF;
+    --background-muted: #E5E5E5;
+    
+    /* 文字颜色 - 黑灰�?*/
+    --text-primary: #171717;
+    --text-secondary: #525252;
+    --text-muted: #737373;
+    --text-light: #A3A3A3;
+    --text-on-primary: #FFFFFF;
+    --text-on-dark: #FAFAFA;
+    
+    /* 卡片和容�?- 纯白为主 */
+    --card-bg: #FFFFFF;
+    --card-bg-hover: #FAFAFA;
+    --card-bg-active: #F5F5F5;
+    --card-border: #E5E5E5;
+    --card-border-light: #F5F5F5;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --card-shadow-active: 0 2px 10px rgba(0, 0, 0, 0.1);
+    
+    /* 导航�?*/
+    --nav-bg: rgba(255, 255, 255, 0.95);
+    --nav-border: rgba(229, 229, 229, 0.8);
+    --nav-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    
+    /* 侧边�?*/
+    --sidebar-bg: #FAFAFA;
+    --sidebar-border: #E5E5E5;
+    
+    /* 玻璃态效�?*/
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-blur: 12px;
+    
+    /* 尺寸和圆�?*/
     --sidebar-width: 320px;
+    --border-radius: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    --border-radius-full: 9999px;
+    
+    /* 过渡动画 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s ease;
+    
+    /* 层级 */
+    --z-dropdown: 100;
+    --z-sticky: 500;
+    --z-modal: 1000;
+    --z-tooltip: 1500;
 }
 
 * {
@@ -19,17 +95,20 @@
 
 body {
     font-family: 'Noto Sans SC', sans-serif;
-    background: #fff;
-    color: #333;
+    background: var(--background-alt);
+    background-attachment: fixed;
+    color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3 {
     font-family: 'Noto Serif SC', serif;
 }
 
-/* 导航栏 */
+/* 导航�?*/
 nav {
     position: fixed;
     top: 0;
@@ -39,16 +118,24 @@ nav {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 3rem;
-    background: #fff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background: var(--nav-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--nav-shadow);
+    border-bottom: 1px solid var(--nav-border);
     z-index: 1000;
 }
 
 .logo {
     font-family: 'Noto Serif SC', serif;
     font-size: 2rem;
-    color: var(--primary-color);
+    background: var(--primary-color);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     text-decoration: none;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .nav-links {
@@ -57,29 +144,53 @@ nav {
 }
 
 .nav-links a {
-    color: #333;
+    color: var(--text-secondary);
     text-decoration: none;
-    transition: color 0.3s ease;
+    font-weight: 500;
+    transition: color var(--transition-fast);
+    position: relative;
+    padding: 0.25rem 0;
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color);
+    transition: width var(--transition-normal);
+    border-radius: 2px;
 }
 
 .nav-links a:hover {
-    color: var(--accent-color);
+    color: var(--primary-color);
+}
+
+.nav-links a:hover::after {
+    width: 100%;
 }
 
 .nav-links a.active {
-    color: var(--download-color);
-    font-weight: bold;
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
-/* 导航栏统计 */
+.nav-links a.active::after {
+    width: 100%;
+}
+
+/* 导航栏统�?*/
 .nav-stats {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: var(--primary-color);
     padding: 0.5rem 1rem;
-    border-radius: 20px;
+    border-radius: var(--border-radius-full);
     color: white;
+    box-shadow: 0 2px 10px rgba(220, 38, 38, 0.3);
 }
 
 .nav-stats__number {
@@ -99,7 +210,7 @@ nav {
     display: block;
 }
 
-/* 主内容区 - 音乐库样式 */
+/* 主内容区 - 音乐库样�?*/
 .music-content {
     display: none;
     margin-top: 80px;
@@ -120,12 +231,16 @@ nav {
     margin: 0 auto;
 }
 
-/* 搜索和筛选区域 */
+/* 搜索和筛选区�?*/
 .search-section {
     padding: 2rem 3rem;
-    background: #f0f0f0;
-    border-radius: 12px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-radius: var(--border-radius-lg);
     margin: 2rem;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
 }
 
 .search-box {
@@ -136,31 +251,34 @@ nav {
 .search-input {
     flex: 1;
     padding: 0.8rem 1rem;
-    border: none;
-    border-radius: 8px 0 0 8px;
-    background: #fff;
-    color: #333;
+    border: 2px solid var(--card-border);
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    background: var(--card-bg);
+    color: var(--text-primary);
     font-size: 1rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .search-input:focus {
     outline: none;
-    background: #fff;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
 .search-button {
-    background: var(--accent-color);
+    background: var(--primary-color);
     color: white;
     border: none;
     padding: 0 1.5rem;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
     cursor: pointer;
-    font-weight: bold;
-    transition: background 0.3s ease;
+    font-weight: 600;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .search-button:hover {
-    background: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
 .filter-tags {
@@ -170,27 +288,38 @@ nav {
 }
 
 .tag {
-    background: #e9e9e9;
+    background: var(--card-bg-active);
     padding: 0.4rem 0.8rem;
-    border-radius: 20px;
+    border-radius: var(--border-radius-full);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-fast);
+    color: var(--text-secondary);
+    border: 1px solid transparent;
 }
 
-.tag:hover, .tag.active {
-    background: var(--secondary-color);
+.tag:hover {
+    background: var(--primary-lighter);
+    color: var(--primary-dark);
+}
+
+.tag.active {
+    background: var(--primary-color);
     color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
 }
 
-/* 左侧筛选面板 */
+/* 左侧筛选面�?*/
 .sidebar {
     width: var(--sidebar-width);
     padding: 2rem;
-    background: #eee;
-    border-radius: 12px;
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
     margin: 2rem 0 2rem 2rem;
     height: fit-content;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
 }
 
 .filter-group {
@@ -200,7 +329,9 @@ nav {
 .filter-group h3 {
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 2px solid var(--primary-lighter);
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 .filter-options {
@@ -235,6 +366,7 @@ nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    color: var(--text-primary);
 }
 
 .sort-options {
@@ -248,13 +380,13 @@ nav {
     color: var(--text-secondary);
     cursor: pointer;
     padding: 0.5rem;
-    border-radius: 4px;
-    transition: all 0.3s ease;
+    border-radius: var(--border-radius);
+    transition: all var(--transition-fast);
 }
 
 .sort-btn:hover, .sort-btn.active {
-    color: var(--download-color);
-    background: rgba(255, 255, 255, 0.1);
+    color: var(--primary-color);
+    background: var(--primary-lighter);
 }
 
 /* 音乐卡片网格 */
@@ -285,41 +417,31 @@ nav {
 
 .music-card {
     background: var(--card-bg);
-    border-radius: 12px;
+    border-radius: var(--border-radius-lg);
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
 }
 
 .music-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    transform: translateY(-8px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--primary-lighter);
 }
 
 .album-cover {
-
     width: 100%;
-
     height: 200px;
-
     background-size: cover;
-
     background-position: center;
-
     background-repeat: no-repeat;
-
-    background-color: transparent; /* 改为透明背景，避免覆盖动态加载的图片 */
-
+    background-color: var(--card-bg-active);
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     position: relative;
-
-    overflow: hidden; /* 防止描述溢出 */
-
+    overflow: hidden;
 }
 
 
@@ -330,14 +452,14 @@ nav {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(220, 38, 38, 0.95);
     color: white;
     padding: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--transition-normal);
     z-index: 3;
     pointer-events: none;
 }
@@ -349,7 +471,7 @@ nav {
 .album-description-text {
     text-align: center;
     font-size: 0.9rem;
-    line-height: 1.4;
+    line-height: 1.5;
     max-height: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -360,42 +482,27 @@ nav {
 
 
 .album-cover::before {
-
     content: '';
-
     position: absolute;
-
     top: 0;
-
     left: 0;
-
     right: 0;
-
     bottom: 0;
-
-    background: rgba(0, 0, 0, 0.1);
-
+    background: transparent;
     z-index: 1;
-
 }
 
 
 .album-cover .fallback-content {
-
     position: relative;
-
     z-index: 2;
-
     font-size: 4rem;
-
-    color: white;
-
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-
+    color: var(--primary-lighter);
 }
 
 .card-content {
     padding: 1.5rem;
+    background: var(--card-bg);
 }
 
 .card-title {
@@ -404,6 +511,8 @@ nav {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 .card-artist {
@@ -415,7 +524,7 @@ nav {
 .card-stats {
     display: flex;
     justify-content: space-between;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     font-size: 0.8rem;
 }
 
@@ -430,44 +539,24 @@ nav {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     position: absolute;
     bottom: 10px;
     right: 10px;
     opacity: 0;
+    transform: scale(0.9);
+    box-shadow: 0 4px 12px rgba(23, 23, 23, 0.4);
 }
 
 .music-card:hover .play-button {
     opacity: 1;
+    transform: scale(1);
 }
 
 .play-button:hover {
     transform: scale(1.1);
-    background: var(--download-color);
-}
-
-/* 分页 */
-.pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 3rem;
-    gap: 0.5rem;
-}
-
-.page-btn {
-    background: #eee;
-    border: none;
-    color: #333;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.page-btn:hover, .page-btn.active {
-    background: var(--download-color);
-    color: white;
+    background: var(--secondary-color);
+    box-shadow: 0 6px 16px rgba(153, 27, 27, 0.5);
 }
 
 /* 报告错误按钮 */
@@ -505,30 +594,32 @@ nav {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(15, 23, 42, 0.6);
     z-index: 2000;
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .modal-content {
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    background: var(--card-bg);
     width: 90%;
     max-width: 800px;
     max-height: 90vh;
-    border-radius: 16px;
+    border-radius: var(--border-radius-xl);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--card-border);
 }
 
 .modal-header {
     display: flex;
     gap: 1.5rem;
     padding: 2rem;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #1a1540 100%);
+    background: var(--primary-dark);
     color: white;
 }
 
@@ -544,7 +635,7 @@ nav {
     align-items: center;
     justify-content: center;
     font-size: 4rem;
-    border-radius: 12px;
+    border-radius: var(--border-radius-lg);
     position: relative;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
@@ -556,15 +647,14 @@ nav {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius-lg);
 }
 
 .album-art .fallback-content {
     position: relative;
     z-index: 2;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .album-header-info {
@@ -583,7 +673,7 @@ nav {
 }
 
 .album-artist {
-    color: var(--secondary-color);
+    color: #FECACA;
     font-size: 1.1rem;
     margin-bottom: 1rem;
     font-weight: 500;
@@ -601,7 +691,7 @@ nav {
     align-items: center;
     gap: 0.4rem;
     font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .meta-item i {
@@ -624,18 +714,20 @@ nav {
     background: var(--secondary-color);
     color: white;
     border: none;
-    border-radius: 20px;
+    border-radius: var(--border-radius-full);
     cursor: pointer;
     font-size: 0.75rem;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     height: 40px;
     line-height: 40px;
     box-sizing: border-box;
 }
 
 .play-all-btn:hover {
-    background: #e07070;
+    background: var(--secondary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(153, 27, 27, 0.4);
 }
 
 .report-error-btn {
@@ -651,7 +743,7 @@ nav {
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     flex-shrink: 0;
     box-sizing: border-box;
 }
@@ -664,15 +756,16 @@ nav {
     flex: 1;
     padding: 1.5rem 2rem;
     overflow-y: auto;
+    background: var(--card-bg);
 }
 
 .album-description {
-    color: #555;
+    color: var(--text-secondary);
     font-size: 0.95rem;
     line-height: 1.7;
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--card-border);
 }
 
 .track-list h3 {
@@ -698,18 +791,18 @@ nav {
     display: flex;
     align-items: center;
     padding: 0.7rem 0.8rem;
-    border-radius: 8px;
-    transition: background 0.2s;
+    border-radius: var(--border-radius);
+    transition: background var(--transition-fast);
     cursor: pointer;
 }
 
 .track:hover {
-    background: #f5f5f5;
+    background: var(--card-bg-active);
 }
 
 .track-number {
     width: 28px;
-    color: #999;
+    color: var(--text-muted);
     font-size: 0.85rem;
     text-align: center;
 }
@@ -718,18 +811,18 @@ nav {
     flex: 1;
     padding: 0 0.8rem;
     font-size: 0.95rem;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .track-duration {
-    color: #999;
+    color: var(--text-muted);
     font-size: 0.85rem;
 }
 
 .track-play-btn {
     background: none;
     border: none;
-    color: #999;
+    color: var(--text-muted);
     cursor: pointer;
     width: 32px;
     height: 32px;
@@ -737,17 +830,17 @@ nav {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
 }
 
 .track:hover .track-play-btn {
-    color: var(--secondary-color);
-    background: rgba(223, 136, 136, 0.15);
+    color: var(--primary-color);
+    background: var(--primary-lighter);
 }
 
 .track-play-btn:hover {
     color: var(--secondary-color);
-    background: rgba(223, 136, 136, 0.2);
+    background: var(--secondary-lighter);
 }
 
 .close-modal {
@@ -762,7 +855,7 @@ nav {
     color: white;
     cursor: pointer;
     font-size: 1rem;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     z-index: 10;
 }
 
@@ -771,18 +864,19 @@ nav {
     transform: rotate(90deg);
 }
 
-/* 底部音乐播放器 */
+/* 底部音乐播放�?*/
 .player {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: #fff;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    background: var(--card-bg);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     padding: 1rem 2rem;
     display: none;
     align-items: center;
     z-index: 1001;
+    border-top: 1px solid var(--card-border);
 }
 
 .now-playing {
@@ -794,13 +888,14 @@ nav {
 .now-playing-cover {
     width: 50px;
     height: 50px;
-    background: var(--secondary-color);
-    border-radius: 8px;
+    background: var(--primary-lighter);
+    border-radius: var(--border-radius);
     margin-right: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    color: var(--primary-color);
 }
 
 .now-playing-info {
@@ -812,6 +907,8 @@ nav {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
 .now-playing-artist {
@@ -836,7 +933,7 @@ nav {
 .control-btn {
     background: none;
     border: none;
-    color: #333;
+    color: var(--text-secondary);
     font-size: 1rem;
     cursor: pointer;
     width: 40px;
@@ -845,21 +942,25 @@ nav {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--transition-fast);
 }
 
 .control-btn:hover {
-    background: #eee;
+    background: var(--card-bg-active);
+    color: var(--primary-color);
 }
 
 .control-btn.play-pause {
     width: 50px;
     height: 50px;
-    background: var(--secondary-color);
+    background: var(--primary-color);
     color: white;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 .control-btn.play-pause:hover {
-    background: var(--download-color);
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
 }
 
 .progress-container {
@@ -871,23 +972,23 @@ nav {
 
 .progress-time {
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     width: 40px;
 }
 
 .progress-bar {
     flex: 1;
     height: 5px;
-    background: #e9e9e9;
-    border-radius: 5px;
+    background: var(--card-border);
+    border-radius: var(--border-radius-full);
     position: relative;
     cursor: pointer;
 }
 
 .progress {
     height: 100%;
-    background: var(--secondary-color);
-    border-radius: 5px;
+    background: var(--primary-color);
+    border-radius: var(--border-radius-full);
     width: 30%;
 }
 
@@ -905,16 +1006,16 @@ nav {
 .volume-slider {
     flex: 1;
     height: 5px;
-    background: #e9e9e9;
-    border-radius: 5px;
+    background: var(--card-border);
+    border-radius: var(--border-radius-full);
     position: relative;
     cursor: pointer;
 }
 
 .volume-level {
     height: 100%;
-    background: var(--secondary-color);
-    border-radius: 5px;
+    background: var(--accent-color);
+    border-radius: var(--border-radius-full);
     width: 80%;
 }
 
@@ -939,14 +1040,17 @@ nav {
     left: 0;
     width: 100%;
     height: 100%;
-    background: #fff;
+    background: var(--background-alt);
     z-index: -1;
 }
 
 .hero-title {
     font-size: 3.5rem;
     margin-bottom: 1rem;
-    color: var(--primary-color);
+    background: var(--primary-color);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .hero-subtitle {
@@ -956,43 +1060,40 @@ nav {
     max-width: 600px;
 }
 
-/* 专辑发布进度条样式 */
+/* 专辑发布进度条样�?*/
 .album-progress-container {
     margin: 3rem 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--border-radius-xl);
     padding: 3rem 2rem;
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--card-shadow);
 }
 
 .progress-bar-container {
     width: 100%;
     height: 30px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
+    background: var(--card-bg-active);
+    border-radius: var(--border-radius-full);
     position: relative;
     overflow: hidden;
     margin-bottom: 1.5rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--card-border);
 }
 
 .progress-bar-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #3498db, #00d2ff, #27ae60);
-    background-size: 200% 100%;
-    border-radius: 15px;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 20px rgba(52, 152, 219, 0.6);
-    animation: gradientFlow 3s ease infinite;
+    background: var(--primary-color);
+    border-radius: var(--border-radius-full);
+    transition: width var(--transition-normal);
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
     position: relative;
 }
 
@@ -1015,11 +1116,7 @@ nav {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.4) 50%,
-    rgba(255, 255, 255, 0) 100%);
-    animation: shimmer 2s infinite;
+    background: rgba(255, 255, 255, 0.15);
 }
 
 @keyframes shimmer {
@@ -1035,38 +1132,37 @@ nav {
     font-size: 4em;
     font-weight: 800;
     margin-bottom: 1rem;
-    background: linear-gradient(45deg, #3a7bd5, #00d2ff, #3a7bd5);
+    background: var(--primary-color);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     letter-spacing: -1px;
 }
 
 .progress-info {
     font-size: 1.5em;
     font-weight: 500;
-    opacity: 0.95;
+    color: var(--text-secondary);
 }
 
 .cta-button {
-    background: var(--accent-color);
+    background: var(--primary-color);
     color: white;
     border: none;
     padding: 1rem 2rem;
     font-size: 1.1rem;
-    border-radius: 8px;
+    border-radius: var(--border-radius-full);
     cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3);
 }
 
 .cta-button:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(0, 166, 235, 0.5);
+    box-shadow: 0 8px 30px rgba(220, 38, 38, 0.4);
 }
 
-/* 进度条闪光动画效果 */
+/* 进度条闪光动画效�?*/
 .progress-bar-fill::after {
     content: '';
     position: absolute;
@@ -1074,10 +1170,7 @@ nav {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent);
+    background: rgba(255, 255, 255, 0.2);
     animation: shimmer 2s infinite;
 }
 
@@ -1251,43 +1344,61 @@ nav {
 
 .artist-card {
     text-align: center;
-    background: #f9f9f9;
-    border-radius: 12px;
-    padding: 2rem;
-    transition: transform 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    padding: 0;
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
+    overflow: hidden;
 }
 
 .artist-card:hover {
-    transform: scale(1.05);
+    transform: translateY(-5px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--primary-lighter);
 }
 
 .artist-avatar {
     width: 100px;
     height: 100px;
     border-radius: 50%;
-    background: var(--secondary-color);
+    background: var(--primary-light);
     margin: 0 auto 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
+    color: white;
 }
 
 /* 页脚 */
 footer {
     text-align: center;
     padding: 2rem;
-    background: #f5f5f5;
+    background: var(--card-bg);
+    color: var(--text-secondary);
     margin-top: 3rem;
+    border-top: 1px solid var(--card-border);
+}
+
+footer p {
+    margin: 0.3rem 0;
+    font-size: 0.9rem;
 }
 
 /* 星空粒子效果容器 */
 #particles-js {
-    display: none;
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
 }
 
-/* 响应式设计 */
+/* 响应式设�?*/
 @media (max-width: 1024px) {
     .main-container {
         flex-direction: column;
@@ -1455,12 +1566,16 @@ footer {
     top: 100%;
     left: 0;
     right: 0;
-    background: #fff;
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    background: var(--card-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    box-shadow: var(--card-shadow-hover);
     z-index: 100;
     max-height: 400px;
     overflow-y: auto;
+    border: 1px solid var(--card-border);
+    border-top: none;
 }
 
 .suggestions-list {
@@ -1470,8 +1585,9 @@ footer {
 .suggestions-header {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
-    color: #999;
-    border-bottom: 1px solid #eee;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--card-border);
+    font-weight: 500;
 }
 
 .suggestion-item {
@@ -1479,19 +1595,19 @@ footer {
     align-items: center;
     padding: 0.8rem 1rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--transition-fast);
 }
 
 .suggestion-item:hover,
 .suggestion-item.highlighted {
-    background-color: #f5f5f5;
+    background-color: var(--card-bg-active);
 }
 
 .suggestion-icon {
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    border-radius: 6px;
+    background: var(--primary-light);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1508,7 +1624,7 @@ footer {
 .suggestion-title {
     font-size: 0.95rem;
     font-weight: 500;
-    color: #333;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1516,23 +1632,23 @@ footer {
 
 .suggestion-artist {
     font-size: 0.8rem;
-    color: #999;
+    color: var(--text-secondary);
     margin-top: 2px;
 }
 
 .history-item .suggestion-icon {
-    background: #e0e0e0;
-    color: #666;
+    background: var(--card-bg-active);
+    color: var(--text-muted);
 }
 
 .history-delete {
     background: none;
     border: none;
-    color: #999;
+    color: var(--text-muted);
     padding: 0.5rem;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.2s, color 0.2s;
+    transition: opacity var(--transition-fast), color var(--transition-fast);
 }
 
 .history-item:hover .history-delete {
@@ -1540,10 +1656,10 @@ footer {
 }
 
 .history-delete:hover {
-    color: #ff4444;
+    color: var(--download-color);
 }
 
-/* ==================== 筛选和排序行 ==================== */
+/* ==================== 筛选和排序�?==================== */
 
 .filter-sort-row {
     display: flex;
@@ -1567,22 +1683,27 @@ footer {
 
 .sort-select {
     padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: var(--border-radius-full);
+    background: var(--card-bg);
     font-size: 0.9rem;
-    color: #333;
+    color: var(--text-primary);
     cursor: pointer;
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .sort-select:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(0, 166, 235, 0.1);
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
-/* ==================== 骨架屏加载效果 ==================== */
+.sort-select option {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* ==================== 骨架屏加载效�?==================== */
 
 .skeleton-card {
     pointer-events: none;
@@ -1591,7 +1712,7 @@ footer {
 .skeleton-cover {
     width: 100%;
     height: 180px;
-    background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+    background: linear-gradient(90deg, var(--card-bg-active) 25%, var(--card-bg) 50%, var(--card-bg-active) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
 }
@@ -1599,7 +1720,7 @@ footer {
 .skeleton-title {
     height: 16px;
     width: 80%;
-    background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+    background: linear-gradient(90deg, var(--card-bg-active) 25%, var(--card-bg) 50%, var(--card-bg-active) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: 4px;
@@ -1609,7 +1730,7 @@ footer {
 .skeleton-stats {
     height: 12px;
     width: 40%;
-    background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+    background: linear-gradient(90deg, var(--card-bg-active) 25%, var(--card-bg) 50%, var(--card-bg-active) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: 4px;
@@ -1633,11 +1754,13 @@ footer {
     gap: 1.5rem;
     flex-wrap: wrap;
     padding: 2rem 0;
+    position: relative;
+    z-index: 10;
 }
 
 .pagination-info {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .pagination-controls {
@@ -1649,27 +1772,30 @@ footer {
 .page-btn {
     min-width: 36px;
     height: 36px;
-    border: 1px solid #ddd;
-    background: #fff;
-    color: #333;
-    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    border-radius: var(--border-radius);
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-weight: 500;
 }
 
 .page-btn:hover:not(:disabled) {
-    border-color: var(--secondary-color);
-    color: var(--secondary-color);
+    border-color: var(--primary-light);
+    color: var(--primary-color);
+    background: var(--primary-lighter);
 }
 
 .page-btn.active {
-    background: var(--secondary-color);
-    border-color: var(--secondary-color);
+    background: var(--primary-color);
+    border-color: transparent;
     color: white;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
 }
 
 .page-btn:disabled {
@@ -1679,7 +1805,7 @@ footer {
 
 .page-ellipsis {
     padding: 0 0.5rem;
-    color: #999;
+    color: var(--text-muted);
 }
 
 .pagination-jump {
@@ -1687,36 +1813,41 @@ footer {
     align-items: center;
     gap: 0.5rem;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .jump-input {
     width: 60px;
     padding: 0.4rem 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--border-radius);
     text-align: center;
     font-size: 0.9rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .jump-input:focus {
     outline: none;
-    border-color: var(--accent-color);
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
 .jump-btn {
     padding: 0.4rem 0.8rem;
-    background: var(--accent-color);
+    background: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--border-radius);
     cursor: pointer;
     font-size: 0.9rem;
-    transition: background 0.2s;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .jump-btn:hover {
-    background: #0090cc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 /* ==================== 移动端响应式优化 ==================== */

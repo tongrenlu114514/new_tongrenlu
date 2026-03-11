@@ -1,7 +1,6 @@
 /**
  * 同人录主页重设计样式
- * 使用 .home- 前缀避免与现有样式冲突
- */
+ * 使用 .home- 前缀避免与现有样式冲�? */
 
 /* ========================================
    图片画廊 Hero 区域
@@ -11,7 +10,7 @@
     min-height: 100vh;
     position: relative;
     overflow: hidden;
-    background: #0a0a0a;
+    background: var(--background-alt);
 }
 
 /* 画廊网格 */
@@ -25,12 +24,12 @@
     padding: 4px;
 }
 
-/* 画廊图片项 */
+/* 画廊图片�?*/
 .home-gallery-item {
     position: relative;
     overflow: hidden;
     cursor: pointer;
-    background: #1a1a1a;
+    background: var(--card-bg-active);
 }
 
 .home-gallery-item__cover {
@@ -40,11 +39,11 @@
     background-size: cover;
     background-position: center;
     transition: transform 0.5s ease, opacity 0.3s ease;
-    opacity: 0.85;
+    opacity: 0.9;
 }
 
 .home-gallery-item:hover .home-gallery-item__cover {
-    transform: scale(1.08);
+    transform: scale(1.05);
     opacity: 1;
 }
 
@@ -56,7 +55,7 @@
     left: 0;
     right: 0;
     padding: 1rem;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    background: rgba(220, 38, 38, 0.9);
     color: white;
     font-size: 0.875rem;
     font-weight: 500;
@@ -70,7 +69,7 @@
     transform: translateY(0);
 }
 
-/* 大尺寸图片 */
+/* 大尺寸图�?*/
 .home-gallery-item--large {
     grid-column: span 2;
     grid-row: span 2;
@@ -85,19 +84,20 @@
 }
 
 /* ========================================
-   最新专辑轮播区域
-   ======================================== */
+   最新专辑轮播区�?   ======================================== */
 
 .home-section {
     padding: 4rem 2rem;
     max-width: 1400px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 }
 
 .home-section__title {
     font-family: 'Noto Serif SC', serif;
     font-size: 2rem;
-    color: var(--primary-color);
+    color: var(--text-primary);
     text-align: center;
     margin-bottom: 2rem;
     position: relative;
@@ -108,7 +108,7 @@
     display: block;
     width: 60px;
     height: 3px;
-    background: var(--secondary-color);
+    background: var(--primary-color);
     margin: 0.5rem auto 0;
     border-radius: 2px;
 }
@@ -148,18 +148,21 @@
     height: 48px;
     border-radius: 50%;
     border: none;
-    background: white;
-    color: var(--primary-color);
+    background: var(--card-bg);
+    color: var(--text-secondary);
     font-size: 1.2rem;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    box-shadow: var(--card-shadow);
+    transition: all var(--transition-normal);
     z-index: 10;
+    border: 1px solid var(--card-border);
 }
 
 .home-carousel__btn:hover {
     background: var(--primary-color);
     color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
 }
 
 .home-carousel__btn--prev {
@@ -176,18 +179,20 @@
 
 .home-album-card {
     flex: 0 0 220px;
-    background: white;
-    border-radius: 12px;
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
+    box-shadow: var(--card-shadow);
+    transition: all var(--transition-normal);
     scroll-snap-align: start;
     cursor: pointer;
+    border: 1px solid var(--card-border);
 }
 
 .home-album-card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--primary-lighter);
 }
 
 .home-album-card__cover {
@@ -195,7 +200,7 @@
     height: 200px;
     background-size: cover;
     background-position: center;
-    background-color: #f0f0f0;
+    background-color: var(--card-bg-active);
     position: relative;
     display: flex;
     align-items: center;
@@ -204,7 +209,7 @@
 
 .home-album-card__cover-fallback {
     font-size: 4rem;
-    color: #ccc;
+    color: var(--text-light);
 }
 
 .home-album-card__play-btn {
@@ -220,10 +225,11 @@
     cursor: pointer;
     opacity: 0;
     transform: scale(0.8);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 12px rgba(23, 23, 23, 0.4);
 }
 
 .home-album-card:hover .home-album-card__play-btn {
@@ -232,17 +238,19 @@
 }
 
 .home-album-card__play-btn:hover {
-    background: var(--download-color);
+    background: var(--secondary-color);
     transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(153, 27, 27, 0.5);
 }
 
 .home-album-card__info {
     padding: 1rem;
+    background: var(--card-bg);
 }
 
 .home-album-card__title {
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.25rem;
     white-space: nowrap;
@@ -263,7 +271,7 @@
    ======================================== */
 
 .home-popular {
-    background: #f8f9fa;
+    background: var(--card-bg-active);
     padding: 4rem 2rem;
 }
 
@@ -276,11 +284,11 @@
 }
 
 /* ========================================
-   艺术家推荐区域
-   ======================================== */
+   艺术家推荐区�?   ======================================== */
 
 .home-artists {
     padding: 4rem 2rem;
+    background: var(--background-muted);
 }
 
 .home-artists__grid {
@@ -294,40 +302,44 @@
 .home-artist-card {
     text-align: center;
     padding: 1.5rem;
-    border-radius: 12px;
-    background: white;
-    transition: all 0.3s ease;
+    border-radius: var(--border-radius-lg);
+    background: var(--card-bg);
+    transition: all var(--transition-normal);
     cursor: pointer;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
 }
 
 .home-artist-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--primary-lighter);
 }
 
 .home-artist-card__avatar {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    background: var(--primary-light);
     margin: 0 auto 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
     color: white;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     background-size: cover;
     background-position: center;
 }
 
 .home-artist-card:hover .home-artist-card__avatar {
     border: 3px solid var(--accent-color);
+    box-shadow: 0 4px 12px rgba(23, 23, 23, 0.3);
 }
 
 .home-artist-card__name {
     font-size: 0.95rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.25rem;
 }
@@ -344,8 +356,11 @@
 .home-footer {
     text-align: center;
     padding: 2rem;
-    background: #f5f5f5;
-    border-top: 1px solid #e9ecef;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    border-top: 1px solid var(--card-border);
+    position: relative;
+    z-index: 1;
 }
 
 .home-footer p {
@@ -362,7 +377,7 @@
    响应式布局
    ======================================== */
 
-/* 平板端 */
+/* 平板�?*/
 @media (max-width: 1024px) {
     .home-gallery-grid {
         grid-template-columns: repeat(4, 1fr);
@@ -391,7 +406,7 @@
     }
 }
 
-/* 移动端 */
+/* 移动�?*/
 @media (max-width: 768px) {
     .home-hero-gallery {
         min-height: 70vh;
@@ -501,8 +516,7 @@
 }
 
 /* ========================================
-   加载状态
-   ======================================== */
+   加载状�?   ======================================== */
 
 .home-loading {
     display: flex;
@@ -514,8 +528,8 @@
 .home-loading__spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid var(--accent-color);
+    border: 3px solid var(--card-border);
+    border-top: 3px solid var(--primary-color);
     border-radius: 50%;
     animation: home-spin 1s linear infinite;
 }
@@ -525,9 +539,9 @@
     100% { transform: rotate(360deg); }
 }
 
-/* 骨架屏 */
+/* 骨架�?*/
 .home-skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--card-bg-active) 25%, var(--card-bg) 50%, var(--card-bg-active) 75%);
     background-size: 200% 100%;
     animation: home-skeleton-loading 1.5s infinite;
 }
@@ -538,14 +552,15 @@
 }
 
 .home-skeleton-card {
-    background: white;
-    border-radius: 12px;
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
     overflow: hidden;
+    border: 1px solid var(--card-border);
 }
 
 .home-skeleton-card__cover {
     height: 200px;
-    background: #f0f0f0;
+    background: var(--card-bg-active);
 }
 
 .home-skeleton-card__info {
@@ -554,7 +569,7 @@
 
 .home-skeleton-card__title {
     height: 16px;
-    background: #f0f0f0;
+    background: var(--card-bg-active);
     border-radius: 4px;
     margin-bottom: 0.5rem;
     width: 80%;
@@ -562,7 +577,7 @@
 
 .home-skeleton-card__artist {
     height: 12px;
-    background: #f0f0f0;
+    background: var(--card-bg-active);
     border-radius: 4px;
     width: 60%;
 }

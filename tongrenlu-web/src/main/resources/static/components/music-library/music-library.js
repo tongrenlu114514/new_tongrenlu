@@ -15,6 +15,23 @@ let highlightedIndex = -1;
 
 // ==================== 工具函数 ====================
 
+// 加载专辑数量统计
+function loadAlbumCount() {
+    $.ajax({
+        url: 'api/music/album-stats',
+        method: 'GET',
+        success: function(response) {
+            if (response && response.success && response.data) {
+                const count = response.data.published || response.data.total || 0;
+                $('#navAlbumCount').text(count.toLocaleString());
+            }
+        },
+        error: function() {
+            $('#navAlbumCount').text('--');
+        }
+    });
+}
+
 // 防抖函数
 function debounce(func, wait) {
     return function executedFunction(...args) {
@@ -575,10 +592,16 @@ function renderPaginationButtons(current, pages, keyword) {
     
     $controls.html(html);
     
-    // 绑定分页按钮事件
-    $('.page-btn[data-page]').off('click').on('click', function() {
-        if ($(this).prop('disabled')) return;
-        const page = $(this).data('page');
+    // 绑定分页按钮事件 - 使用事件委托确保事件能正确触发
+    $controls.off('click', '.page-btn').on('click', '.page-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const $btn = $(this);
+        if ($btn.prop('disabled')) return;
+        
+        const page = $btn.data('page');
+        console.log('分页点击:', page);
         searchMusic(currentKeyword, page, currentOrderBy, currentTag);
     });
 }
@@ -639,7 +662,21 @@ $(window).on('click', function (event) {
 $(function () {
     // 初始化：加载标签和音乐数据
     loadPopularTags();
-    searchMusic('', 1, 'publishDate', '');
+    
+    // 加载专辑数量统计
+    loadAlbumCount();
+    
+    // 检查 localStorage 中是否有来自艺术家页面的筛选标签
+    let filterTag = localStorage.getItem('filterTag');
+    let selectedAlbumId = localStorage.getItem('selectedAlbumId');
+    
+    // 清除 localStorage 中的临时数据
+    if (filterTag) {
+        localStorage.removeItem('filterTag');
+    }
+    if (selectedAlbumId) {
+        localStorage.removeItem('selectedAlbumId');
+    }
     
     // 设置排序默认值
     $('#sortSelect').val('publishDate');
@@ -656,6 +693,30 @@ $(function () {
     }
     if (urlParams.has('page')) {
         currentPage = parseInt(urlParams.get('page')) || 1;
+    }
+    
+    // 如果有筛选标签，使用它进行搜索
+    if (filterTag) {
+        currentTag = filterTag;
+        // 高亮选中的标签
+        setTimeout(function() {
+            $('.tag').each(function() {
+                if ($(this).text() === filterTag) {
+                    $(this).addClass('active');
+                }
+            });
+        }, 500);
+        searchMusic('', 1, 'publishDate', filterTag);
+    } else {
+        searchMusic('', 1, 'publishDate', '');
+    }
+    
+    // 如果有选中的专辑ID，打开详情弹窗
+    if (selectedAlbumId) {
+        setTimeout(function() {
+            updateAlbumModal(selectedAlbumId);
+            openAlbumModal();
+        }, 800);
     }
 });
 

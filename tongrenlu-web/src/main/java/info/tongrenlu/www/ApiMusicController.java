@@ -10,9 +10,11 @@ import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.model.CloudMusicDetailResponse;
 import info.tongrenlu.model.CloudMusicSongDownloadData;
 import info.tongrenlu.model.CloudMusicSongDownloadResponse;
+import info.tongrenlu.service.ArtistService;
 import info.tongrenlu.service.HomeMusicService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -29,6 +31,7 @@ import java.util.Map;
 public class ApiMusicController {
 
     private final HomeMusicService musicService;
+    private final ArtistService artistService;
 
     @GetMapping("search")
     public Page<ArticleBean> search(
@@ -52,23 +55,19 @@ public class ApiMusicController {
             return ResponseEntity.notFound().build();
         }
 
-        CloudMusicDetailResponse musicDetailResponse;
-        musicDetailResponse = getMusicDetailResponseKXZ(track);
-        if (musicDetailResponse == null || musicDetailResponse.getStatus() != 200){
-            CloudMusicSongDownloadResponse cloudMusicSongDownloadResponse = getMusicDetailResponse2(track);
-            if (cloudMusicSongDownloadResponse == null || cloudMusicSongDownloadResponse.getCode() != 200) {
-                return ResponseEntity.notFound().build();
-            }
-
-            CloudMusicSongDownloadData data = cloudMusicSongDownloadResponse.getData();
-
-            musicDetailResponse = new CloudMusicDetailResponse();
-            musicDetailResponse.setUrl(data.getUrl());
-            musicDetailResponse.setName(track.getName());
-            musicDetailResponse.setAlName(track.getAlbum());
-            musicDetailResponse.setArName(track.getArtist());
-            musicDetailResponse.setLevel(data.getLevel());
+        CloudMusicSongDownloadResponse cloudMusicSongDownloadResponse = getMusicDetailResponse2(track);
+        if (cloudMusicSongDownloadResponse == null || cloudMusicSongDownloadResponse.getCode() != 200) {
+            return ResponseEntity.notFound().build();
         }
+
+        CloudMusicSongDownloadData data = cloudMusicSongDownloadResponse.getData();
+
+        CloudMusicDetailResponse  musicDetailResponse = new CloudMusicDetailResponse();
+        musicDetailResponse.setUrl(data.getUrl());
+        musicDetailResponse.setName(track.getName());
+        musicDetailResponse.setAlName(track.getAlbum());
+        musicDetailResponse.setArName(track.getArtist());
+        musicDetailResponse.setLevel(data.getLevel());
 
         return ResponseEntity.ok(musicDetailResponse);
     }
@@ -136,34 +135,40 @@ public class ApiMusicController {
         return ResponseEntity.ok(tags);
     }
 
+    @GetMapping("/artists")
+    public ResponseEntity<Map<String, Object>> getArtists(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "30") int limit) {
+        Map<String, Object> result = this.artistService.getArtistsWithAlbumCountPaged(keyword, page, limit);
+        return ResponseEntity.ok(result);
+    }
+
     private CloudMusicDetailResponse getMusicDetailResponseKXZ(TrackBean track) {
-        String url = UriComponentsBuilder.fromUriString("https://api.kxzjoker.cn/api/163_music")
-                    .queryParam("ids", track.getCloudMusicId())
-                    .queryParam("level", "jymaster")
-                    .queryParam("type", "json")
-                    .build()
-                    .toString();
-        try(HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
-            return new ObjectMapper().readValue(json, CloudMusicDetailResponse.class);
-        }catch (IOException e) {
-            log.error("get {} error",url, e);
-            return null;
-        }
+        return null;
     }
 
     private CloudMusicSongDownloadResponse getMusicDetailResponse2(TrackBean track) {
         //https://apis.netstart.cn/music/song/download/url?id=765822
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/song/download/url")
-                .queryParam("id", track.getCloudMusicId())
+        String url = UriComponentsBuilder.fromUriString("https://music.163.com/song/media/outer/url")
+                .queryParam("id", track.getCloudMusicId() + ".mp3")
+                .queryParam("br", 128000)
+                .queryParam("gain", 0)
+                .queryParam("peak", 1)
                 .build()
                 .toString();
         try(HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
-            return new ObjectMapper().readValue(json, CloudMusicSongDownloadResponse.class);
-        }catch (IOException e) {
-            log.error("get {} error",url, e);
-            return null;
+            String location = response.header("Location");
+            if (StringUtils.isBlank(location)) {
+                return null;
+            }
+
+            CloudMusicSongDownloadResponse cloudMusicSongDownloadResponse = new CloudMusicSongDownloadResponse();
+            CloudMusicSongDownloadData data = new CloudMusicSongDownloadData();
+            data.setUrl(location);
+            cloudMusicSongDownloadResponse.setData(data);
+            cloudMusicSongDownloadResponse.setCode(200);
+            return cloudMusicSongDownloadResponse;
         }
     }
 }

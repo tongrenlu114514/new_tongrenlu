@@ -1,0 +1,478 @@
+/* 艺术家展示页面样式 - 卡片网格布局 */
+
+/* 页面容器 */
+.artist-showcase-page {
+    min-height: 100vh;
+    padding: 100px 2rem 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* 搜索区域 */
+.artist-search-section {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 10;
+}
+
+.artist-page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.artist-search-box {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    max-width: 400px;
+}
+
+.artist-search-input {
+    width: 100%;
+    padding: 1rem 3rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.artist-search-input:focus {
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);
+    transform: scale(1.02);
+}
+
+.artist-search-icon {
+    position: absolute;
+    left: 1.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 1rem;
+}
+
+.artist-search-clear {
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 0.3rem;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.artist-search-clear:hover {
+    color: var(--secondary-color);
+}
+
+/* 卡片网格布局 */
+.artist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+    padding: 0.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* 艺术家卡片 */
+.artist-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.artist-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.artist-card--hidden {
+    display: none;
+}
+
+/* 卡片封面 */
+.artist-card__cover {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+}
+
+.artist-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.artist-card:hover .artist-card__image {
+    transform: scale(1.1);
+}
+
+/* 默认封面占位符 */
+.artist-card__placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.artist-card__placeholder i {
+    font-size: 3rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* 专辑数量角标 */
+.artist-card__badge {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+}
+
+/* 卡片信息 */
+.artist-card__info {
+    padding: 0.6rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.artist-card__name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff !important;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* 加载状态 */
+.artist-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    color: white;
+}
+
+.artist-loading__spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 空状态 */
+.artist-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.artist-empty i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.artist-empty p {
+    font-size: 1.2rem;
+}
+
+/* 专辑列表弹窗 */
+.artist-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.artist-modal.active {
+    display: flex;
+}
+
+.artist-modal__content {
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+}
+
+.artist-modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+}
+
+.artist-modal__title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.artist-modal__close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.artist-modal__close:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.artist-modal__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+/* 弹窗内的专辑列表 */
+.artist-album-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.artist-album-item {
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s;
+}
+
+.artist-album-item:hover {
+    transform: translateY(-4px);
+}
+
+.artist-album-item__cover {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #e0e0e0;
+    margin-bottom: 0.5rem;
+}
+
+.artist-album-item__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.artist-album-item__title {
+    font-size: 0.8rem;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.artist-modal__loading {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+}
+
+.artist-modal__empty {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+}
+
+/* 弹窗分页 */
+.artist-modal__pagination {
+    padding: 1rem;
+    border-top: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.artist-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.artist-pagination__info {
+    font-size: 0.85rem;
+    color: #666;
+    margin-right: 1rem;
+}
+
+.artist-pagination__btn {
+    min-width: 32px;
+    height: 32px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #333;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.artist-pagination__btn:hover:not(:disabled) {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+.artist-pagination__btn.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+}
+
+.artist-pagination__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.artist-pagination__ellipsis {
+    padding: 0 0.3rem;
+    color: #999;
+}
+
+/* 响应式布局 */
+@media (max-width: 1024px) {
+    .artist-showcase-page {
+        padding: 90px 1.5rem 1.5rem;
+    }
+    
+    .artist-page-title {
+        font-size: 2rem;
+    }
+    
+    .artist-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .artist-showcase-page {
+        padding: 80px 1rem 1rem;
+    }
+    
+    .artist-search-section {
+        position: sticky;
+        top: 60px;
+        background: linear-gradient(180deg, rgba(23, 23, 23, 1) 0%, rgba(23, 23, 23, 0.95) 70%, rgba(23, 23, 23, 0) 100%);
+        padding: 1rem;
+        margin: -1rem -1rem 1.5rem -1rem;
+        z-index: 20;
+    }
+    
+    .artist-page-title {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+    }
+    
+    .artist-search-box {
+        max-width: 100%;
+    }
+    
+    .artist-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.6rem;
+        padding: 0.3rem;
+    }
+    
+    .artist-card__info {
+        padding: 0.5rem;
+    }
+    
+    .artist-card__name {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .artist-page-title {
+        font-size: 1.5rem;
+    }
+    
+    .artist-search-input {
+        padding: 0.8rem 2.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .artist-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .artist-card__info {
+        padding: 0.4rem;
+    }
+    
+    .artist-card__name {
+        font-size: 0.75rem;
+    }
+}
