@@ -1,4 +1,3 @@
-
 # 项目上下文文档 (AGENTS.md)
 
 ## 项目概述
@@ -10,6 +9,7 @@
 - **文章管理**: 文章发布、浏览、标签分类、评论系统
 - **标签系统**: 多层级内容分类和检索
 - **用户系统**: 用户注册、登录、收藏管理
+- **艺术家展示**: 视觉化艺术家名称展示，支持搜索过滤
 
 ## 技术栈
 
@@ -20,6 +20,7 @@
 - **ORM**: MyBatis Plus 3.5.11
 - **构建工具**: Maven 3.6+
 - **编码**: UTF-8
+- **连接池**: HikariCP (最大连接数 20)
 
 ### 前端技术
 - **基础框架**: 原生 HTML/CSS/JavaScript
@@ -30,8 +31,8 @@
 ### 工具库
 - **Lombok**: 减少样板代码
 - **Hutool**: Java 工具类库 5.8.40
-- **Guava**: Google 工具库 33.3.1
-- **Apache Commons**: 通用工具库
+- **Guava**: Google 工具库 33.3.1-jre
+- **Apache Commons**: 通用工具库 (commons-io 2.14.0, commons-lang3 3.18.0, commons-collections4 4.4)
 
 ## 项目结构
 
@@ -40,14 +41,20 @@
 ```
 tongrenlu/
 ├── tongrenlu-web/          # Web 应用层 (Spring Boot Web)
-│   ├── info.tongrenlu.www/        # 控制器层 (Controller)
-│   ├── info.tongrenlu.manager/    # 业务逻辑层 (Service/Manager)
-│   ├── info.tongrenlu.domain/     # 数据传输对象 (DTO/VO)
-│   └── info.tongrenlu.support/    # 支撑工具类
+│   └── info.tongrenlu/
+│       ├── www/                    # 控制器层 (Controller)
+│       ├── manager/                # 业务逻辑层 (当前为空)
+│       ├── domain/                 # 数据传输对象 (DTO/VO)
+│       ├── config/                 # 配置类
+│       ├── constants/              # 常量定义
+│       ├── enums/                  # 枚举类
+│       └── exception/              # 异常处理
 ├── tongrenlu-dao/          # 数据访问层
-│   ├── info.tongrenlu.domain/     # 实体类 (Entity)
-│   ├── info.tongrenlu.mapper/     # MyBatis 映射器
-│   └── info.tongrenlu.model/      # 数据模型 (CloudMusic 集成)
+│   └── info.tongrenlu/
+│       ├── domain/                 # 实体类 (Entity)
+│       ├── mapper/                 # MyBatis 映射器
+│       ├── model/                  # 数据模型 (CloudMusic 集成)
+│       └── service/                # 服务层
 └── tongrenlu-tool/         # 工具模块
     └── info.tongrenlu.support/    # 批处理工具类 (数据解析)
 ```
@@ -57,8 +64,23 @@ tongrenlu/
 - **静态资源**: `/tongrenlu-web/src/main/resources/static/`
   - `admin/`: 管理后台页面
   - `components/`: 可复用组件
+    - `admin/`: 管理后台组件
+    - `artist-showcase/`: 艺术家展示组件
+    - `home/`: 首页组件 (画廊Hero、最新专辑)
+    - `music-library/`: 音乐库组件
+    - `player/`: 播放器组件
+    - `shared/`: 共享组件
   - `assets/`: 静态资源文件
 - **文档**: `/docs/` - PRD、架构设计、API 规范等
+- **OpenSpec**: `/openspec/` - 规格驱动开发变更记录
+
+### 静态页面
+- `index.html` - 首页 (Hero画廊 + 最新专辑轮播)
+- `album.html` - 专辑详情页
+- `artist.html` - 艺术家管理页 (后台)
+- `artist-showcase.html` - 艺术家展示页 (公开)
+- `player.html` - 音乐播放器页面
+- `unpublish.html` - 未发布内容管理
 
 ## 构建和运行
 
@@ -66,7 +88,6 @@ tongrenlu/
 - JDK 21 或更高版本
 - Maven 3.6+
 - MySQL 8.2+
-- Node.js (如需前端构建工具)
 
 ### 构建命令
 ```bash
@@ -99,11 +120,11 @@ java -jar tongrenlu-web/target/tongrenlu-web.jar
 ### 应用配置
 - **服务端口**: 8443
 - **上下文路径**: `/tongrenlu`
-- **Swagger UI**: http://localhost:8443/tongrenlu/swagger-ui.html
 - **数据库**: MySQL (localhost:3306/tongrenlu)
 
 ### 环境变量
 - `DB_HOST`: 数据库主机地址 (默认: localhost)
+- `DB_PASSWORD`: 数据库密码 (必需)
 
 ### 数据库初始化
 ```sql
@@ -119,6 +140,7 @@ sql/20251128/m_artist.sql
 
 ### 命名规范
 - **包名**: `info.tongrenlu`
+- **GroupId**: `top.tonrenlu`
 - **表名前缀**:
   - `m_` - 主表 (如: m_article, m_artist)
   - `r_` - 关系表 (如: r_article_tag)
@@ -130,13 +152,14 @@ sql/20251128/m_artist.sql
 - **UTF-8 编码**: 全项目统一使用 UTF-8
 - **Lombok**: 广泛使用 @Data, @Builder, @Slf4j 等注解
 - **组件化**: 前端组件文件 < 200 行，优先复用
-- **分层架构**: Controller → Manager → Service → DAO
+- **分层架构**: Controller → Service → DAO
 
 ### 数据访问规范
 - **软删除**: 所有实体使用 `del_flg` 字段
 - **乐观锁**: 推荐使用版本号控制并发
 - **分页查询**: 使用 MyBatis Plus 分页插件
 - **SQL 日志**: 开发环境开启 SQL 日志输出
+- **懒加载**: 启用 MyBatis 懒加载优化
 
 ### Git 工作流
 - **主分支**: `master`
@@ -144,7 +167,7 @@ sql/20251128/m_artist.sql
 - **代码审查**: 所有代码变更需经过审查
 
 ### 测试策略
-- **单元测试**: Service 和 Manager 层
+- **单元测试**: Service 层
 - **集成测试**: Controller 层
 - **测试数据库**: H2 内存数据库
 - **TODO**: 当前项目缺少完整的测试覆盖
@@ -152,10 +175,22 @@ sql/20251128/m_artist.sql
 ## 核心功能模块
 
 ### 音乐管理模块
-- 专辑列表展示
+- 专辑列表展示 (支持搜索建议、动态筛选、排序)
 - 曲目详情和播放
 - 艺术家信息管理
 - CloudMusic 网易云音乐集成
+
+### 首页模块
+- **Hero 画廊**: 图片画廊风格展示专辑封面，背景为随机排列的封面网格
+- **最新专辑轮播**: 展示最近发布的专辑
+- **专辑统计**: 显示专辑数量统计
+
+### 艺术家展示模块
+- 视觉化展示大量艺术家名称
+- 粒子/星空特效背景
+- 搜索过滤艺术家
+- 点击跳转到艺术家专辑列表
+- 响应式布局
 
 ### 文章管理模块
 - 文章发布和编辑
@@ -164,26 +199,62 @@ sql/20251128/m_artist.sql
 - 访问统计
 
 ### 数据解析工具 (tongrenlu-tool)
-- 音乐专辑解析 (`MusicAlbumParser`)
-- 艺术家信息解析 (`MusicArtistParser`)
-- 批处理任务支持
+- 音乐专辑解析 (`MusicAlbumParseJob`)
+- 艺术家信息解析 (`MusicArtistParseJob`)
+- 歌单批量导入 (`PlaylistImportJob`) - 支持网易云歌单ID导入
+- 批处理任务支持 (断点续传)
 
 ## 外部集成
 
 ### CloudMusic (网易云音乐)
 - **目的**: 获取音乐元数据、封面图、艺术家信息
-- **模型类**: `CloudMusicAlbum`, `CloudMusicTrack`, `CloudMusicArtist`
+- **模型类**: `CloudMusicAlbum`, `CloudMusicTrack`, `CloudMusicArtist`, `CloudMusicPlaylistTrack`, `CloudMusicPlaylistResponse`
 - **API 位置**: `info.tongrenlu.model`
+- **集成功能**:
+  - 专辑详情获取
+  - 艺术家信息获取
+  - 歌单歌曲列表获取 (分页)
+  - 搜索功能
 
 ### 文件系统
 - **存储位置**: 本地文件系统
 - **音乐文件**: 支持标准音乐文件格式
 - **艺术家目录**: 使用 `+` 前缀标识
 
+## API 端点
+
+### 公开 API
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/api/music` | GET | 获取音乐列表 (支持分页、搜索、排序) |
+| `/api/music/suggestions` | GET | 搜索建议与自动补全 |
+| `/api/music/tags` | GET | 获取标签列表 |
+| `/api/artists` | GET | 获取艺术家列表 (支持搜索) |
+
+### 管理 API
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/admin/artist` | GET | 艺术家管理页面 |
+| `/admin/unpublish` | GET | 未发布内容管理 |
+
+## OpenSpec 变更记录
+
+### 已完成变更 (Archive)
+| 日期 | 变更名称 | 描述 |
+|------|----------|------|
+| 2026-03-06 | redesign-homepage | 首页重新设计，Hero画廊 + 最新专辑轮播 |
+| 2026-03-08 | playlist-album-import | 网易云歌单批量导入功能 |
+| 2026-03-10 | optimize-music-library-ux | 音乐库UX优化 (搜索建议、动态筛选、排序) |
+
+### 进行中变更
+| 变更名称 | 描述 |
+|----------|------|
+| artist-page | 艺术家展示页面 (粒子特效背景) |
+
 ## 重要约束
 
 ### 安全要求
-- **⚠️ 数据库密码**: 不得将硬编码密码提交到版本控制
+- **数据库密码**: 使用环境变量 `DB_PASSWORD`，禁止硬编码
 - **SQL 注入防护**: 使用 MyBatis 参数化查询
 - **XSS 防护**: 输出内容需转义
 - **CSRF 防护**: 表单提交需验证令牌
@@ -192,6 +263,7 @@ sql/20251128/m_artist.sql
 - 页面加载时间 < 3 秒
 - 支持 1000+ 并发用户
 - 数据库查询响应时间 < 100ms
+- HikariCP 连接池最大连接数 20
 
 ### 兼容性要求
 - MySQL 8.2+ 必需
@@ -200,7 +272,7 @@ sql/20251128/m_artist.sql
 
 ## 已知技术债务
 
-- [ ] 硬编码数据库密码需迁移到环境变量
+- [ ] 硬编码数据库密码需迁移到环境变量 (已部分完成)
 - [ ] 缺少完整的单元测试覆盖
 - [ ] 日志系统需要完善
 - [ ] 缺少 API 文档自动生成
@@ -236,7 +308,7 @@ sql/20251128/m_artist.sql
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/tongrenlu
 spring.datasource.username=your_username
-spring.datasource.password=your_password
+spring.datasource.password=${DB_PASSWORD}
 ```
 
 ### 端口冲突
@@ -263,6 +335,6 @@ server.port=8080
 
 ---
 
-**文档版本**: v1.0
+**文档版本**: v1.1
 **创建日期**: 2026-03-04
-**最后更新**: 2026-03-04
+**最后更新**: 2026-03-12
