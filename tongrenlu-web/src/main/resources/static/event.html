@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>艺术家 - 东方同人录</title>
+    <title>展会 - 东方同人录</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="webjars/font-awesome/css/all.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="assets/css/home-redesign.css" rel="stylesheet">
-    <link href="components/artist-showcase/artist-showcase.css" rel="stylesheet">
+    <link href="components/event-list/event-list.css" rel="stylesheet">
 </head>
 <body>
     <!-- 星空粒子背景 -->
@@ -20,45 +20,66 @@
         <div class="nav-links">
             <a href="index.html" class="nav-link" data-page="home">首页</a>
             <a href="album.html" class="nav-link" data-page="music">音乐库</a>
-            <a href="artist-showcase.html" class="nav-link active" data-page="artist">艺术家</a>
-            <a href="event.html" class="nav-link" data-page="event">展会</a>
+            <a href="artist-showcase.html" class="nav-link" data-page="artist">艺术家</a>
+            <a href="event.html" class="nav-link active" data-page="event">展会</a>
             <a href="#">关于我们</a>
         </div>
         <div class="nav-stats">
-            <span class="nav-stats__number" id="navArtistCount">--</span>
-            <span class="nav-stats__label">位艺术家</span>
+            <span class="nav-stats__number" id="eventCount">--</span>
+            <span class="nav-stats__label">个展会</span>
         </div>
     </nav>
     
-    <!-- 艺术家展示页面 -->
-    <div class="artist-showcase-page">
+    <!-- 展会列表页面 -->
+    <div class="event-page">
         <!-- 搜索区域 -->
-        <div class="artist-search-section">
-            <h1 class="artist-page-title">艺术家</h1>
-            <div class="artist-search-box">
-                <i class="fas fa-search artist-search-icon"></i>
-                <input type="text" class="artist-search-input" id="artistSearchInput" placeholder="搜索艺术家...">
-                <button class="artist-search-clear" id="artistSearchClear" style="display: none;">
+        <div class="event-search-section">
+            <h1 class="event-page-title">展会列表</h1>
+            <p class="event-page-subtitle">东方同人展会收录，包括COMIC MARKET、例大祭、红楼梦等</p>
+            <div class="event-search-box">
+                <i class="fas fa-search event-search-icon"></i>
+                <input type="text" class="event-search-input" id="eventSearchInput" placeholder="搜索展会名称...">
+                <button class="event-search-clear" id="eventSearchClear" style="display: none;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         </div>
         
-        <!-- 艺术家卡片网格 -->
-        <div class="artist-grid" id="artistGrid">
+        <!-- 筛选和排序 -->
+        <div class="event-filter-section">
+            <div class="event-filter-tabs">
+                <button class="event-filter-tab active" data-filter="all">全部</button>
+                <button class="event-filter-tab" data-filter="comiket">Comic Market</button>
+                <button class="event-filter-tab" data-filter="reitaisai">例大祭</button>
+                <button class="event-filter-tab" data-filter="other">其他</button>
+            </div>
+            <div class="event-sort-options">
+                <span class="event-sort-label">排序:</span>
+                <button class="event-sort-btn active" data-sort="album_count">专辑数量</button>
+                <button class="event-sort-btn" data-sort="name">名称</button>
+            </div>
+        </div>
+        
+        <!-- 展会卡片网格 -->
+        <div class="event-grid" id="eventGrid">
             <!-- 卡片将通过 JavaScript 动态生成 -->
         </div>
         
+        <!-- 分页组件 -->
+        <div class="event-pagination-container" id="eventPaginationContainer">
+            <!-- 分页按钮将通过 JavaScript 动态生成 -->
+        </div>
+        
         <!-- 加载状态 -->
-        <div class="artist-loading" id="artistLoading">
-            <div class="artist-loading__spinner"></div>
-            <p>正在加载艺术家...</p>
+        <div class="event-loading" id="eventLoading">
+            <div class="event-loading__spinner"></div>
+            <p>正在加载展会...</p>
         </div>
         
         <!-- 空状态 -->
-        <div class="artist-empty" id="artistEmpty" style="display: none;">
-            <i class="fas fa-user-slash"></i>
-            <p>未找到匹配的艺术家</p>
+        <div class="event-empty" id="eventEmpty" style="display: none;">
+            <i class="fas fa-calendar-times"></i>
+            <p>未找到匹配的展会</p>
         </div>
     </div>
     
@@ -68,21 +89,21 @@
         <p>本网站仅为学习交流使用，不涉及任何商业用途</p>
     </footer>
 
-    <!-- 专辑列表弹窗 -->
-    <div class="artist-modal" id="artistModal">
-        <div class="artist-modal__content">
-            <div class="artist-modal__header">
-                <h2 class="artist-modal__title" id="artistModalTitle">艺术家专辑</h2>
-                <button class="artist-modal__close" id="artistModalClose">
+    <!-- 展会详情弹窗 -->
+    <div class="event-modal" id="eventModal">
+        <div class="event-modal__content">
+            <div class="event-modal__header">
+                <h2 class="event-modal__title" id="eventModalTitle">展会专辑</h2>
+                <button class="event-modal__close" id="eventModalClose">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="artist-modal__body" id="artistModalBody">
+            <div class="event-modal__body" id="eventModalBody">
                 <!-- 专辑列表将通过 JS 动态生成 -->
             </div>
             
             <!-- 分页控件 -->
-            <div class="artist-modal__pagination" id="artistModalPagination">
+            <div class="event-modal__pagination" id="eventModalPagination">
                 <!-- 分页按钮将通过 JavaScript 动态生成 -->
             </div>
         </div>
@@ -129,7 +150,7 @@
     
     <!-- 版本号显示 -->
     <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 1002;">
-        版本: v1.2.1
+        版本: v1.3.0
     </div>
 
     <!-- JavaScript -->
@@ -139,6 +160,6 @@
     <script src="components/player/player-base-ui.js"></script>
     <script src="components/player/player-events.js"></script>
     <script src="components/home/particles.js"></script>
-    <script src="components/artist-showcase/artist-showcase.js"></script>
+    <script src="components/event-list/event-list.js"></script>
 </body>
 </html>

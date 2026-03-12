@@ -11,15 +11,13 @@ import org.apache.ibatis.type.JdbcType;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 
 @TableName(value = "m_tag", autoResultMap = true)
 @JsonInclude(Include.NON_DEFAULT)
 @Data
 public class TagBean implements Serializable {
 
-    /**
-     * 
-     */
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -27,12 +25,18 @@ public class TagBean implements Serializable {
     private Long id;
 
     @TableField(value = "tag", jdbcType = JdbcType.VARCHAR)
-    private String tag = null;
+    private String tag;
 
     @TableField(value = "type", jdbcType = JdbcType.VARCHAR)
-    private String type = null;
+    private String type;
 
     @TableField(value = "text", jdbcType = JdbcType.VARCHAR)
-    private String text = null;
+    private String text;
+
+    @TableField(value = "upd_date", jdbcType = JdbcType.TIMESTAMP)
+    private Date updDate;
+
+    @TableField(value = "del_flg", jdbcType = JdbcType.VARCHAR)
+    private String delFlg;
 
 }
