@@ -4,141 +4,549 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>艺术家 - 东方同人录</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="webjars/font-awesome/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
-    <link href="assets/css/home-redesign.css" rel="stylesheet">
-    <link href="components/artist-showcase/artist-showcase.css" rel="stylesheet">
-</head>
-<body>
-    <!-- 星空粒子背景 -->
-    <div id="particles-js"></div>
     
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/geometric-theme.css" rel="stylesheet">
+    
+    <style>
+        /* 艺术家页面特定样式 */
+        .geo-artist-page {
+            padding-top: 80px;
+            min-height: 100vh;
+        }
+        
+        .geo-artist-header {
+            background: linear-gradient(135deg, var(--geo-primary), var(--geo-accent-alt));
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .geo-artist-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(45deg, transparent 49%, rgba(233, 69, 96, 0.15) 49%, rgba(233, 69, 96, 0.15) 51%, transparent 51%);
+            background-size: 50px 50px;
+            animation: geo-pattern-move 20s linear infinite;
+        }
+        
+        @keyframes geo-pattern-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 100px 100px; }
+        }
+        
+        .geo-artist-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4rem;
+            color: white;
+            letter-spacing: 5px;
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        
+        .geo-artist-search {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .geo-artist-search__input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.2rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            border: none;
+            background: rgba(255,255,255,0.95);
+            color: var(--geo-text);
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+        }
+        
+        .geo-artist-search__icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--geo-text-muted);
+        }
+        
+        .geo-artist-search__clear {
+            position: absolute;
+            right: 2.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--geo-text-muted);
+            cursor: pointer;
+            display: none;
+        }
+        
+        .geo-artist-search__clear.visible {
+            display: block;
+        }
+        
+        /* 艺术家网格 - 保持与JS兼容 */
+        .geo-artist-grid,
+        #artistGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* 艺术家卡片 - 几何风格 */
+        .geo-artist-card,
+        .artist-card {
+            background: var(--geo-bg);
+            border: 2px solid var(--geo-border);
+            overflow: hidden;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .geo-artist-card::before,
+        .artist-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background: var(--geo-accent);
+            clip-path: polygon(0 0, 100% 0, 0 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+        }
+        
+        .geo-artist-card:hover::before,
+        .artist-card:hover::before {
+            opacity: 1;
+        }
+        
+        .geo-artist-card:hover,
+        .artist-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--geo-primary);
+            box-shadow: 8px 8px 0 var(--geo-accent);
+        }
+        
+        .artist-card__cover {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--geo-bg-alt), #e8e8ed);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .artist-card__image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .artist-card:hover .artist-card__image {
+            transform: scale(1.05);
+        }
+        
+        .artist-card__placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: var(--geo-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        
+        .artist-card__badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: var(--geo-accent);
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
+            letter-spacing: 1px;
+        }
+        
+        .artist-card__info {
+            padding: 1rem;
+            border-top: 2px solid var(--geo-border);
+        }
+        
+        .geo-artist-card__name,
+        .artist-card__name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--geo-primary);
+            word-break: break-word;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .geo-artist-card__count {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            color: var(--geo-text-muted);
+        }
+        
+        /* 加载状态 */
+        #artistLoading,
+        .geo-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            gap: 1rem;
+        }
+        
+        .geo-loading__spinner,
+        .fa-spinner.fa-spin {
+            font-size: 2rem;
+            color: var(--geo-accent);
+        }
+        
+        .geo-loading__text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            color: var(--geo-text-muted);
+        }
+        
+        /* 空状态 */
+        .geo-artist-empty,
+        #artistEmpty {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--geo-text-muted);
+        }
+        
+        .geo-artist-empty__icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .geo-artist-empty__text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+        }
+        
+        /* 艺术家模态框 */
+        .geo-artist-modal,
+        #artistModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .geo-artist-modal.active,
+        #artistModal.active {
+            display: flex;
+        }
+        
+        .geo-artist-modal__content {
+            background: var(--geo-bg);
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            border: 3px solid var(--geo-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .geo-artist-modal__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: var(--geo-primary);
+            color: white;
+        }
+        
+        .geo-artist-modal__title,
+        #artistModalTitle {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+        }
+        
+        .geo-artist-modal__close,
+        #artistModalClose {
+            width: 36px;
+            height: 36px;
+            background: var(--geo-accent);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .geo-artist-modal__close:hover,
+        #artistModalClose:hover {
+            background: white;
+            color: var(--geo-accent);
+        }
+        
+        .geo-artist-modal__body,
+        #artistModalBody {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 150px);
+        }
+        
+        /* 模态框加载和空状态 */
+        .artist-modal__loading,
+        .artist-modal__empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--geo-text-muted);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        
+        .artist-modal__loading i {
+            font-size: 2rem;
+            color: var(--geo-accent);
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        /* 专辑列表 */
+        .artist-album-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        
+        .artist-album-item {
+            background: var(--geo-bg-alt);
+            border: 2px solid var(--geo-border);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .artist-album-item:hover {
+            border-color: var(--geo-accent);
+            transform: translateY(-3px);
+            box-shadow: 4px 4px 0 var(--geo-accent);
+        }
+        
+        .artist-album-item__cover {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--geo-bg), #e8e8ed);
+            overflow: hidden;
+        }
+        
+        .artist-album-item__cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .artist-album-item:hover .artist-album-item__cover img {
+            transform: scale(1.1);
+        }
+        
+        .artist-album-item__title {
+            padding: 0.6rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.8rem;
+            color: var(--geo-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* 分页样式 */
+        .geo-artist-modal__pagination,
+        #artistModalPagination {
+            display: flex;
+            justify-content: center;
+            padding: 1rem;
+            border-top: 2px solid var(--geo-border);
+        }
+        
+        .artist-pagination {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .artist-pagination__info {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            color: var(--geo-text-muted);
+            margin-right: 1rem;
+        }
+        
+        .artist-pagination__btn {
+            font-family: 'Space Grotesk', sans-serif;
+            min-width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--geo-border);
+            background: var(--geo-bg);
+            color: var(--geo-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0 0.5rem;
+        }
+        
+        .artist-pagination__btn:hover:not(:disabled) {
+            border-color: var(--geo-accent);
+            color: var(--geo-accent);
+        }
+        
+        .artist-pagination__btn.active {
+            background: var(--geo-accent);
+            border-color: var(--geo-accent);
+            color: white;
+        }
+        
+        .artist-pagination__btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .artist-pagination__ellipsis {
+            padding: 0 0.5rem;
+            color: var(--geo-text-muted);
+        }
+        
+        @media (max-width: 900px) {
+            .geo-artist-title { font-size: 2.5rem; }
+            .geo-artist-modal__albums { grid-template-columns: repeat(3, 1fr); }
+        }
+        
+        @media (max-width: 600px) {
+            .geo-artist-title { font-size: 2rem; }
+            .geo-artist-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; padding: 1rem; }
+            .geo-artist-modal__albums { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body class="geo-theme">
     <!-- 导航栏 -->
-    <nav>
-        <a href="index.html" class="logo">东方同人录</a>
-        <div class="nav-links">
-            <a href="index.html" class="nav-link" data-page="home">首页</a>
-            <a href="album.html" class="nav-link" data-page="music">音乐库</a>
-            <a href="artist-showcase.html" class="nav-link active" data-page="artist">艺术家</a>
-            <a href="event.html" class="nav-link" data-page="event">展会</a>
-            <a href="#">关于我们</a>
+    <nav class="geo-nav">
+        <a href="index.html" class="geo-logo">TONGRENLU</a>
+        <div class="geo-nav__links">
+            <a href="index.html" class="geo-nav__link">首页</a>
+            <a href="album.html" class="geo-nav__link">音乐库</a>
+            <a href="artist-showcase.html" class="geo-nav__link active">艺术家</a>
+            <a href="event.html" class="geo-nav__link">展会</a>
         </div>
-        <div class="nav-stats">
-            <span class="nav-stats__number" id="navArtistCount">--</span>
-            <span class="nav-stats__label">位艺术家</span>
+        <div class="geo-nav__stats">
+            <span class="geo-nav__number" id="navArtistCount">--</span>
+            <span class="geo-nav__label">艺术家</span>
         </div>
     </nav>
     
-    <!-- 艺术家展示页面 -->
-    <div class="artist-showcase-page">
-        <!-- 搜索区域 -->
-        <div class="artist-search-section">
-            <h1 class="artist-page-title">艺术家</h1>
-            <div class="artist-search-box">
-                <i class="fas fa-search artist-search-icon"></i>
-                <input type="text" class="artist-search-input" id="artistSearchInput" placeholder="搜索艺术家...">
-                <button class="artist-search-clear" id="artistSearchClear" style="display: none;">
+    <!-- 艺术家页面 -->
+    <div class="geo-artist-page">
+        <!-- 搜索头部 -->
+        <div class="geo-artist-header">
+            <h1 class="geo-artist-title">艺术家</h1>
+            <div class="geo-artist-search">
+                <input type="text" class="geo-artist-search__input" id="artistSearchInput" placeholder="搜索艺术家...">
+                <i class="fas fa-search geo-artist-search__icon"></i>
+                <button class="geo-artist-search__clear" id="artistSearchClear">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         </div>
         
-        <!-- 艺术家卡片网格 -->
-        <div class="artist-grid" id="artistGrid">
-            <!-- 卡片将通过 JavaScript 动态生成 -->
+        <!-- 艺术家网格 -->
+        <div class="geo-artist-grid" id="artistGrid">
         </div>
         
         <!-- 加载状态 -->
-        <div class="artist-loading" id="artistLoading">
-            <div class="artist-loading__spinner"></div>
-            <p>正在加载艺术家...</p>
+        <div id="artistLoading" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>加载艺术家...</span>
         </div>
         
         <!-- 空状态 -->
-        <div class="artist-empty" id="artistEmpty" style="display: none;">
-            <i class="fas fa-user-slash"></i>
-            <p>未找到匹配的艺术家</p>
+        <div class="geo-artist-empty" id="artistEmpty" style="display: none;">
+            <i class="fas fa-user-slash geo-artist-empty__icon"></i>
+            <p class="geo-artist-empty__text">未找到匹配的艺术家</p>
+        </div>
+    </div>
+    
+    <!-- 艺术家专辑模态框 -->
+    <div class="geo-artist-modal" id="artistModal">
+        <div class="geo-artist-modal__content">
+            <div class="geo-artist-modal__header">
+                <h2 class="geo-artist-modal__title" id="artistModalTitle">艺术家专辑</h2>
+                <button class="geo-artist-modal__close" id="artistModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="geo-artist-modal__body" id="artistModalBody">
+                <!-- 专辑动态加载 -->
+            </div>
+            <div class="geo-artist-modal__pagination" id="artistModalPagination">
+                <!-- 分页按钮 -->
+            </div>
         </div>
     </div>
     
     <!-- 页脚 -->
-    <footer class="home-footer">
-        <p>&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
-        <p>本网站仅为学习交流使用，不涉及任何商业用途</p>
+    <footer class="geo-footer">
+        <div class="geo-footer__logo">TONGRENLU</div>
+        <p class="geo-footer__text">&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
+        <p class="geo-footer__text">本网站仅为学习交流使用，不涉及任何商业用途</p>
     </footer>
-
-    <!-- 专辑列表弹窗 -->
-    <div class="artist-modal" id="artistModal">
-        <div class="artist-modal__content">
-            <div class="artist-modal__header">
-                <h2 class="artist-modal__title" id="artistModalTitle">艺术家专辑</h2>
-                <button class="artist-modal__close" id="artistModalClose">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="artist-modal__body" id="artistModalBody">
-                <!-- 专辑列表将通过 JS 动态生成 -->
-            </div>
-            
-            <!-- 分页控件 -->
-            <div class="artist-modal__pagination" id="artistModalPagination">
-                <!-- 分页按钮将通过 JavaScript 动态生成 -->
-            </div>
-        </div>
-    </div>
     
-    <!-- 底部音乐播放器 -->
-    <div class="player">
-        <div class="now-playing">
-            <div class="now-playing-cover">🎵</div>
-            <div class="now-playing-info">
-                <div class="now-playing-title">梦月仙境</div>
-                <div class="now-playing-artist">上海爱丽丝幻乐团</div>
-            </div>
-        </div>
-        
-        <div class="player-controls">
-            <div class="control-buttons">
-                <button class="control-btn"><i class="fas fa-random"></i></button>
-                <button class="control-btn"><i class="fas fa-step-backward"></i></button>
-                <button class="control-btn play-pause"><i class="fas fa-play"></i></button>
-                <button class="control-btn"><i class="fas fa-step-forward"></i></button>
-                <button class="control-btn"><i class="fas fa-redo"></i></button>
-            </div>
-            
-            <div class="progress-container">
-                <span class="progress-time">1:20</span>
-                <div class="progress-bar">
-                    <div class="progress"></div>
-                </div>
-                <span class="progress-time">4:45</span>
-            </div>
-        </div>
-        
-        <div class="volume-controls">
-            <i class="fas fa-volume-up volume-icon"></i>
-            <div class="volume-slider">
-                <div class="volume-level"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 隐藏的音频播放器 -->
-    <audio id="audioPlayer" style="display: none;"></audio>
-    
-    <!-- 版本号显示 -->
-    <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 1002;">
-        版本: v1.2.1
+    <!-- 版本号 -->
+    <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: var(--geo-primary); color: white; padding: 5px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; z-index: 1002; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
+        v2.0 GEOMETRIC
     </div>
 
     <!-- JavaScript -->
     <script src="webjars/jquery/jquery.min.js"></script>
     <script src="components/shared/image-loader.js"></script>
-    <script src="components/player/player-base-core.js"></script>
-    <script src="components/player/player-base-ui.js"></script>
-    <script src="components/player/player-events.js"></script>
-    <script src="components/home/particles.js"></script>
     <script src="components/artist-showcase/artist-showcase.js"></script>
 </body>
 </html>

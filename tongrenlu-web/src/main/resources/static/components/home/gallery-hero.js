@@ -101,8 +101,12 @@
             // 渲染15个画廊位置
             const html = this.layout.map(function(item, index) {
                 const album = shuffledAlbums[index % shuffledAlbums.length];
-                const coverStyle = album.cloudMusicPicUrl
-                    ? 'background-image: url(' + album.cloudMusicPicUrl + ')'
+                // 使用优化后的图片URL（300x300）
+                const optimizedUrl = album.cloudMusicPicUrl 
+                    ? (typeof getOptimizedImageUrl === 'function' ? getOptimizedImageUrl(album.cloudMusicPicUrl, 300, 300) : album.cloudMusicPicUrl)
+                    : null;
+                const coverStyle = optimizedUrl
+                    ? 'background-image: url(' + optimizedUrl + ')'
                     : '';
                 const title = album.title || '';
 

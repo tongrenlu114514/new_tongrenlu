@@ -94,10 +94,14 @@
 
             const self = this;
             const html = albums.map(function(album) {
-                const coverStyle = album.cloudMusicPicUrl
-                    ? 'background-image: url(' + album.cloudMusicPicUrl + ')'
+                // 使用优化后的图片URL（200x200）
+                const optimizedUrl = album.cloudMusicPicUrl 
+                    ? (typeof getOptimizedImageUrl === 'function' ? getOptimizedImageUrl(album.cloudMusicPicUrl, 200, 200) : album.cloudMusicPicUrl)
+                    : null;
+                const coverStyle = optimizedUrl
+                    ? 'background-image: url(' + optimizedUrl + ')'
                     : '';
-                const fallback = album.cloudMusicPicUrl ? '' : '<span class="home-album-card__cover-fallback">🎵</span>';
+                const fallback = optimizedUrl ? '' : '<span class="home-album-card__cover-fallback">🎵</span>';
 
                 return '<div class="home-album-card" data-album-id="' + album.id + '">' +
                     '<div class="home-album-card__cover" style="' + coverStyle + '">' +

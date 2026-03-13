@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>组件风格预览 - 东方同人录</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Noto+Serif+JP:wght@200;300;400;500;600;700;900&family=Audiowide&family=Righteous&family=Cinzel:wght@400;500;600;700&family=UnifrakturMaguntia&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Josefin+Sans:wght@300;400;500;600&family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Shippori+Mincho:wght@400;500;600;700;800&family=Zen+Antique+Soft&display=swap" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* ============================================
+           全局重置与基础样式
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* 风格切换导航 */
+        .style-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0;
+            padding: 0;
+            background: #0a0a0a;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .style-nav__btn {
+            padding: 0.9rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 0.3px;
+        }
+        
+        .style-nav__btn:hover {
+            color: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .style-nav__btn.active {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .style-nav__btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 2px;
+            background: currentColor;
+        }
+        
+        /* 风格容器 */
+        .style-container {
+            display: none;
+            min-height: 100vh;
+            padding-top: 50px;
+        }
+        
+        .style-container.active {
+            display: block;
+        }
+        
+        /* ============================================
+           风格1: 赛博朋克霓虹风 (Cyberpunk Neon)
+           ============================================ */
+        .cyberpunk {
+            --cyber-bg: #0a0a0f;
+            --cyber-neon-cyan: #00fff0;
+            --cyber-neon-magenta: #ff00ff;
+            --cyber-neon-purple: #8b00ff;
+            --cyber-text: #e0e0e0;
+            --cyber-text-dim: #6a6a8a;
+            --cyber-border: rgba(0, 255, 240, 0.2);
+            
+            background: var(--cyber-bg);
+            color: var(--cyber-text);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyberpunk::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 1000;
+            animation: scanline 8s linear infinite;
+        }
+        
+        @keyframes scanline { 0% { transform: translateY(0); } 100% { transform: translateY(100px); } }
+        
+        .cyberpunk::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(0,255,240,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,240,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .cyber-nav {
+            position: relative;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 3rem;
+            background: rgba(10, 10, 15, 0.95);
+            border-bottom: 1px solid var(--cyber-border);
+            backdrop-filter: blur(10px);
+        }
+        
+        .cyber-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--cyber-neon-cyan);
+            text-decoration: none;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px var(--cyber-neon-cyan), 0 0 20px var(--cyber-neon-cyan);
+            animation: cyber-glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes cyber-glow { from { text-shadow: 0 0 10px var(--cyber-neon-cyan); } to { text-shadow: 0 0 20px var(--cyber-neon-cyan), 0 0 40px var(--cyber-neon-cyan); } }
+        
+        .cyber-nav__links { display: flex; gap: 2.5rem; }
+        .cyber-nav__link {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--cyber-text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+        .cyber-nav__link:hover { color: var(--cyber-neon-cyan); }
+        
+        .cyber-nav__stats {
+            font-family: 'Share Tech Mono', monospace;
+            background: linear-gradient(135deg, rgba(0,255,240,0.1), rgba(255,0,255,0.1));
+            border: 1px solid var(--cyber-border);
+            padding: 0.6rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .cyber-nav__number { font-size: 1.2rem; color: var(--cyber-neon-cyan); font-weight: 700; text-shadow: 0 0 10px var(--cyber-neon-cyan); }
+        .cyber-nav__label { font-size: 0.75rem; color: var(--cyber-text-dim); }
+        
+        .cyber-hero {
+            position: relative;
+            z-index: 1;
+            min-height: 75vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            background: radial-gradient(ellipse at 20% 80%, rgba(139,0,255,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(0,255,240,0.1) 0%, transparent 50%);
+        }
+        
+        .cyber-hero__content { text-align: center; max-width: 800px; }
+        .cyber-hero__title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            animation: glitch 3s infinite;
+        }
+        .cyber-hero__title span:nth-child(1) { color: var(--cyber-neon-cyan); text-shadow: 0 0 10px var(--cyber-neon-cyan); }
+        .cyber-hero__title span:nth-child(2) { color: var(--cyber-neon-magenta); text-shadow: 0 0 10px var(--cyber-neon-magenta); animation: glitch-skew 2s infinite; }
+        
+        @keyframes glitch { 0%, 90%, 100% { transform: translate(0); } 92% { transform: translate(-2px, 2px); } 94% { transform: translate(2px, -2px); } 96% { transform: translate(-1px, -1px); } 98% { transform: translate(1px, 1px); } }
+        @keyframes glitch-skew { 0%, 90%, 100% { transform: skewX(0deg); } 92% { transform: skewX(-2deg); } 94% { transform: skewX(2deg); } }
+        
+        .cyber-hero__subtitle { font-family: 'Share Tech Mono', monospace; font-size: 1rem; color: var(--cyber-text-dim); margin-bottom: 2.5rem; letter-spacing: 2px; }
+        .cyber-hero__cta { display: inline-flex; gap: 1.5rem; }
+        
+        .cyber-btn {
+            font-family: 'Orbitron', sans-serif;
+            padding: 0.9rem 2rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .cyber-btn--primary { background: linear-gradient(135deg, var(--cyber-neon-cyan), #00d4ff); color: var(--cyber-bg); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+        .cyber-btn--primary:hover { box-shadow: 0 0 20px var(--cyber-neon-cyan), 0 0 40px var(--cyber-neon-cyan); transform: translateY(-2px); }
+        .cyber-btn--secondary { background: transparent; color: var(--cyber-neon-magenta); border: 2px solid var(--cyber-neon-magenta); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+        .cyber-btn--secondary:hover { background: rgba(255,0,255,0.1); box-shadow: 0 0 20px var(--cyber-neon-magenta); }
+        
+        .cyber-section { position: relative; z-index: 1; padding: 3rem; }
+        .cyber-section__header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+        .cyber-section__title { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--cyber-text); letter-spacing: 3px; }
+        .cyber-section__line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--cyber-neon-cyan), transparent); }
+        
+        .cyber-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; }
+        
+        .cyber-card {
+            position: relative;
+            background: rgba(18, 18, 26, 0.9);
+            border: 1px solid var(--cyber-border);
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+        .cyber-card:hover { transform: translateY(-5px); border-color: var(--cyber-neon-cyan); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(0,255,240,0.2); }
+        
+        .cyber-card__cover { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #1a1a2e, #0a0a0f); position: relative; overflow: hidden; }
+        .cyber-card__fallback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; color: var(--cyber-neon-purple); opacity: 0.5; }
+        .cyber-card__play { position: absolute; bottom: 8px; right: 8px; width: 35px; height: 35px; background: var(--cyber-neon-magenta); border: none; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; cursor: pointer; opacity: 0; transform: scale(0.8); transition: all 0.3s ease; box-shadow: 0 0 15px var(--cyber-neon-magenta); }
+        .cyber-card:hover .cyber-card__play { opacity: 1; transform: scale(1); }
+        
+        .cyber-card__info { padding: 1rem; border-top: 1px solid var(--cyber-border); }
+        .cyber-card__title { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--cyber-text); margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cyber-card__artist { font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--cyber-text-dim); }
+        
+        .cyber-player {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(10, 10, 15, 0.98);
+            border-top: 1px solid var(--cyber-border);
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+        .cyber-player__info { display: flex; align-items: center; gap: 0.8rem; min-width: 220px; }
+        .cyber-player__cover { width: 42px; height: 42px; background: linear-gradient(135deg, var(--cyber-neon-cyan), var(--cyber-neon-purple)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .cyber-player__title { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--cyber-text); }
+        .cyber-player__artist { font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; color: var(--cyber-text-dim); }
+        .cyber-player__buttons { display: flex; align-items: center; gap: 1.2rem; }
+        .cyber-player__btn { background: none; border: none; color: var(--cyber-text-dim); font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; }
+        .cyber-player__btn:hover { color: var(--cyber-neon-cyan); text-shadow: 0 0 10px var(--cyber-neon-cyan); }
+        .cyber-player__btn--play { width: 38px; height: 38px; background: var(--cyber-neon-cyan); color: var(--cyber-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--cyber-neon-cyan); }
+        .cyber-player__progress { width: 100%; display: flex; align-items: center; gap: 0.8rem; }
+        .cyber-player__bar { flex: 1; height: 3px; background: rgba(255,255,255,0.1); position: relative; cursor: pointer; }
+        .cyber-player__bar-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--cyber-neon-cyan), var(--cyber-neon-magenta)); }
+        .cyber-player__time { font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; color: var(--cyber-text-dim); min-width: 35px; }
+        
+        /* ============================================
+           风格2: 极简禅意风 (Zen Minimal)
+           ============================================ */
+        .zen {
+            --zen-bg: #f8f6f3;
+            --zen-bg-alt: #fffef9;
+            --zen-text: #2d2d2d;
+            --zen-text-light: #6b6b6b;
+            --zen-text-muted: #999;
+            --zen-accent: #c9a87c;
+            --zen-accent-dark: #8b7355;
+            --zen-border: #e8e4df;
+            --zen-shadow: 0 4px 30px rgba(0, 0, 0, 0.04);
+            
+            background: var(--zen-bg);
+            color: var(--zen-text);
+        }
+        
+        .zen-nav { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 4rem; background: var(--zen-bg-alt); border-bottom: 1px solid var(--zen-border); }
+        .zen-logo { font-family: 'Noto Serif JP', serif; font-size: 1.4rem; font-weight: 300; color: var(--zen-text); text-decoration: none; letter-spacing: 0.1em; }
+        .zen-nav__links { display: flex; gap: 3rem; }
+        .zen-nav__link { font-family: 'Noto Serif JP', serif; font-size: 0.8rem; color: var(--zen-text-light); text-decoration: none; letter-spacing: 0.15em; transition: color 0.3s ease; }
+        .zen-nav__link:hover { color: var(--zen-text); }
+        .zen-nav__stats { font-family: 'Cormorant Garamond', serif; display: flex; align-items: baseline; gap: 0.4rem; }
+        .zen-nav__number { font-size: 1.8rem; font-weight: 300; color: var(--zen-accent); line-height: 1; }
+        .zen-nav__label { font-size: 0.75rem; color: var(--zen-text-muted); letter-spacing: 0.1em; }
+        
+        .zen-hero { min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 4rem; }
+        .zen-hero__content { text-align: center; max-width: 700px; }
+        .zen-hero__title { font-family: 'Noto Serif JP', serif; font-size: 3rem; font-weight: 200; line-height: 1.4; margin-bottom: 1.5rem; letter-spacing: 0.15em; }
+        .zen-hero__title .accent { color: var(--zen-accent-dark); font-weight: 400; }
+        .zen-hero__divider { width: 50px; height: 1px; background: var(--zen-accent); margin: 0 auto 1.5rem; }
+        .zen-hero__subtitle { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 300; color: var(--zen-text-light); letter-spacing: 0.1em; margin-bottom: 2.5rem; font-style: italic; }
+        .zen-hero__cta { display: inline-flex; gap: 1.5rem; }
+        .zen-btn { font-family: 'Noto Serif JP', serif; padding: 0.9rem 2rem; font-size: 0.75rem; letter-spacing: 0.2em; border: none; cursor: pointer; transition: all 0.4s ease; }
+        .zen-btn--primary { background: var(--zen-text); color: var(--zen-bg-alt); }
+        .zen-btn--secondary { background: transparent; color: var(--zen-text); border: 1px solid var(--zen-border); }
+        
+        .zen-section { padding: 4rem; }
+        .zen-section__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
+        .zen-section__title { font-family: 'Noto Serif JP', serif; font-size: 1.2rem; font-weight: 300; letter-spacing: 0.2em; }
+        .zen-section__more { font-family: 'Cormorant Garamond', serif; font-size: 0.85rem; font-style: italic; color: var(--zen-text-muted); text-decoration: none; }
+        
+        .zen-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; }
+        .zen-card { background: var(--zen-bg-alt); transition: all 0.5s ease; cursor: pointer; }
+        .zen-card:hover { transform: translateY(-8px); box-shadow: 0 8px 50px rgba(0,0,0,0.08); }
+        .zen-card__cover { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #e8e4df, #d4cfc7); position: relative; overflow: hidden; }
+        .zen-card__fallback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; color: var(--zen-text-muted); opacity: 0.4; }
+        .zen-card__play { position: absolute; bottom: 0.8rem; right: 0.8rem; width: 38px; height: 38px; background: var(--zen-bg-alt); border: none; display: flex; align-items: center; justify-content: center; color: var(--zen-text); font-size: 0.8rem; cursor: pointer; opacity: 0; transform: translateY(10px); transition: all 0.4s ease; box-shadow: var(--zen-shadow); }
+        .zen-card:hover .zen-card__play { opacity: 1; transform: translateY(0); }
+        .zen-card__info { padding: 1.2rem; }
+        .zen-card__title { font-family: 'Noto Serif JP', serif; font-size: 0.95rem; font-weight: 400; color: var(--zen-text); margin-bottom: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .zen-card__artist { font-family: 'Cormorant Garamond', serif; font-size: 0.8rem; font-style: italic; color: var(--zen-text-light); }
+        
+        .zen-player { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--zen-bg-alt); border-top: 1px solid var(--zen-border); padding: 1rem 3rem; display: flex; align-items: center; gap: 2rem; }
+        .zen-player__info { display: flex; align-items: center; gap: 1rem; min-width: 250px; }
+        .zen-player__cover { width: 48px; height: 48px; background: linear-gradient(135deg, var(--zen-accent), var(--zen-accent-dark)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; }
+        .zen-player__title { font-family: 'Noto Serif JP', serif; font-size: 0.85rem; font-weight: 400; color: var(--zen-text); }
+        .zen-player__artist { font-family: 'Cormorant Garamond', serif; font-size: 0.75rem; font-style: italic; color: var(--zen-text-light); }
+        .zen-player__buttons { display: flex; align-items: center; gap: 1.5rem; }
+        .zen-player__btn { background: none; border: none; color: var(--zen-text-light); font-size: 0.85rem; cursor: pointer; }
+        .zen-player__btn--play { width: 36px; height: 36px; background: var(--zen-text); color: var(--zen-bg-alt); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+        .zen-player__progress { width: 100%; display: flex; align-items: center; gap: 1rem; }
+        .zen-player__bar { flex: 1; height: 2px; background: var(--zen-border); position: relative; cursor: pointer; }
+        .zen-player__bar-fill { height: 100%; width: 35%; background: var(--zen-accent); }
+        .zen-player__time { font-family: 'Cormorant Garamond', serif; font-size: 0.7rem; color: var(--zen-text-muted); min-width: 30px; }
+        
+        /* ============================================
+           风格3: 蒸汽波复古风 (Vaporwave Retro)
+           ============================================ */
+        .vaporwave {
+            --vapor-bg: #1a0a2e;
+            --vapor-pink: #ff6ad5;
+            --vapor-cyan: #00d4ff;
+            --vapor-purple: #b967ff;
+            --vapor-text: #ffffff;
+            --vapor-text-dim: rgba(255,255,255,0.7);
+            
+            background: var(--vapor-bg);
+            color: var(--vapor-text);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .vaporwave::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 200%; height: 200%;
+            background: linear-gradient(rgba(185,103,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(185,103,255,0.1) 1px, transparent 1px);
+            background-size: 60px 60px;
+            transform: perspective(500px) rotateX(60deg);
+            transform-origin: top center;
+            animation: grid-scroll 20s linear infinite;
+            z-index: 0;
+        }
+        
+        @keyframes grid-scroll { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(60px); } }
+        
+        .vaporwave::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(ellipse at 20% 0%, rgba(255,106,213,0.3) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(0,212,255,0.3) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .vapor-nav { position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 3rem; background: rgba(26,10,46,0.8); backdrop-filter: blur(15px); border-bottom: 2px solid transparent; background-image: linear-gradient(var(--vapor-bg), var(--vapor-bg)), linear-gradient(90deg, var(--vapor-pink), var(--vapor-cyan)); background-origin: border-box; background-clip: padding-box, border-box; }
+        .vapor-logo { font-family: 'Righteous', cursive; font-size: 1.6rem; color: transparent; background: linear-gradient(90deg, var(--vapor-pink), var(--vapor-cyan)); -webkit-background-clip: text; background-clip: text; text-decoration: none; letter-spacing: 2px; }
+        .vapor-nav__links { display: flex; gap: 2.5rem; }
+        .vapor-nav__link { font-family: 'Audiowide', cursive; font-size: 0.8rem; color: var(--vapor-text-dim); text-decoration: none; letter-spacing: 1px; transition: all 0.3s ease; }
+        .vapor-nav__link:hover { color: var(--vapor-text); text-shadow: 0 0 10px var(--vapor-pink); }
+        .vapor-nav__stats { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.2rem; background: linear-gradient(135deg, rgba(255,106,213,0.2), rgba(0,212,255,0.2)); border: 1px solid rgba(255,106,213,0.3); border-radius: 25px; }
+        .vapor-nav__number { font-family: 'Audiowide', cursive; font-size: 1.2rem; color: var(--vapor-pink); text-shadow: 0 0 15px var(--vapor-pink); }
+        .vapor-nav__label { font-size: 0.75rem; color: var(--vapor-text-dim); }
+        
+        .vapor-hero { position: relative; z-index: 1; min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: 3rem; text-align: center; }
+        .vapor-hero__content { max-width: 800px; }
+        .vapor-hero__badge { display: inline-block; padding: 0.4rem 1.2rem; background: linear-gradient(90deg, rgba(255,106,213,0.2), rgba(0,212,255,0.2)); border: 1px solid rgba(255,106,213,0.4); font-family: 'Audiowide', cursive; font-size: 0.7rem; letter-spacing: 3px; color: var(--vapor-cyan); margin-bottom: 1.5rem; text-transform: uppercase; }
+        .vapor-hero__title { font-family: 'Righteous', cursive; font-size: 4.5rem; line-height: 1.1; margin-bottom: 1.2rem; color: transparent; background: linear-gradient(135deg, var(--vapor-pink), var(--vapor-purple), var(--vapor-cyan)); -webkit-background-clip: text; background-clip: text; animation: vapor-pulse 3s ease-in-out infinite; }
+        @keyframes vapor-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.2); } }
+        .vapor-hero__subtitle { font-family: 'Audiowide', cursive; font-size: 0.95rem; color: var(--vapor-text-dim); margin-bottom: 2.5rem; letter-spacing: 2px; }
+        .vapor-hero__cta { display: inline-flex; gap: 1.5rem; }
+        .vapor-btn { font-family: 'Audiowide', cursive; padding: 0.9rem 2rem; font-size: 0.8rem; letter-spacing: 2px; border: none; cursor: pointer; transition: all 0.3s ease; }
+        .vapor-btn--primary { background: linear-gradient(90deg, var(--vapor-pink), var(--vapor-purple)); color: white; border-radius: 25px; }
+        .vapor-btn--primary:hover { box-shadow: 0 0 30px var(--vapor-pink); transform: translateY(-3px); }
+        .vapor-btn--secondary { background: transparent; color: var(--vapor-cyan); border: 2px solid var(--vapor-cyan); border-radius: 25px; }
+        
+        .vapor-section { position: relative; z-index: 1; padding: 3rem; }
+        .vapor-section__header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+        .vapor-section__title { font-family: 'Righteous', cursive; font-size: 1.8rem; color: transparent; background: linear-gradient(90deg, var(--vapor-pink), var(--vapor-cyan)); -webkit-background-clip: text; background-clip: text; }
+        .vapor-section__line { flex: 1; height: 2px; background: linear-gradient(90deg, var(--vapor-pink), transparent); opacity: 0.5; }
+        
+        .vapor-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; }
+        .vapor-card { position: relative; background: rgba(45,27,78,0.6); border: 1px solid rgba(255,106,213,0.2); overflow: hidden; transition: all 0.4s ease; backdrop-filter: blur(10px); }
+        .vapor-card:hover { transform: translateY(-8px) scale(1.02); border-color: var(--vapor-pink); box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 30px rgba(255,106,213,0.3); }
+        .vapor-card__cover { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #2d1b4e, #1a0a2e); position: relative; overflow: hidden; }
+        .vapor-card__fallback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; color: var(--vapor-purple); opacity: 0.5; }
+        .vapor-card__play { position: absolute; bottom: 8px; right: 8px; width: 36px; height: 36px; background: linear-gradient(135deg, var(--vapor-pink), var(--vapor-purple)); border: none; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; cursor: pointer; opacity: 0; transform: scale(0.8); transition: all 0.3s ease; box-shadow: 0 0 20px var(--vapor-pink); z-index: 2; }
+        .vapor-card:hover .vapor-card__play { opacity: 1; transform: scale(1); }
+        .vapor-card__info { padding: 1rem; border-top: 1px solid rgba(255,106,213,0.2); position: relative; z-index: 2; }
+        .vapor-card__title { font-family: 'Righteous', cursive; font-size: 0.9rem; color: var(--vapor-text); margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .vapor-card__artist { font-family: 'Audiowide', cursive; font-size: 0.65rem; color: var(--vapor-cyan); letter-spacing: 1px; }
+        
+        .vapor-player { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: rgba(26,10,46,0.95); backdrop-filter: blur(20px); border-top: 2px solid transparent; background-image: linear-gradient(var(--vapor-bg), var(--vapor-bg)), linear-gradient(90deg, var(--vapor-pink), var(--vapor-cyan)); background-origin: border-box; background-clip: padding-box, border-box; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+        .vapor-player__info { display: flex; align-items: center; gap: 0.8rem; min-width: 220px; }
+        .vapor-player__cover { width: 42px; height: 42px; background: linear-gradient(135deg, var(--vapor-pink), var(--vapor-purple)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .vapor-player__title { font-family: 'Righteous', cursive; font-size: 0.85rem; color: var(--vapor-text); }
+        .vapor-player__artist { font-family: 'Audiowide', cursive; font-size: 0.65rem; color: var(--vapor-cyan); }
+        .vapor-player__buttons { display: flex; align-items: center; gap: 1.2rem; }
+        .vapor-player__btn { background: none; border: none; color: var(--vapor-text-dim); font-size: 0.85rem; cursor: pointer; }
+        .vapor-player__btn:hover { color: var(--vapor-pink); text-shadow: 0 0 10px var(--vapor-pink); }
+        .vapor-player__btn--play { width: 38px; height: 38px; background: linear-gradient(135deg, var(--vapor-pink), var(--vapor-purple)); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--vapor-pink); }
+        .vapor-player__progress { width: 100%; display: flex; align-items: center; gap: 0.8rem; }
+        .vapor-player__bar { flex: 1; height: 3px; background: rgba(255,255,255,0.1); position: relative; cursor: pointer; border-radius: 2px; }
+        .vapor-player__bar-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--vapor-pink), var(--vapor-cyan)); border-radius: 2px; }
+        .vapor-player__time { font-family: 'Audiowide', cursive; font-size: 0.65rem; color: var(--vapor-text-dim); min-width: 35px; }
+        
+        /* ============================================
+           风格4: 暗黑哥特风 (Dark Gothic)
+           ============================================ */
+        .gothic {
+            --goth-bg: #0d0d0d;
+            --goth-bg-alt: #1a1a1a;
+            --goth-blood: #8b0000;
+            --goth-blood-light: #b22222;
+            --goth-gold: #c9a227;
+            --goth-silver: #708090;
+            --goth-text: #e8e8e8;
+            --goth-text-dim: #6a6a6a;
+            --goth-border: rgba(139, 0, 0, 0.3);
+            
+            background: var(--goth-bg);
+            color: var(--goth-text);
+            position: relative;
+        }
+        
+        .gothic::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                radial-gradient(ellipse at 50% 0%, rgba(139, 0, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 0% 100%, rgba(139, 0, 0, 0.05) 0%, transparent 40%),
+                radial-gradient(ellipse at 100% 100%, rgba(139, 0, 0, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .goth-nav { position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 3rem; background: rgba(13, 13, 13, 0.95); border-bottom: 1px solid var(--goth-border); backdrop-filter: blur(10px); }
+        .goth-logo { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 600; color: var(--goth-gold); text-decoration: none; letter-spacing: 4px; text-transform: uppercase; }
+        .goth-nav__links { display: flex; gap: 2.5rem; }
+        .goth-nav__link { font-family: 'Cinzel', serif; font-size: 0.75rem; color: var(--goth-text-dim); text-decoration: none; letter-spacing: 2px; text-transform: uppercase; transition: all 0.3s ease; position: relative; }
+        .goth-nav__link::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: var(--goth-blood); transition: width 0.3s ease; }
+        .goth-nav__link:hover { color: var(--goth-text); }
+        .goth-nav__link:hover::after { width: 100%; }
+        .goth-nav__stats { display: flex; align-items: center; gap: 0.5rem; }
+        .goth-nav__number { font-family: 'Cinzel', serif; font-size: 1.4rem; color: var(--goth-blood-light); font-weight: 600; }
+        .goth-nav__label { font-size: 0.7rem; color: var(--goth-text-dim); letter-spacing: 1px; text-transform: uppercase; }
+        
+        .goth-hero { position: relative; z-index: 1; min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: 3rem; }
+        .goth-hero__content { text-align: center; max-width: 800px; }
+        .goth-hero__ornament { font-size: 2rem; color: var(--goth-gold); opacity: 0.6; margin-bottom: 1.5rem; }
+        .goth-hero__title { font-family: 'UnifrakturMaguntia', cursive; font-size: 4rem; line-height: 1.2; margin-bottom: 1rem; color: var(--goth-text); text-shadow: 0 0 30px rgba(139, 0, 0, 0.3); }
+        .goth-hero__subtitle { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--goth-text-dim); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 2.5rem; }
+        .goth-hero__cta { display: inline-flex; gap: 1.5rem; }
+        .goth-btn { font-family: 'Cinzel', serif; padding: 0.9rem 2.2rem; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.4s ease; position: relative; }
+        .goth-btn--primary { background: linear-gradient(135deg, var(--goth-blood), var(--goth-blood-light)); color: var(--goth-text); border: 1px solid var(--goth-blood-light); }
+        .goth-btn--primary::before { content: '◆'; position: absolute; left: 10px; color: var(--goth-gold); font-size: 0.6rem; }
+        .goth-btn--primary::after { content: '◆'; position: absolute; right: 10px; color: var(--goth-gold); font-size: 0.6rem; }
+        .goth-btn--primary:hover { box-shadow: 0 0 30px rgba(139, 0, 0, 0.5); transform: translateY(-2px); }
+        .goth-btn--secondary { background: transparent; color: var(--goth-text-dim); border: 1px solid var(--goth-border); }
+        .goth-btn--secondary:hover { border-color: var(--goth-blood); color: var(--goth-text); }
+        
+        .goth-section { position: relative; z-index: 1; padding: 3rem; }
+        .goth-section__header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+        .goth-section__ornament { color: var(--goth-gold); opacity: 0.5; font-size: 0.8rem; }
+        .goth-section__title { font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: 500; color: var(--goth-text); letter-spacing: 3px; text-transform: uppercase; }
+        .goth-section__line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--goth-blood), transparent); }
+        
+        .goth-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+        .goth-card { position: relative; background: var(--goth-bg-alt); border: 1px solid var(--goth-border); overflow: hidden; transition: all 0.4s ease; }
+        .goth-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--goth-blood), transparent); opacity: 0; transition: opacity 0.3s ease; }
+        .goth-card:hover::before { opacity: 1; }
+        .goth-card:hover { transform: translateY(-5px); border-color: var(--goth-blood-light); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(139, 0, 0, 0.2); }
+        .goth-card__cover { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #1a1a1a, #0d0d0d); position: relative; overflow: hidden; }
+        .goth-card__fallback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; color: var(--goth-blood); opacity: 0.4; }
+        .goth-card__play { position: absolute; bottom: 8px; right: 8px; width: 36px; height: 36px; background: var(--goth-blood); border: 1px solid var(--goth-blood-light); display: flex; align-items: center; justify-content: center; color: var(--goth-text); font-size: 0.75rem; cursor: pointer; opacity: 0; transform: scale(0.8); transition: all 0.3s ease; }
+        .goth-card:hover .goth-card__play { opacity: 1; transform: scale(1); }
+        .goth-card__info { padding: 1rem; border-top: 1px solid var(--goth-border); }
+        .goth-card__title { font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 500; color: var(--goth-text); margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .goth-card__artist { font-family: 'Spectral', serif; font-size: 0.75rem; font-style: italic; color: var(--goth-text-dim); }
+        
+        .goth-player { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: rgba(13, 13, 13, 0.98); border-top: 1px solid var(--goth-border); padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; backdrop-filter: blur(10px); }
+        .goth-player__info { display: flex; align-items: center; gap: 0.8rem; min-width: 220px; }
+        .goth-player__cover { width: 42px; height: 42px; background: linear-gradient(135deg, var(--goth-blood), var(--goth-bg-alt)); border: 1px solid var(--goth-border); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--goth-gold); }
+        .goth-player__title { font-family: 'Cinzel', serif; font-size: 0.8rem; color: var(--goth-text); }
+        .goth-player__artist { font-family: 'Spectral', serif; font-size: 0.7rem; font-style: italic; color: var(--goth-text-dim); }
+        .goth-player__buttons { display: flex; align-items: center; gap: 1.2rem; }
+        .goth-player__btn { background: none; border: none; color: var(--goth-text-dim); font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; }
+        .goth-player__btn:hover { color: var(--goth-gold); }
+        .goth-player__btn--play { width: 38px; height: 38px; background: var(--goth-blood); border: 1px solid var(--goth-blood-light); color: var(--goth-text); display: flex; align-items: center; justify-content: center; }
+        .goth-player__progress { width: 100%; display: flex; align-items: center; gap: 0.8rem; }
+        .goth-player__bar { flex: 1; height: 3px; background: rgba(255, 255, 255, 0.05); position: relative; cursor: pointer; }
+        .goth-player__bar-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--goth-blood), var(--goth-gold)); }
+        .goth-player__time { font-family: 'Cinzel', serif; font-size: 0.65rem; color: var(--goth-text-dim); min-width: 35px; }
+        
+        /* ============================================
+           风格5: 自然森林风 (Forest Natural)
+           ============================================ */
+        .forest {
+            --forest-bg: #f5f2eb;
+            --forest-bg-alt: #fdfcf9;
+            --forest-green: #2d5a27;
+            --forest-green-light: #4a7c42;
+            --forest-cream: #e8e0d0;
+            --forest-brown: #6b4423;
+            --forest-text: #2a2a2a;
+            --forest-text-light: #5a5a5a;
+            --forest-text-muted: #8a8a7a;
+            --forest-border: #d4cbb8;
+            
+            background: var(--forest-bg);
+            color: var(--forest-text);
+            position: relative;
+        }
+        
+        .forest::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 L32 15 L30 12 L28 15 Z' fill='%232d5a27' fill-opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .forest-nav { position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 3rem; background: var(--forest-bg-alt); border-bottom: 1px solid var(--forest-border); }
+        .forest-logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 500; color: var(--forest-green); text-decoration: none; letter-spacing: 1px; }
+        .forest-nav__links { display: flex; gap: 2.5rem; }
+        .forest-nav__link { font-family: 'Crimson Pro', serif; font-size: 0.9rem; color: var(--forest-text-light); text-decoration: none; transition: all 0.3s ease; position: relative; }
+        .forest-nav__link::after { content: '🌿'; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; opacity: 0; transition: opacity 0.3s ease; }
+        .forest-nav__link:hover { color: var(--forest-green); }
+        .forest-nav__link:hover::after { opacity: 1; }
+        .forest-nav__stats { display: flex; align-items: center; gap: 0.5rem; background: var(--forest-cream); padding: 0.5rem 1rem; border-radius: 20px; }
+        .forest-nav__number { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--forest-green); font-weight: 600; }
+        .forest-nav__label { font-size: 0.75rem; color: var(--forest-text-muted); }
+        
+        .forest-hero { position: relative; z-index: 1; min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: 3rem; background: linear-gradient(180deg, var(--forest-bg) 0%, var(--forest-cream) 100%); }
+        .forest-hero__content { text-align: center; max-width: 700px; }
+        .forest-hero__leaf { font-size: 2rem; margin-bottom: 1rem; opacity: 0.6; }
+        .forest-hero__title { font-family: 'Playfair Display', serif; font-size: 3.5rem; font-weight: 500; line-height: 1.3; margin-bottom: 1.5rem; color: var(--forest-text); }
+        .forest-hero__title .accent { color: var(--forest-green); font-style: italic; }
+        .forest-hero__subtitle { font-family: 'Crimson Pro', serif; font-size: 1.1rem; color: var(--forest-text-light); margin-bottom: 2.5rem; font-style: italic; line-height: 1.6; }
+        .forest-hero__cta { display: inline-flex; gap: 1.5rem; }
+        .forest-btn { font-family: 'Crimson Pro', serif; padding: 0.9rem 2rem; font-size: 0.9rem; border: none; cursor: pointer; transition: all 0.4s ease; border-radius: 30px; }
+        .forest-btn--primary { background: var(--forest-green); color: white; box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3); }
+        .forest-btn--primary:hover { background: var(--forest-green-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45, 90, 39, 0.4); }
+        .forest-btn--secondary { background: transparent; color: var(--forest-green); border: 2px solid var(--forest-border); }
+        .forest-btn--secondary:hover { border-color: var(--forest-green); background: rgba(45, 90, 39, 0.05); }
+        
+        .forest-section { position: relative; z-index: 1; padding: 3rem; }
+        .forest-section__header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+        .forest-section__title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 500; color: var(--forest-text); }
+        .forest-section__line { flex: 1; height: 1px; background: var(--forest-border); position: relative; }
+        .forest-section__line::after { content: '🍃'; position: absolute; right: 0; top: -8px; font-size: 0.8rem; opacity: 0.5; }
+        
+        .forest-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; }
+        .forest-card { position: relative; background: var(--forest-bg-alt); border: 1px solid var(--forest-border); overflow: hidden; transition: all 0.4s ease; border-radius: 15px; }
+        .forest-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(45, 90, 39, 0.1); border-color: var(--forest-green-light); }
+        .forest-card__cover { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, var(--forest-cream), #ddd5c5); position: relative; overflow: hidden; border-radius: 15px 15px 0 0; }
+        .forest-card__fallback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; color: var(--forest-green); opacity: 0.3; }
+        .forest-card__play { position: absolute; bottom: 10px; right: 10px; width: 38px; height: 38px; background: var(--forest-green); border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; cursor: pointer; opacity: 0; transform: scale(0.8); transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3); }
+        .forest-card:hover .forest-card__play { opacity: 1; transform: scale(1); }
+        .forest-card__info { padding: 1.2rem; }
+        .forest-card__title { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 500; color: var(--forest-text); margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .forest-card__artist { font-family: 'Crimson Pro', serif; font-size: 0.8rem; font-style: italic; color: var(--forest-text-light); }
+        
+        .forest-player { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--forest-bg-alt); border-top: 1px solid var(--forest-border); padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+        .forest-player__info { display: flex; align-items: center; gap: 0.8rem; min-width: 220px; }
+        .forest-player__cover { width: 42px; height: 42px; background: linear-gradient(135deg, var(--forest-green), var(--forest-green-light)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; }
+        .forest-player__title { font-family: 'Playfair Display', serif; font-size: 0.85rem; color: var(--forest-text); }
+        .forest-player__artist { font-family: 'Crimson Pro', serif; font-size: 0.7rem; font-style: italic; color: var(--forest-text-light); }
+        .forest-player__buttons { display: flex; align-items: center; gap: 1.2rem; }
+        .forest-player__btn { background: none; border: none; color: var(--forest-text-light); font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; }
+        .forest-player__btn:hover { color: var(--forest-green); }
+        .forest-player__btn--play { width: 38px; height: 38px; background: var(--forest-green); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; }
+        .forest-player__progress { width: 100%; display: flex; align-items: center; gap: 0.8rem; }
+        .forest-player__bar { flex: 1; height: 4px; background: var(--forest-border); border-radius: 2px; position: relative; cursor: pointer; }
+        .forest-player__bar-fill { height: 100%; width: 35%; background: var(--forest-green); border-radius: 2px; }
+        .forest-player__time { font-family: 'Crimson Pro', serif; font-size: 0.7rem; color: var(--forest-text-muted); min-width: 35px; }
+        
+        /* ============================================
+           风格6: 未来主义几何风 (Geometric Futurism)
+           ============================================ */
+        .geometric {
+            --geo-bg: #ffffff;
+            --geo-bg-alt: #f8f9fa;
+            --geo-primary: #1a1a2e;
+            --geo-accent: #e94560;
+            --geo-accent-alt: #0f3460;
+            --geo-text: #1a1a2e;
+            --geo-text-light: #4a4a5a;
+            --geo-text-muted: #8a8a9a;
+            --geo-border: #e0e0e5;
+            
+            background: var(--geo-bg);
+            color: var(--geo-text);
+            position: relative;
+        }
+        
+        .geometric::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                linear-gradient(135deg, transparent 49.5%, var(--geo-border) 49.5%, var(--geo-border) 50.5%, transparent 50.5%);
+            background-size: 80px 80px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+        }
+        
+        .geo-nav { position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 3rem; background: var(--geo-bg); border-bottom: 3px solid var(--geo-primary); }
+        .geo-logo { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; font-weight: 400; color: var(--geo-primary); text-decoration: none; letter-spacing: 3px; position: relative; }
+        .geo-logo::after { content: ''; position: absolute; bottom: -3px; left: 0; width: 30px; height: 3px; background: var(--geo-accent); }
+        .geo-nav__links { display: flex; gap: 2.5rem; }
+        .geo-nav__link { font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--geo-text-light); text-decoration: none; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s ease; position: relative; }
+        .geo-nav__link::before { content: ''; position: absolute; bottom: -3px; left: 0; width: 0; height: 3px; background: var(--geo-accent); transition: width 0.3s ease; }
+        .geo-nav__link:hover { color: var(--geo-primary); }
+        .geo-nav__link:hover::before { width: 100%; }
+        .geo-nav__stats { display: flex; align-items: center; gap: 0.5rem; background: var(--geo-primary); color: white; padding: 0.6rem 1.2rem; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+        .geo-nav__number { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; }
+        .geo-nav__label { font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
+        
+        .geo-hero { position: relative; z-index: 1; min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: 3rem; }
+        .geo-hero__content { text-align: center; max-width: 900px; position: relative; }
+        .geo-hero__content::before { content: ''; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); width: 100px; height: 100px; background: var(--geo-accent); opacity: 0.1; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+        .geo-hero__title { font-family: 'Bebas Neue', sans-serif; font-size: 6rem; line-height: 0.95; margin-bottom: 1rem; color: var(--geo-primary); letter-spacing: 5px; position: relative; }
+        .geo-hero__title span { display: block; }
+        .geo-hero__title .accent { color: var(--geo-accent); }
+        .geo-hero__subtitle { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; color: var(--geo-text-light); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 2.5rem; }
+        .geo-hero__cta { display: inline-flex; gap: 1.5rem; }
+        .geo-btn { font-family: 'Space Grotesk', sans-serif; padding: 1rem 2.5rem; font-size: 0.85rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .geo-btn--primary { background: var(--geo-accent); color: white; clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px)); }
+        .geo-btn--primary:hover { transform: translateY(-3px); box-shadow: 10px 10px 0 var(--geo-primary); }
+        .geo-btn--secondary { background: transparent; color: var(--geo-primary); border: 2px solid var(--geo-primary); clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px)); }
+        .geo-btn--secondary:hover { background: var(--geo-primary); color: white; }
+        
+        .geo-section { position: relative; z-index: 1; padding: 3rem; }
+        .geo-section__header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+        .geo-section__shape { width: 20px; height: 20px; background: var(--geo-accent); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+        .geo-section__title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--geo-primary); letter-spacing: 2px; }
+        .geo-section__line { flex: 1; height: 3px; background: linear-gradient(90deg, var(--geo-primary), transparent); }
+        
+        .geo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; }
+        .geo-card { position: relative; background: var(--geo-bg); border: 2px solid var(--geo-border); overflow: hidden; transition: all 0.4s ease; }
+        .geo-card::before { content: ''; position: absolute; top: 0; left: 0; width: 20px; height: 20px; background: var(--geo-accent); clip-path: polygon(0 0, 100% 0, 0 100%); opacity: 0; transition: opacity 0.3s ease; }
+        .geo-card:hover::before { opacity: 1; }
+        .geo-card:hover { transform: translateY(-5px); border-color: var(--geo-primary); box-shadow: 8px 8px 0 var(--geo-accent); }
+        .geo-card__cover { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, var(--geo-bg-alt), #e8e8ed); position: relative; overflow: hidden; }
+        .geo-card__fallback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; color: var(--geo-text-muted); opacity: 0.3; }
+        .geo-card__play { position: absolute; bottom: 10px; right: 10px; width: 38px; height: 38px; background: var(--geo-accent); border: none; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; cursor: pointer; opacity: 0; transform: scale(0.8); transition: all 0.3s ease; }
+        .geo-card:hover .geo-card__play { opacity: 1; transform: scale(1); }
+        .geo-card__info { padding: 1rem; border-top: 2px solid var(--geo-border); }
+        .geo-card__title { font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--geo-primary); margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .geo-card__artist { font-family: 'Outfit', sans-serif; font-size: 0.75rem; color: var(--geo-text-light); }
+        
+        .geo-player { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--geo-primary); padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; clip-path: polygon(0 10px, 0 0, 100% 0, 100% 100%, 0 100%, 0 calc(100% - 10px)); }
+        .geo-player__info { display: flex; align-items: center; gap: 0.8rem; min-width: 220px; }
+        .geo-player__cover { width: 42px; height: 42px; background: var(--geo-accent); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%); }
+        .geo-player__title { font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; color: white; font-weight: 500; }
+        .geo-player__artist { font-family: 'Outfit', sans-serif; font-size: 0.7rem; color: rgba(255,255,255,0.6); }
+        .geo-player__buttons { display: flex; align-items: center; gap: 1.2rem; }
+        .geo-player__btn { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; }
+        .geo-player__btn:hover { color: var(--geo-accent); }
+        .geo-player__btn--play { width: 38px; height: 38px; background: var(--geo-accent); color: white; display: flex; align-items: center; justify-content: center; clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%); }
+        .geo-player__progress { width: 100%; display: flex; align-items: center; gap: 0.8rem; }
+        .geo-player__bar { flex: 1; height: 4px; background: rgba(255,255,255,0.2); position: relative; cursor: pointer; }
+        .geo-player__bar-fill { height: 100%; width: 35%; background: var(--geo-accent); }
+        .geo-player__time { font-family: 'Outfit', sans-serif; font-size: 0.7rem; color: rgba(255,255,255,0.5); min-width: 35px; }
+        
+        /* ============================================
+           风格7: 东方Project主题风 (Touhou Project)
+           ============================================ */
+        .touhou {
+            --touhou-bg: #0d0a12;
+            --touhou-bg-alt: #1a1420;
+            --touhou-crimson: #dc143c;
+            --touhou-crimson-light: #ff4d6a;
+            --touhou-gold: #ffd700;
+            --touhou-gold-dark: #b8860b;
+            --touhou-purple: #6b2d7b;
+            --touhou-blue: #1e3a5f;
+            --touhou-white: #faf8f5;
+            --touhou-text: #faf8f5;
+            --touhou-text-light: #c8c0b8;
+            --touhou-text-muted: #8a8490;
+            --touhou-border: rgba(220, 20, 60, 0.3);
+            --touhou-border-gold: rgba(255, 215, 0, 0.4);
+            
+            background: var(--touhou-bg);
+            color: var(--touhou-text);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 弹幕背景动画 */
+        .touhou::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(220, 20, 60, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 80% 70%, rgba(107, 45, 123, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 60% 20%, rgba(255, 215, 0, 0.05) 0%, transparent 20%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* 弹幕图案层 */
+        .touhou::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 200%;
+            background-image: 
+                radial-gradient(circle, rgba(220, 20, 60, 0.15) 2px, transparent 2px),
+                radial-gradient(circle, rgba(255, 215, 0, 0.1) 1px, transparent 1px);
+            background-size: 80px 80px, 120px 120px;
+            background-position: 0 0, 40px 40px;
+            animation: danmaku-drift 60s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        @keyframes danmaku-drift {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(5deg); }
+        }
+        
+        /* 东方导航栏 */
+        .touhou-nav { 
+            position: relative; z-index: 100; 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 1.2rem 3rem; 
+            background: linear-gradient(180deg, rgba(13, 10, 18, 0.98), rgba(13, 10, 18, 0.9));
+            border-bottom: 2px solid transparent;
+            background-image: linear-gradient(var(--touhou-bg), var(--touhou-bg)), linear-gradient(90deg, var(--touhou-crimson), var(--touhou-gold), var(--touhou-purple));
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+        }
+        
+        .touhou-logo { 
+            font-family: 'Shippori Mincho', serif; 
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            color: var(--touhou-gold); 
+            text-decoration: none; 
+            letter-spacing: 0.15em;
+            position: relative;
+            padding: 0 0.5rem;
+        }
+        .touhou-logo::before { content: '◆'; position: absolute; left: -1rem; color: var(--touhou-crimson); font-size: 0.7rem; }
+        .touhou-logo::after { content: '◆'; position: absolute; right: -1rem; color: var(--touhou-crimson); font-size: 0.7rem; }
+        
+        .touhou-nav__links { display: flex; gap: 2.5rem; }
+        .touhou-nav__link { 
+            font-family: 'Shippori Mincho', serif; 
+            font-size: 0.9rem; 
+            color: var(--touhou-text-light); 
+            text-decoration: none; 
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.3rem 0;
+        }
+        .touhou-nav__link::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: 0; left: 50%; 
+            width: 0; height: 2px; 
+            background: linear-gradient(90deg, var(--touhou-crimson), var(--touhou-gold));
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .touhou-nav__link:hover { color: var(--touhou-gold); }
+        .touhou-nav__link:hover::after { width: 100%; }
+        
+        .touhou-nav__stats { 
+            display: flex; align-items: center; gap: 0.5rem; 
+            background: linear-gradient(135deg, rgba(220, 20, 60, 0.2), rgba(107, 45, 123, 0.2));
+            border: 1px solid var(--touhou-border);
+            padding: 0.5rem 1.2rem;
+            position: relative;
+        }
+        .touhou-nav__stats::before { content: '✦'; position: absolute; left: 8px; color: var(--touhou-gold); font-size: 0.6rem; }
+        .touhou-nav__number { font-family: 'Shippori Mincho', serif; font-size: 1.3rem; color: var(--touhou-crimson-light); font-weight: 700; }
+        .touhou-nav__label { font-size: 0.75rem; color: var(--touhou-text-muted); }
+        
+        /* 东方Hero区域 */
+        .touhou-hero { 
+            position: relative; z-index: 1; 
+            min-height: 80vh; 
+            display: flex; align-items: center; justify-content: center; 
+            padding: 3rem;
+        }
+        .touhou-hero__content { text-align: center; max-width: 850px; position: relative; }
+        
+        /* 阴阳玉装饰 */
+        .touhou-hero__yinyang {
+            width: 100px; height: 100px;
+            margin: 0 auto 2rem;
+            position: relative;
+            animation: yinyang-spin 20s linear infinite;
+        }
+        .touhou-hero__yinyang::before {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--touhou-crimson) 50%, var(--touhou-gold) 50%);
+            box-shadow: 
+                0 0 30px rgba(220, 20, 60, 0.5),
+                inset 0 0 20px rgba(0,0,0,0.3);
+        }
+        .touhou-hero__yinyang::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 30px; height: 30px;
+            background: var(--touhou-bg);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 
+                0 -35px 0 -7px var(--touhou-gold),
+                0 35px 0 -7px var(--touhou-crimson);
+        }
+        @keyframes yinyang-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .touhou-hero__title { 
+            font-family: 'Shippori Mincho', serif; 
+            font-size: 4.5rem; 
+            font-weight: 800; 
+            line-height: 1.2; 
+            margin-bottom: 1rem; 
+            color: var(--touhou-text);
+            text-shadow: 
+                0 0 20px rgba(220, 20, 60, 0.3),
+                0 0 40px rgba(255, 215, 0, 0.2);
+            letter-spacing: 0.1em;
+        }
+        .touhou-hero__title .crimson { color: var(--touhou-crimson-light); }
+        .touhou-hero__title .gold { color: var(--touhou-gold); }
+        
+        .touhou-hero__subtitle { 
+            font-family: 'Zen Antique Soft', serif; 
+            font-size: 1.1rem; 
+            color: var(--touhou-text-light); 
+            margin-bottom: 2.5rem; 
+            letter-spacing: 0.2em;
+        }
+        
+        .touhou-hero__decor {
+            display: flex; justify-content: center; gap: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: var(--touhou-gold);
+            opacity: 0.7;
+        }
+        
+        .touhou-hero__cta { display: inline-flex; gap: 1.5rem; }
+        
+        .touhou-btn { 
+            font-family: 'Shippori Mincho', serif; 
+            padding: 1rem 2.5rem; 
+            font-size: 0.9rem; 
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            border: none; cursor: pointer; 
+            transition: all 0.4s ease; 
+            position: relative;
+            overflow: hidden;
+        }
+        .touhou-btn--primary { 
+            background: linear-gradient(135deg, var(--touhou-crimson), var(--touhou-purple)); 
+            color: var(--touhou-white);
+            border: 1px solid var(--touhou-crimson-light);
+        }
+        .touhou-btn--primary::before {
+            content: '✦';
+            position: absolute;
+            left: 12px;
+            color: var(--touhou-gold);
+            font-size: 0.7rem;
+        }
+        .touhou-btn--primary:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 30px rgba(220, 20, 60, 0.4);
+            border-color: var(--touhou-gold);
+        }
+        .touhou-btn--secondary { 
+            background: transparent; 
+            color: var(--touhou-gold); 
+            border: 2px solid var(--touhou-border-gold);
+        }
+        .touhou-btn--secondary:hover { 
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        
+        /* 东方专辑区域 */
+        .touhou-section { position: relative; z-index: 1; padding: 3rem; }
+        .touhou-section__header { 
+            display: flex; align-items: center; gap: 1.5rem; 
+            margin-bottom: 2.5rem; 
+        }
+        .touhou-section__ornament { 
+            width: 30px; height: 30px; 
+            background: linear-gradient(135deg, var(--touhou-crimson) 50%, var(--touhou-gold) 50%);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 15px rgba(220, 20, 60, 0.4);
+        }
+        .touhou-section__ornament::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 8px; height: 8px;
+            background: var(--touhou-bg);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .touhou-section__title { 
+            font-family: 'Shippori Mincho', serif; 
+            font-size: 1.6rem; 
+            font-weight: 600;
+            color: var(--touhou-text);
+            letter-spacing: 0.15em;
+        }
+        .touhou-section__line { 
+            flex: 1; height: 2px; 
+            background: linear-gradient(90deg, var(--touhou-crimson), var(--touhou-gold), transparent);
+        }
+        
+        .touhou-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.8rem; }
+        
+        /* 符卡风格卡片 */
+        .touhou-card { 
+            position: relative; 
+            background: linear-gradient(135deg, rgba(26, 20, 32, 0.9), rgba(30, 58, 95, 0.3));
+            border: 2px solid var(--touhou-border);
+            overflow: hidden; 
+            transition: all 0.4s ease;
+        }
+        .touhou-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                linear-gradient(135deg, transparent 45%, rgba(255, 215, 0, 0.05) 50%, transparent 55%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .touhou-card:hover::before { opacity: 1; }
+        
+        /* 符卡边框效果 */
+        .touhou-card::after {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px solid var(--touhou-border-gold);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .touhou-card:hover::after { opacity: 1; }
+        .touhou-card:hover { 
+            transform: translateY(-8px) scale(1.02); 
+            border-color: var(--touhou-gold);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                0 0 30px rgba(220, 20, 60, 0.3),
+                inset 0 0 20px rgba(255, 215, 0, 0.05);
+        }
+        
+        .touhou-card__cover { 
+            width: 100%; aspect-ratio: 1; 
+            background: linear-gradient(135deg, #1a1420, #0d0a12);
+            position: relative; overflow: hidden;
+        }
+        .touhou-card__fallback { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 2.5rem; color: var(--touhou-crimson); opacity: 0.4;
+        }
+        .touhou-card__play { 
+            position: absolute; bottom: 10px; right: 10px; 
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--touhou-crimson), var(--touhou-purple));
+            border: 1px solid var(--touhou-crimson-light);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 0.85rem; cursor: pointer;
+            opacity: 0; transform: scale(0.8);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.5);
+        }
+        .touhou-card:hover .touhou-card__play { opacity: 1; transform: scale(1); }
+        
+        .touhou-card__info { 
+            padding: 1.2rem; 
+            border-top: 1px solid var(--touhou-border);
+            position: relative;
+        }
+        .touhou-card__info::before {
+            content: '◆';
+            position: absolute;
+            top: -6px; left: 50%;
+            transform: translateX(-50%);
+            color: var(--touhou-gold);
+            font-size: 0.6rem;
+            background: var(--touhou-bg-alt);
+            padding: 0 5px;
+        }
+        .touhou-card__title { 
+            font-family: 'Shippori Mincho', serif; 
+            font-size: 0.95rem; font-weight: 600;
+            color: var(--touhou-text); 
+            margin-bottom: 0.4rem; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .touhou-card__artist { 
+            font-family: 'Zen Antique Soft', serif; 
+            font-size: 0.8rem;
+            color: var(--touhou-text-muted);
+        }
+        
+        /* 东方播放器 */
+        .touhou-player { 
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: linear-gradient(180deg, rgba(13, 10, 18, 0.95), rgba(13, 10, 18, 0.99));
+            border-top: 2px solid transparent;
+            background-image: linear-gradient(var(--touhou-bg), var(--touhou-bg)), linear-gradient(90deg, var(--touhou-crimson), var(--touhou-gold), var(--touhou-purple));
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            padding: 0.8rem 1.5rem;
+            display: flex; align-items: center; gap: 1.5rem;
+        }
+        .touhou-player__info { display: flex; align-items: center; gap: 0.8rem; min-width: 230px; }
+        .touhou-player__cover { 
+            width: 45px; height: 45px;
+            background: linear-gradient(135deg, var(--touhou-crimson), var(--touhou-gold));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: white;
+            position: relative;
+            box-shadow: 0 0 15px rgba(220, 20, 60, 0.4);
+        }
+        .touhou-player__cover::before {
+            content: '';
+            position: absolute;
+            width: 15px; height: 15px;
+            background: var(--touhou-bg);
+            border-radius: 50%;
+        }
+        .touhou-player__title { font-family: 'Shippori Mincho', serif; font-size: 0.85rem; color: var(--touhou-text); font-weight: 500; }
+        .touhou-player__artist { font-family: 'Zen Antique Soft', serif; font-size: 0.7rem; color: var(--touhou-text-muted); }
+        
+        .touhou-player__buttons { display: flex; align-items: center; gap: 1.2rem; }
+        .touhou-player__btn { background: none; border: none; color: var(--touhou-text-muted); font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease; }
+        .touhou-player__btn:hover { color: var(--touhou-gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .touhou-player__btn--play { 
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--touhou-crimson), var(--touhou-purple));
+            border: 1px solid var(--touhou-crimson-light);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.5);
+        }
+        
+        .touhou-player__progress { width: 100%; display: flex; align-items: center; gap: 0.8rem; }
+        .touhou-player__bar { flex: 1; height: 4px; background: rgba(255, 255, 255, 0.1); position: relative; cursor: pointer; border-radius: 2px; }
+        .touhou-player__bar-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--touhou-crimson), var(--touhou-gold)); border-radius: 2px; position: relative; }
+        .touhou-player__bar-fill::after {
+            content: '◆';
+            position: absolute;
+            right: -8px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--touhou-gold);
+            font-size: 0.6rem;
+            text-shadow: 0 0 10px var(--touhou-gold);
+        }
+        .touhou-player__time { font-family: 'Zen Antique Soft', serif; font-size: 0.7rem; color: var(--touhou-text-muted); min-width: 35px; }
+        
+        /* ============================================
+           响应式布局
+           ============================================ */
+        @media (max-width: 1200px) {
+            .cyber-grid, .vapor-grid, .geo-grid, .touhou-grid { grid-template-columns: repeat(4, 1fr); }
+            .zen-grid, .goth-grid, .forest-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        
+        @media (max-width: 900px) {
+            .cyber-grid, .vapor-grid, .geo-grid, .touhou-grid { grid-template-columns: repeat(3, 1fr); }
+            .zen-grid, .goth-grid, .forest-grid { grid-template-columns: repeat(2, 1fr); }
+            
+            .cyber-hero__title, .vapor-hero__title, .goth-hero__title { font-size: 3rem; }
+            .forest-hero__title { font-size: 2.5rem; }
+            .geo-hero__title { font-size: 4rem; }
+            .zen-hero__title { font-size: 2.5rem; }
+            .touhou-hero__title { font-size: 3rem; }
+            .touhou-hero__yinyang { width: 70px; height: 70px; }
+        }
+        
+        @media (max-width: 600px) {
+            .style-nav__btn { padding: 0.7rem 0.8rem; font-size: 0.65rem; }
+            
+            .cyber-grid, .vapor-grid, .geo-grid, .touhou-grid,
+            .zen-grid, .goth-grid, .forest-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+            
+            .cyber-nav__links, .vapor-nav__links, .zen-nav__links,
+            .goth-nav__links, .forest-nav__links, .geo-nav__links, .touhou-nav__links { display: none; }
+            .goth-nav__links, .forest-nav__links, .geo-nav__links { display: none; }
+            
+            .cyber-hero__title, .vapor-hero__title, .goth-hero__title { font-size: 2rem; }
+            .forest-hero__title { font-size: 1.8rem; }
+            .geo-hero__title { font-size: 2.5rem; }
+            .zen-hero__title { font-size: 1.8rem; }
+            
+            .cyber-section, .vapor-section, .zen-section,
+            .goth-section, .forest-section, .geo-section { padding: 2rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 风格切换导航 -->
+    <nav class="style-nav">
+        <button class="style-nav__btn active" data-style="cyberpunk">赛博朋克</button>
+        <button class="style-nav__btn" data-style="zen">极简禅意</button>
+        <button class="style-nav__btn" data-style="vaporwave">蒸汽波</button>
+        <button class="style-nav__btn" data-style="gothic">暗黑哥特</button>
+        <button class="style-nav__btn" data-style="forest">自然森林</button>
+        <button class="style-nav__btn" data-style="geometric">几何未来</button>
+        <button class="style-nav__btn" data-style="touhou">东方幻想</button>
+    </nav>
+    
+    <!-- ============================================
+         风格1: 赛博朋克霓虹风
+         ============================================ -->
+    <div class="style-container cyberpunk active" id="cyberpunk">
+        <nav class="cyber-nav">
+            <a href="#" class="cyber-logo">TONGRENLU</a>
+            <div class="cyber-nav__links">
+                <a href="#" class="cyber-nav__link">首页</a>
+                <a href="#" class="cyber-nav__link">音乐库</a>
+                <a href="#" class="cyber-nav__link">艺术家</a>
+                <a href="#" class="cyber-nav__link">展会</a>
+            </div>
+            <div class="cyber-nav__stats">
+                <span class="cyber-nav__number">1,247</span>
+                <span class="cyber-nav__label">ALBUMS</span>
+            </div>
+        </nav>
+        
+        <section class="cyber-hero">
+            <div class="cyber-hero__content">
+                <h1 class="cyber-hero__title"><span>东方</span><span>同人录</span></h1>
+                <p class="cyber-hero__subtitle">// 探索无限的东方同人音乐宇宙 //</p>
+                <div class="cyber-hero__cta">
+                    <button class="cyber-btn cyber-btn--primary">进入音乐库</button>
+                    <button class="cyber-btn cyber-btn--secondary">了解更多</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="cyber-section">
+            <div class="cyber-section__header">
+                <h2 class="cyber-section__title">LATEST</h2>
+                <div class="cyber-section__line"></div>
+            </div>
+            <div class="cyber-grid">
+                <div class="cyber-card"><div class="cyber-card__cover"><span class="cyber-card__fallback"><i class="fas fa-music"></i></span><button class="cyber-card__play"><i class="fas fa-play"></i></button></div><div class="cyber-card__info"><div class="cyber-card__title">东方红魔乡</div><div class="cyber-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="cyber-card"><div class="cyber-card__cover"><span class="cyber-card__fallback"><i class="fas fa-compact-disc"></i></span><button class="cyber-card__play"><i class="fas fa-play"></i></button></div><div class="cyber-card__info"><div class="cyber-card__title">东方妖妖梦</div><div class="cyber-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="cyber-card"><div class="cyber-card__cover"><span class="cyber-card__fallback"><i class="fas fa-headphones"></i></span><button class="cyber-card__play"><i class="fas fa-play"></i></button></div><div class="cyber-card__info"><div class="cyber-card__title">东方永夜抄</div><div class="cyber-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="cyber-card"><div class="cyber-card__cover"><span class="cyber-card__fallback"><i class="fas fa-atom"></i></span><button class="cyber-card__play"><i class="fas fa-play"></i></button></div><div class="cyber-card__info"><div class="cyber-card__title">东方风神录</div><div class="cyber-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="cyber-card"><div class="cyber-card__cover"><span class="cyber-card__fallback"><i class="fas fa-meteor"></i></span><button class="cyber-card__play"><i class="fas fa-play"></i></button></div><div class="cyber-card__info"><div class="cyber-card__title">东方地灵殿</div><div class="cyber-card__artist">上海爱丽丝幻乐团</div></div></div>
+            </div>
+        </section>
+        
+        <div class="cyber-player">
+            <div class="cyber-player__info"><div class="cyber-player__cover"><i class="fas fa-music"></i></div><div><div class="cyber-player__title">亡き王女の為のセプテット</div><div class="cyber-player__artist">上海爱丽丝幻乐团</div></div></div>
+            <div class="cyber-player__controls" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;"><div class="cyber-player__buttons"><button class="cyber-player__btn"><i class="fas fa-random"></i></button><button class="cyber-player__btn"><i class="fas fa-step-backward"></i></button><button class="cyber-player__btn cyber-player__btn--play"><i class="fas fa-play"></i></button><button class="cyber-player__btn"><i class="fas fa-step-forward"></i></button><button class="cyber-player__btn"><i class="fas fa-redo"></i></button></div><div class="cyber-player__progress"><span class="cyber-player__time">1:24</span><div class="cyber-player__bar"><div class="cyber-player__bar-fill"></div></div><span class="cyber-player__time">5:18</span></div></div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         风格2: 极简禅意风
+         ============================================ -->
+    <div class="style-container zen" id="zen">
+        <nav class="zen-nav">
+            <a href="#" class="zen-logo">東方同人録</a>
+            <div class="zen-nav__links">
+                <a href="#" class="zen-nav__link">首頁</a>
+                <a href="#" class="zen-nav__link">音樂庫</a>
+                <a href="#" class="zen-nav__link">藝術家</a>
+                <a href="#" class="zen-nav__link">展會</a>
+            </div>
+            <div class="zen-nav__stats">
+                <span class="zen-nav__number">1,247</span>
+                <span class="zen-nav__label">張專輯</span>
+            </div>
+        </nav>
+        
+        <section class="zen-hero">
+            <div class="zen-hero__content">
+                <h1 class="zen-hero__title"><span>靜謐之音</span><span class="accent">流轉于心</span></h1>
+                <div class="zen-hero__divider"></div>
+                <p class="zen-hero__subtitle">在東方同人音樂的世界裡，尋找屬於你的旋律</p>
+                <div class="zen-hero__cta">
+                    <button class="zen-btn zen-btn--primary">探索音樂</button>
+                    <button class="zen-btn zen-btn--secondary">了解更多</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="zen-section">
+            <div class="zen-section__header">
+                <h2 class="zen-section__title">最新專輯</h2>
+                <a href="#" class="zen-section__more">查看更多 →</a>
+            </div>
+            <div class="zen-grid">
+                <div class="zen-card"><div class="zen-card__cover"><span class="zen-card__fallback"><i class="fas fa-music"></i></span><button class="zen-card__play"><i class="fas fa-play"></i></button></div><div class="zen-card__info"><div class="zen-card__title">東方紅魔鄉</div><div class="zen-card__artist">上海愛麗絲幻樂團</div></div></div>
+                <div class="zen-card"><div class="zen-card__cover"><span class="zen-card__fallback"><i class="fas fa-compact-disc"></i></span><button class="zen-card__play"><i class="fas fa-play"></i></button></div><div class="zen-card__info"><div class="zen-card__title">東方妖妖夢</div><div class="zen-card__artist">上海愛麗絲幻樂團</div></div></div>
+                <div class="zen-card"><div class="zen-card__cover"><span class="zen-card__fallback"><i class="fas fa-headphones"></i></span><button class="zen-card__play"><i class="fas fa-play"></i></button></div><div class="zen-card__info"><div class="zen-card__title">東方永夜抄</div><div class="zen-card__artist">上海愛麗絲幻樂團</div></div></div>
+                <div class="zen-card"><div class="zen-card__cover"><span class="zen-card__fallback"><i class="fas fa-atom"></i></span><button class="zen-card__play"><i class="fas fa-play"></i></button></div><div class="zen-card__info"><div class="zen-card__title">東方風神錄</div><div class="zen-card__artist">上海愛麗絲幻樂團</div></div></div>
+            </div>
+        </section>
+        
+        <div class="zen-player">
+            <div class="zen-player__info"><div class="zen-player__cover"><i class="fas fa-music"></i></div><div><div class="zen-player__title">亡き王女の為のセプテット</div><div class="zen-player__artist">上海愛麗絲幻樂團</div></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;"><div class="zen-player__buttons"><button class="zen-player__btn"><i class="fas fa-random"></i></button><button class="zen-player__btn"><i class="fas fa-step-backward"></i></button><button class="zen-player__btn zen-player__btn--play"><i class="fas fa-play"></i></button><button class="zen-player__btn"><i class="fas fa-step-forward"></i></button><button class="zen-player__btn"><i class="fas fa-redo"></i></button></div><div class="zen-player__progress"><span class="zen-player__time">1:24</span><div class="zen-player__bar"><div class="zen-player__bar-fill"></div></div><span class="zen-player__time">5:18</span></div></div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         风格3: 蒸汽波复古风
+         ============================================ -->
+    <div class="style-container vaporwave" id="vaporwave">
+        <nav class="vapor-nav">
+            <a href="#" class="vapor-logo">TONGRENLU</a>
+            <div class="vapor-nav__links">
+                <a href="#" class="vapor-nav__link">首页</a>
+                <a href="#" class="vapor-nav__link">音乐库</a>
+                <a href="#" class="vapor-nav__link">艺术家</a>
+                <a href="#" class="vapor-nav__link">展会</a>
+            </div>
+            <div class="vapor-nav__stats">
+                <span class="vapor-nav__number">1,247</span>
+                <span class="vapor-nav__label">专辑</span>
+            </div>
+        </nav>
+        
+        <section class="vapor-hero">
+            <div class="vapor-hero__content">
+                <div class="vapor-hero__badge">★ 东方同人音乐 ★</div>
+                <h1 class="vapor-hero__title">TONGRENLU</h1>
+                <p class="vapor-hero__subtitle">探索无限的东方同人音乐宇宙</p>
+                <div class="vapor-hero__cta">
+                    <button class="vapor-btn vapor-btn--primary">进入音乐库</button>
+                    <button class="vapor-btn vapor-btn--secondary">了解更多</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="vapor-section">
+            <div class="vapor-section__header">
+                <h2 class="vapor-section__title">最新发布</h2>
+                <div class="vapor-section__line"></div>
+            </div>
+            <div class="vapor-grid">
+                <div class="vapor-card"><div class="vapor-card__cover"><span class="vapor-card__fallback"><i class="fas fa-music"></i></span><button class="vapor-card__play"><i class="fas fa-play"></i></button></div><div class="vapor-card__info"><div class="vapor-card__title">东方红魔乡</div><div class="vapor-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="vapor-card"><div class="vapor-card__cover"><span class="vapor-card__fallback"><i class="fas fa-compact-disc"></i></span><button class="vapor-card__play"><i class="fas fa-play"></i></button></div><div class="vapor-card__info"><div class="vapor-card__title">东方妖妖梦</div><div class="vapor-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="vapor-card"><div class="vapor-card__cover"><span class="vapor-card__fallback"><i class="fas fa-headphones"></i></span><button class="vapor-card__play"><i class="fas fa-play"></i></button></div><div class="vapor-card__info"><div class="vapor-card__title">东方永夜抄</div><div class="vapor-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="vapor-card"><div class="vapor-card__cover"><span class="vapor-card__fallback"><i class="fas fa-atom"></i></span><button class="vapor-card__play"><i class="fas fa-play"></i></button></div><div class="vapor-card__info"><div class="vapor-card__title">东方风神录</div><div class="vapor-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="vapor-card"><div class="vapor-card__cover"><span class="vapor-card__fallback"><i class="fas fa-meteor"></i></span><button class="vapor-card__play"><i class="fas fa-play"></i></button></div><div class="vapor-card__info"><div class="vapor-card__title">东方地灵殿</div><div class="vapor-card__artist">上海爱丽丝幻乐团</div></div></div>
+            </div>
+        </section>
+        
+        <div class="vapor-player">
+            <div class="vapor-player__info"><div class="vapor-player__cover"><i class="fas fa-music"></i></div><div><div class="vapor-player__title">亡き王女の為のセプテット</div><div class="vapor-player__artist">上海爱丽丝幻乐团</div></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;"><div class="vapor-player__buttons"><button class="vapor-player__btn"><i class="fas fa-random"></i></button><button class="vapor-player__btn"><i class="fas fa-step-backward"></i></button><button class="vapor-player__btn vapor-player__btn--play"><i class="fas fa-play"></i></button><button class="vapor-player__btn"><i class="fas fa-step-forward"></i></button><button class="vapor-player__btn"><i class="fas fa-redo"></i></button></div><div class="vapor-player__progress"><span class="vapor-player__time">1:24</span><div class="vapor-player__bar"><div class="vapor-player__bar-fill"></div></div><span class="vapor-player__time">5:18</span></div></div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         风格4: 暗黑哥特风
+         ============================================ -->
+    <div class="style-container gothic" id="gothic">
+        <nav class="goth-nav">
+            <a href="#" class="goth-logo">Tongrenlu</a>
+            <div class="goth-nav__links">
+                <a href="#" class="goth-nav__link">首页</a>
+                <a href="#" class="goth-nav__link">音乐库</a>
+                <a href="#" class="goth-nav__link">艺术家</a>
+                <a href="#" class="goth-nav__link">展会</a>
+            </div>
+            <div class="goth-nav__stats">
+                <span class="goth-nav__number">1,247</span>
+                <span class="goth-nav__label">张专辑</span>
+            </div>
+        </nav>
+        
+        <section class="goth-hero">
+            <div class="goth-hero__content">
+                <div class="goth-hero__ornament">❧ ❧ ❧</div>
+                <h1 class="goth-hero__title">东方同人录</h1>
+                <p class="goth-hero__subtitle">在黑暗中寻找永恒的旋律</p>
+                <div class="goth-hero__cta">
+                    <button class="goth-btn goth-btn--primary">进入圣殿</button>
+                    <button class="goth-btn goth-btn--secondary">了解更多</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="goth-section">
+            <div class="goth-section__header">
+                <span class="goth-section__ornament">✦</span>
+                <h2 class="goth-section__title">最新专辑</h2>
+                <div class="goth-section__line"></div>
+            </div>
+            <div class="goth-grid">
+                <div class="goth-card"><div class="goth-card__cover"><span class="goth-card__fallback"><i class="fas fa-music"></i></span><button class="goth-card__play"><i class="fas fa-play"></i></button></div><div class="goth-card__info"><div class="goth-card__title">东方红魔乡</div><div class="goth-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="goth-card"><div class="goth-card__cover"><span class="goth-card__fallback"><i class="fas fa-compact-disc"></i></span><button class="goth-card__play"><i class="fas fa-play"></i></button></div><div class="goth-card__info"><div class="goth-card__title">东方妖妖梦</div><div class="goth-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="goth-card"><div class="goth-card__cover"><span class="goth-card__fallback"><i class="fas fa-headphones"></i></span><button class="goth-card__play"><i class="fas fa-play"></i></button></div><div class="goth-card__info"><div class="goth-card__title">东方永夜抄</div><div class="goth-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="goth-card"><div class="goth-card__cover"><span class="goth-card__fallback"><i class="fas fa-atom"></i></span><button class="goth-card__play"><i class="fas fa-play"></i></button></div><div class="goth-card__info"><div class="goth-card__title">东方风神录</div><div class="goth-card__artist">上海爱丽丝幻乐团</div></div></div>
+            </div>
+        </section>
+        
+        <div class="goth-player">
+            <div class="goth-player__info"><div class="goth-player__cover"><i class="fas fa-music"></i></div><div><div class="goth-player__title">亡き王女の為のセプテット</div><div class="goth-player__artist">上海爱丽丝幻乐团</div></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;"><div class="goth-player__buttons"><button class="goth-player__btn"><i class="fas fa-random"></i></button><button class="goth-player__btn"><i class="fas fa-step-backward"></i></button><button class="goth-player__btn goth-player__btn--play"><i class="fas fa-play"></i></button><button class="goth-player__btn"><i class="fas fa-step-forward"></i></button><button class="goth-player__btn"><i class="fas fa-redo"></i></button></div><div class="goth-player__progress"><span class="goth-player__time">1:24</span><div class="goth-player__bar"><div class="goth-player__bar-fill"></div></div><span class="goth-player__time">5:18</span></div></div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         风格5: 自然森林风
+         ============================================ -->
+    <div class="style-container forest" id="forest">
+        <nav class="forest-nav">
+            <a href="#" class="forest-logo">Tongrenlu</a>
+            <div class="forest-nav__links">
+                <a href="#" class="forest-nav__link">首页</a>
+                <a href="#" class="forest-nav__link">音乐库</a>
+                <a href="#" class="forest-nav__link">艺术家</a>
+                <a href="#" class="forest-nav__link">展会</a>
+            </div>
+            <div class="forest-nav__stats">
+                <span class="forest-nav__number">1,247</span>
+                <span class="forest-nav__label">张专辑</span>
+            </div>
+        </nav>
+        
+        <section class="forest-hero">
+            <div class="forest-hero__content">
+                <div class="forest-hero__leaf">🌿</div>
+                <h1 class="forest-hero__title">自然之音<br><span class="accent">流淌于心</span></h1>
+                <p class="forest-hero__subtitle">在东方同人音乐的森林中，寻找属于你的旋律</p>
+                <div class="forest-hero__cta">
+                    <button class="forest-btn forest-btn--primary">探索音乐</button>
+                    <button class="forest-btn forest-btn--secondary">了解更多</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="forest-section">
+            <div class="forest-section__header">
+                <h2 class="forest-section__title">最新专辑</h2>
+                <div class="forest-section__line"></div>
+            </div>
+            <div class="forest-grid">
+                <div class="forest-card"><div class="forest-card__cover"><span class="forest-card__fallback"><i class="fas fa-music"></i></span><button class="forest-card__play"><i class="fas fa-play"></i></button></div><div class="forest-card__info"><div class="forest-card__title">东方红魔乡</div><div class="forest-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="forest-card"><div class="forest-card__cover"><span class="forest-card__fallback"><i class="fas fa-compact-disc"></i></span><button class="forest-card__play"><i class="fas fa-play"></i></button></div><div class="forest-card__info"><div class="forest-card__title">东方妖妖梦</div><div class="forest-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="forest-card"><div class="forest-card__cover"><span class="forest-card__fallback"><i class="fas fa-headphones"></i></span><button class="forest-card__play"><i class="fas fa-play"></i></button></div><div class="forest-card__info"><div class="forest-card__title">东方永夜抄</div><div class="forest-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="forest-card"><div class="forest-card__cover"><span class="forest-card__fallback"><i class="fas fa-atom"></i></span><button class="forest-card__play"><i class="fas fa-play"></i></button></div><div class="forest-card__info"><div class="forest-card__title">东方风神录</div><div class="forest-card__artist">上海爱丽丝幻乐团</div></div></div>
+            </div>
+        </section>
+        
+        <div class="forest-player">
+            <div class="forest-player__info"><div class="forest-player__cover"><i class="fas fa-music"></i></div><div><div class="forest-player__title">亡き王女の為のセプテット</div><div class="forest-player__artist">上海爱丽丝幻乐团</div></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;"><div class="forest-player__buttons"><button class="forest-player__btn"><i class="fas fa-random"></i></button><button class="forest-player__btn"><i class="fas fa-step-backward"></i></button><button class="forest-player__btn forest-player__btn--play"><i class="fas fa-play"></i></button><button class="forest-player__btn"><i class="fas fa-step-forward"></i></button><button class="forest-player__btn"><i class="fas fa-redo"></i></button></div><div class="forest-player__progress"><span class="forest-player__time">1:24</span><div class="forest-player__bar"><div class="forest-player__bar-fill"></div></div><span class="forest-player__time">5:18</span></div></div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         风格6: 几何未来主义风
+         ============================================ -->
+    <div class="style-container geometric" id="geometric">
+        <nav class="geo-nav">
+            <a href="#" class="geo-logo">TONGRENLU</a>
+            <div class="geo-nav__links">
+                <a href="#" class="geo-nav__link">首页</a>
+                <a href="#" class="geo-nav__link">音乐库</a>
+                <a href="#" class="geo-nav__link">艺术家</a>
+                <a href="#" class="geo-nav__link">展会</a>
+            </div>
+            <div class="geo-nav__stats">
+                <span class="geo-nav__number">1,247</span>
+                <span class="geo-nav__label">专辑</span>
+            </div>
+        </nav>
+        
+        <section class="geo-hero">
+            <div class="geo-hero__content">
+                <h1 class="geo-hero__title"><span>东方</span><span class="accent">同人录</span></h1>
+                <p class="geo-hero__subtitle">探索东方同人音乐的未来</p>
+                <div class="geo-hero__cta">
+                    <button class="geo-btn geo-btn--primary">进入音乐库</button>
+                    <button class="geo-btn geo-btn--secondary">了解更多</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="geo-section">
+            <div class="geo-section__header">
+                <div class="geo-section__shape"></div>
+                <h2 class="geo-section__title">最新发布</h2>
+                <div class="geo-section__line"></div>
+            </div>
+            <div class="geo-grid">
+                <div class="geo-card"><div class="geo-card__cover"><span class="geo-card__fallback"><i class="fas fa-music"></i></span><button class="geo-card__play"><i class="fas fa-play"></i></button></div><div class="geo-card__info"><div class="geo-card__title">东方红魔乡</div><div class="geo-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="geo-card"><div class="geo-card__cover"><span class="geo-card__fallback"><i class="fas fa-compact-disc"></i></span><button class="geo-card__play"><i class="fas fa-play"></i></button></div><div class="geo-card__info"><div class="geo-card__title">东方妖妖梦</div><div class="geo-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="geo-card"><div class="geo-card__cover"><span class="geo-card__fallback"><i class="fas fa-headphones"></i></span><button class="geo-card__play"><i class="fas fa-play"></i></button></div><div class="geo-card__info"><div class="geo-card__title">东方永夜抄</div><div class="geo-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="geo-card"><div class="geo-card__cover"><span class="geo-card__fallback"><i class="fas fa-atom"></i></span><button class="geo-card__play"><i class="fas fa-play"></i></button></div><div class="geo-card__info"><div class="geo-card__title">东方风神录</div><div class="geo-card__artist">上海爱丽丝幻乐团</div></div></div>
+                <div class="geo-card"><div class="geo-card__cover"><span class="geo-card__fallback"><i class="fas fa-meteor"></i></span><button class="geo-card__play"><i class="fas fa-play"></i></button></div><div class="geo-card__info"><div class="geo-card__title">东方地灵殿</div><div class="geo-card__artist">上海爱丽丝幻乐团</div></div></div>
+            </div>
+        </section>
+        
+        <div class="geo-player">
+            <div class="geo-player__info"><div class="geo-player__cover"><i class="fas fa-music"></i></div><div><div class="geo-player__title">亡き王女の為のセプテット</div><div class="geo-player__artist">上海爱丽丝幻乐团</div></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;"><div class="geo-player__buttons"><button class="geo-player__btn"><i class="fas fa-random"></i></button><button class="geo-player__btn"><i class="fas fa-step-backward"></i></button><button class="geo-player__btn geo-player__btn--play"><i class="fas fa-play"></i></button><button class="geo-player__btn"><i class="fas fa-step-forward"></i></button><button class="geo-player__btn"><i class="fas fa-redo"></i></button></div><div class="geo-player__progress"><span class="geo-player__time">1:24</span><div class="geo-player__bar"><div class="geo-player__bar-fill"></div></div><span class="geo-player__time">5:18</span></div></div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         风格7: 东方Project主题风
+         ============================================ -->
+    <div class="style-container touhou" id="touhou">
+        <nav class="touhou-nav">
+            <a href="#" class="touhou-logo">東方同人録</a>
+            <div class="touhou-nav__links">
+                <a href="#" class="touhou-nav__link">首頁</a>
+                <a href="#" class="touhou-nav__link">音樂庫</a>
+                <a href="#" class="touhou-nav__link">藝術家</a>
+                <a href="#" class="touhou-nav__link">展會</a>
+            </div>
+            <div class="touhou-nav__stats">
+                <span class="touhou-nav__number">1,247</span>
+                <span class="touhou-nav__label">張專輯</span>
+            </div>
+        </nav>
+        
+        <section class="touhou-hero">
+            <div class="touhou-hero__content">
+                <div class="touhou-hero__yinyang"></div>
+                <h1 class="touhou-hero__title"><span class="crimson">東方</span><span class="gold">同人録</span></h1>
+                <div class="touhou-hero__decor">✦ 幻想郷 ✦ 音樂 ✦ 夢境 ✦</div>
+                <p class="touhou-hero__subtitle">在幻想鄉的旋律中，尋找屬於你的奇跡</p>
+                <div class="touhou-hero__cta">
+                    <button class="touhou-btn touhou-btn--primary">進入幻想鄉</button>
+                    <button class="touhou-btn touhou-btn--secondary">了解更多</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="touhou-section">
+            <div class="touhou-section__header">
+                <div class="touhou-section__ornament"></div>
+                <h2 class="touhou-section__title">最新專輯</h2>
+                <div class="touhou-section__line"></div>
+            </div>
+            <div class="touhou-grid">
+                <div class="touhou-card"><div class="touhou-card__cover"><span class="touhou-card__fallback"><i class="fas fa-music"></i></span><button class="touhou-card__play"><i class="fas fa-play"></i></button></div><div class="touhou-card__info"><div class="touhou-card__title">東方紅魔鄉</div><div class="touhou-card__artist">上海愛麗絲幻樂團</div></div></div>
+                <div class="touhou-card"><div class="touhou-card__cover"><span class="touhou-card__fallback"><i class="fas fa-compact-disc"></i></span><button class="touhou-card__play"><i class="fas fa-play"></i></button></div><div class="touhou-card__info"><div class="touhou-card__title">東方妖妖夢</div><div class="touhou-card__artist">上海愛麗絲幻樂團</div></div></div>
+                <div class="touhou-card"><div class="touhou-card__cover"><span class="touhou-card__fallback"><i class="fas fa-headphones"></i></span><button class="touhou-card__play"><i class="fas fa-play"></i></button></div><div class="touhou-card__info"><div class="touhou-card__title">東方永夜抄</div><div class="touhou-card__artist">上海愛麗絲幻樂團</div></div></div>
+                <div class="touhou-card"><div class="touhou-card__cover"><span class="touhou-card__fallback"><i class="fas fa-atom"></i></span><button class="touhou-card__play"><i class="fas fa-play"></i></button></div><div class="touhou-card__info"><div class="touhou-card__title">東方風神錄</div><div class="touhou-card__artist">上海愛麗絲幻樂團</div></div></div>
+                <div class="touhou-card"><div class="touhou-card__cover"><span class="touhou-card__fallback"><i class="fas fa-meteor"></i></span><button class="touhou-card__play"><i class="fas fa-play"></i></button></div><div class="touhou-card__info"><div class="touhou-card__title">東方地靈殿</div><div class="touhou-card__artist">上海愛麗絲幻樂團</div></div></div>
+            </div>
+        </section>
+        
+        <div class="touhou-player">
+            <div class="touhou-player__info"><div class="touhou-player__cover"><i class="fas fa-music"></i></div><div><div class="touhou-player__title">亡き王女の為のセプテット</div><div class="touhou-player__artist">上海愛麗絲幻樂團</div></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;"><div class="touhou-player__buttons"><button class="touhou-player__btn"><i class="fas fa-random"></i></button><button class="touhou-player__btn"><i class="fas fa-step-backward"></i></button><button class="touhou-player__btn touhou-player__btn--play"><i class="fas fa-play"></i></button><button class="touhou-player__btn"><i class="fas fa-step-forward"></i></button><button class="touhou-player__btn"><i class="fas fa-redo"></i></button></div><div class="touhou-player__progress"><span class="touhou-player__time">1:24</span><div class="touhou-player__bar"><div class="touhou-player__bar-fill"></div></div><span class="touhou-player__time">5:18</span></div></div>
+        </div>
+    </div>
+    
+    <script>
+        // 风格切换逻辑
+        document.querySelectorAll('.style-nav__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.style-nav__btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const style = btn.dataset.style;
+                document.querySelectorAll('.style-container').forEach(container => {
+                    container.classList.remove('active');
+                });
+                document.getElementById(style).classList.add('active');
+            });
+        });
+        
+        // 播放按钮交互
+        document.querySelectorAll('[class*="__play"], [class*="__btn--play"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    if (icon.classList.contains('fa-play')) {
+                        icon.classList.remove('fa-play');
+                        icon.classList.add('fa-pause');
+                    } else {
+                        icon.classList.remove('fa-pause');
+                        icon.classList.add('fa-play');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

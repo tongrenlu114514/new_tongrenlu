@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>东方同人录 - 几何未来主义风格</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* ============================================
+           几何未来主义风格 (Geometric Futurism)
+           ============================================ */
+        
+        :root {
+            --geo-bg: #ffffff;
+            --geo-bg-alt: #f8f9fa;
+            --geo-primary: #1a1a2e;
+            --geo-accent: #e94560;
+            --geo-accent-alt: #0f3460;
+            --geo-text: #1a1a2e;
+            --geo-text-light: #4a4a5a;
+            --geo-text-muted: #8a8a9a;
+            --geo-border: #e0e0e5;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--geo-bg);
+            color: var(--geo-text);
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* 几何网格背景 - 增强可见性 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                linear-gradient(135deg, transparent 49%, var(--geo-border) 49%, var(--geo-border) 51%, transparent 51%),
+                linear-gradient(45deg, transparent 49%, rgba(233, 69, 96, 0.05) 49%, rgba(233, 69, 96, 0.05) 51%, transparent 51%);
+            background-size: 60px 60px, 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
+        }
+        
+        /* 导航栏 */
+        .geo-nav { 
+            position: relative; z-index: 100; 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 1.2rem 3rem; 
+            background: var(--geo-bg); 
+            border-bottom: 3px solid var(--geo-primary);
+        }
+        
+        .geo-logo { 
+            font-family: 'Bebas Neue', sans-serif; 
+            font-size: 2rem; 
+            font-weight: 400; 
+            color: var(--geo-primary); 
+            text-decoration: none; 
+            letter-spacing: 3px; 
+            position: relative; 
+        }
+        .geo-logo::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: -3px; left: 0; 
+            width: 30px; height: 3px; 
+            background: var(--geo-accent); 
+        }
+        
+        .geo-nav__links { display: flex; gap: 2.5rem; }
+        
+        .geo-nav__link { 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            color: var(--geo-text-light); 
+            text-decoration: none; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            transition: all 0.3s ease; 
+            position: relative; 
+        }
+        .geo-nav__link::before { 
+            content: ''; 
+            position: absolute; 
+            bottom: -3px; left: 0; 
+            width: 0; height: 3px; 
+            background: var(--geo-accent); 
+            transition: width 0.3s ease; 
+        }
+        .geo-nav__link:hover { color: var(--geo-primary); }
+        .geo-nav__link:hover::before { width: 100%; }
+        .geo-nav__link.active { color: var(--geo-primary); }
+        .geo-nav__link.active::before { width: 100%; }
+        
+        .geo-nav__stats { 
+            display: flex; align-items: center; gap: 0.5rem; 
+            background: var(--geo-primary); 
+            color: white; 
+            padding: 0.6rem 1.2rem; 
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+        .geo-nav__number { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 1px; }
+        .geo-nav__label { font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
+        
+        /* Hero区域 */
+        .geo-hero { 
+            position: relative; z-index: 1; 
+            min-height: 85vh; 
+            display: flex; align-items: center; justify-content: center; 
+            padding: 3rem;
+        }
+        
+        .geo-hero__content { text-align: center; max-width: 900px; position: relative; }
+        .geo-hero__content::before { 
+            content: ''; 
+            position: absolute; 
+            top: -30px; left: 50%; 
+            transform: translateX(-50%); 
+            width: 100px; height: 100px; 
+            background: var(--geo-accent); 
+            opacity: 0.1; 
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        
+        .geo-hero__title { 
+            font-family: 'Bebas Neue', sans-serif; 
+            font-size: 7rem; 
+            line-height: 0.95; 
+            margin-bottom: 1rem; 
+            color: var(--geo-primary); 
+            letter-spacing: 5px; 
+            position: relative; 
+        }
+        .geo-hero__title span { display: block; }
+        .geo-hero__title .accent { color: var(--geo-accent); }
+        
+        .geo-hero__subtitle { 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: 1rem; 
+            color: var(--geo-text-light); 
+            letter-spacing: 3px; 
+            text-transform: uppercase; 
+            margin-bottom: 2.5rem;
+        }
+        
+        .geo-hero__cta { display: inline-flex; gap: 1.5rem; }
+        
+        .geo-btn { 
+            font-family: 'Space Grotesk', sans-serif; 
+            padding: 1rem 2.5rem; 
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            letter-spacing: 2px; 
+            text-transform: uppercase; 
+            border: none; cursor: pointer; 
+            transition: all 0.3s ease; 
+            position: relative; overflow: hidden;
+        }
+        .geo-btn--primary { 
+            background: var(--geo-accent); 
+            color: white; 
+            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+        }
+        .geo-btn--primary:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 10px 10px 0 var(--geo-primary);
+        }
+        .geo-btn--secondary { 
+            background: transparent; 
+            color: var(--geo-primary); 
+            border: 2px solid var(--geo-primary); 
+            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+        }
+        .geo-btn--secondary:hover { 
+            background: var(--geo-primary); 
+            color: white;
+        }
+        
+        /* 专辑区域 */
+        .geo-section { position: relative; z-index: 1; padding: 4rem 3rem; }
+        
+        .geo-section__header { 
+            display: flex; align-items: center; gap: 1.5rem; 
+            margin-bottom: 2.5rem;
+        }
+        .geo-section__shape { 
+            width: 20px; height: 20px; 
+            background: var(--geo-accent); 
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        .geo-section__title { 
+            font-family: 'Bebas Neue', sans-serif; 
+            font-size: 2.5rem; 
+            color: var(--geo-primary); 
+            letter-spacing: 2px;
+        }
+        .geo-section__line { 
+            flex: 1; height: 3px; 
+            background: linear-gradient(90deg, var(--geo-primary), transparent);
+        }
+        
+        .geo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2rem; }
+        
+        .geo-card { 
+            position: relative; 
+            background: var(--geo-bg); 
+            border: 2px solid var(--geo-border); 
+            overflow: hidden; 
+            transition: all 0.4s ease;
+            cursor: pointer;
+        }
+        .geo-card::before { 
+            content: ''; 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 20px; height: 20px; 
+            background: var(--geo-accent); 
+            clip-path: polygon(0 0, 100% 0, 0 100%); 
+            opacity: 0; 
+            transition: opacity 0.3s ease;
+        }
+        .geo-card:hover::before { opacity: 1; }
+        .geo-card:hover { 
+            transform: translateY(-5px); 
+            border-color: var(--geo-primary); 
+            box-shadow: 8px 8px 0 var(--geo-accent);
+        }
+        
+        .geo-card__cover { 
+            width: 100%; aspect-ratio: 1; 
+            background: linear-gradient(135deg, var(--geo-bg-alt), #e8e8ed); 
+            position: relative; overflow: hidden;
+        }
+        .geo-card__fallback { 
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); 
+            font-size: 3rem; 
+            color: var(--geo-text-muted); 
+            opacity: 0.3;
+        }
+        .geo-card__play { 
+            position: absolute; 
+            bottom: 10px; right: 10px; 
+            width: 40px; height: 40px;
+            background: var(--geo-accent); 
+            border: none; 
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 0.85rem; cursor: pointer;
+            opacity: 0; transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+        .geo-card:hover .geo-card__play { opacity: 1; transform: scale(1); }
+        
+        .geo-card__info { padding: 1.2rem; border-top: 2px solid var(--geo-border); }
+        .geo-card__title { 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: 0.95rem; font-weight: 600;
+            color: var(--geo-primary); 
+            margin-bottom: 0.3rem; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .geo-card__artist { 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 0.8rem;
+            color: var(--geo-text-light);
+        }
+        
+        /* 特色区域 */
+        .geo-features {
+            position: relative;
+            z-index: 1;
+            padding: 4rem 3rem;
+            background: var(--geo-bg-alt);
+        }
+        
+        .geo-features__grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .geo-feature {
+            text-align: center;
+            padding: 2rem;
+            background: var(--geo-bg);
+            border: 2px solid var(--geo-border);
+            transition: all 0.3s ease;
+        }
+        
+        .geo-feature:hover {
+            border-color: var(--geo-accent);
+            transform: translateY(-5px);
+            box-shadow: 8px 8px 0 var(--geo-primary);
+        }
+        
+        .geo-feature__icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.5rem;
+            background: var(--geo-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        
+        .geo-feature__title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3rem;
+            color: var(--geo-primary);
+            letter-spacing: 2px;
+            margin-bottom: 0.75rem;
+        }
+        
+        .geo-feature__desc {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            color: var(--geo-text-light);
+            line-height: 1.6;
+        }
+        
+        /* 页脚 */
+        .geo-footer {
+            position: relative;
+            z-index: 1;
+            padding: 3rem;
+            background: var(--geo-primary);
+            color: white;
+            text-align: center;
+        }
+        
+        .geo-footer__logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+        }
+        
+        .geo-footer__text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* 播放器 */
+        .geo-player { 
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: var(--geo-primary); 
+            padding: 1rem 2rem;
+            display: flex; align-items: center; gap: 2rem;
+            clip-path: polygon(0 15px, 0 0, 100% 0, 100% 100%, 0 100%, 0 calc(100% - 15px));
+        }
+        .geo-player__info { display: flex; align-items: center; gap: 1rem; min-width: 250px; }
+        .geo-player__cover { 
+            width: 48px; height: 48px;
+            background: var(--geo-accent); 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: white;
+            clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%);
+        }
+        .geo-player__title { 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: 0.9rem; 
+            color: white; 
+            font-weight: 500;
+        }
+        .geo-player__artist { 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 0.75rem; 
+            color: rgba(255,255,255,0.6);
+        }
+        
+        .geo-player__controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .geo-player__buttons { display: flex; align-items: center; gap: 1.5rem; }
+        .geo-player__btn { 
+            background: none; 
+            border: none; 
+            color: rgba(255,255,255,0.6); 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .geo-player__btn:hover { color: var(--geo-accent); }
+        .geo-player__btn--play { 
+            width: 42px; height: 42px;
+            background: var(--geo-accent); 
+            color: white; 
+            display: flex; align-items: center; justify-content: center;
+            clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%);
+        }
+        
+        .geo-player__progress { 
+            width: 100%;
+            display: flex; align-items: center; gap: 1rem;
+        }
+        .geo-player__bar { 
+            flex: 1; height: 4px; 
+            background: rgba(255,255,255,0.2); 
+            position: relative; cursor: pointer;
+        }
+        .geo-player__bar-fill { height: 100%; width: 35%; background: var(--geo-accent); }
+        .geo-player__time { 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 0.75rem; 
+            color: rgba(255,255,255,0.5); 
+            min-width: 40px;
+        }
+        
+        .geo-player__volume {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 150px;
+        }
+        .geo-player__volume-icon {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+        }
+        .geo-player__volume-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            position: relative;
+            cursor: pointer;
+        }
+        .geo-player__volume-fill {
+            height: 100%;
+            width: 70%;
+            background: var(--geo-accent);
+        }
+        
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .geo-grid { grid-template-columns: repeat(4, 1fr); }
+            .geo-features__grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 900px) {
+            .geo-grid { grid-template-columns: repeat(3, 1fr); }
+            .geo-hero__title { font-size: 5rem; }
+            .geo-nav { padding: 1rem 2rem; }
+        }
+        
+        @media (max-width: 600px) {
+            .geo-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+            .geo-features__grid { grid-template-columns: 1fr; }
+            .geo-nav__links { display: none; }
+            .geo-hero__title { font-size: 3.5rem; }
+            .geo-hero__subtitle { font-size: 0.85rem; }
+            .geo-section { padding: 2rem 1rem; }
+            .geo-player { 
+                padding: 0.75rem 1rem; 
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            .geo-player__info { min-width: auto; }
+            .geo-player__volume { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="geo-nav">
+        <a href="#" class="geo-logo">TONGRENLU</a>
+        <div class="geo-nav__links">
+            <a href="#" class="geo-nav__link active">首页</a>
+            <a href="#" class="geo-nav__link">音乐库</a>
+            <a href="#" class="geo-nav__link">艺术家</a>
+            <a href="#" class="geo-nav__link">展会</a>
+            <a href="#" class="geo-nav__link">关于</a>
+        </div>
+        <div class="geo-nav__stats">
+            <span class="geo-nav__number">1,247</span>
+            <span class="geo-nav__label">专辑</span>
+        </div>
+    </nav>
+    
+    <!-- Hero区域 -->
+    <section class="geo-hero">
+        <div class="geo-hero__content">
+            <h1 class="geo-hero__title">
+                <span>东方</span>
+                <span class="accent">同人录</span>
+            </h1>
+            <p class="geo-hero__subtitle">探索东方同人音乐的未来</p>
+            <div class="geo-hero__cta">
+                <button class="geo-btn geo-btn--primary">进入音乐库</button>
+                <button class="geo-btn geo-btn--secondary">了解更多</button>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 最新专辑 -->
+    <section class="geo-section">
+        <div class="geo-section__header">
+            <div class="geo-section__shape"></div>
+            <h2 class="geo-section__title">最新发布</h2>
+            <div class="geo-section__line"></div>
+        </div>
+        <div class="geo-grid">
+            <div class="geo-card">
+                <div class="geo-card__cover">
+                    <span class="geo-card__fallback"><i class="fas fa-music"></i></span>
+                    <button class="geo-card__play"><i class="fas fa-play"></i></button>
+                </div>
+                <div class="geo-card__info">
+                    <div class="geo-card__title">东方红魔乡</div>
+                    <div class="geo-card__artist">上海爱丽丝幻乐团</div>
+                </div>
+            </div>
+            <div class="geo-card">
+                <div class="geo-card__cover">
+                    <span class="geo-card__fallback"><i class="fas fa-compact-disc"></i></span>
+                    <button class="geo-card__play"><i class="fas fa-play"></i></button>
+                </div>
+                <div class="geo-card__info">
+                    <div class="geo-card__title">东方妖妖梦</div>
+                    <div class="geo-card__artist">上海爱丽丝幻乐团</div>
+                </div>
+            </div>
+            <div class="geo-card">
+                <div class="geo-card__cover">
+                    <span class="geo-card__fallback"><i class="fas fa-headphones"></i></span>
+                    <button class="geo-card__play"><i class="fas fa-play"></i></button>
+                </div>
+                <div class="geo-card__info">
+                    <div class="geo-card__title">东方永夜抄</div>
+                    <div class="geo-card__artist">上海爱丽丝幻乐团</div>
+                </div>
+            </div>
+            <div class="geo-card">
+                <div class="geo-card__cover">
+                    <span class="geo-card__fallback"><i class="fas fa-atom"></i></span>
+                    <button class="geo-card__play"><i class="fas fa-play"></i></button>
+                </div>
+                <div class="geo-card__info">
+                    <div class="geo-card__title">东方风神录</div>
+                    <div class="geo-card__artist">上海爱丽丝幻乐团</div>
+                </div>
+            </div>
+            <div class="geo-card">
+                <div class="geo-card__cover">
+                    <span class="geo-card__fallback"><i class="fas fa-meteor"></i></span>
+                    <button class="geo-card__play"><i class="fas fa-play"></i></button>
+                </div>
+                <div class="geo-card__info">
+                    <div class="geo-card__title">东方地灵殿</div>
+                    <div class="geo-card__artist">上海爱丽丝幻乐团</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 特色功能 -->
+    <section class="geo-features">
+        <div class="geo-features__grid">
+            <div class="geo-feature">
+                <div class="geo-feature__icon">
+                    <i class="fas fa-music"></i>
+                </div>
+                <h3 class="geo-feature__title">海量音乐</h3>
+                <p class="geo-feature__desc">收录数千张东方同人专辑，涵盖各种风格流派</p>
+            </div>
+            <div class="geo-feature">
+                <div class="geo-feature__icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3 class="geo-feature__title">艺术家社区</h3>
+                <p class="geo-feature__desc">发现优秀的同人创作者，支持他们的音乐事业</p>
+            </div>
+            <div class="geo-feature">
+                <div class="geo-feature__icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <h3 class="geo-feature__title">在线播放</h3>
+                <p class="geo-feature__desc">高品质音乐流媒体，随时随地享受同人音乐</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 页脚 -->
+    <footer class="geo-footer">
+        <div class="geo-footer__logo">TONGRENLU</div>
+        <p class="geo-footer__text">&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
+        <p class="geo-footer__text">本网站仅为学习交流使用，不涉及任何商业用途</p>
+    </footer>
+    
+    <!-- 播放器 -->
+    <div class="geo-player">
+        <div class="geo-player__info">
+            <div class="geo-player__cover">
+                <i class="fas fa-music"></i>
+            </div>
+            <div>
+                <div class="geo-player__title">亡き王女の為のセプテット</div>
+                <div class="geo-player__artist">上海爱丽丝幻乐团</div>
+            </div>
+        </div>
+        <div class="geo-player__controls">
+            <div class="geo-player__buttons">
+                <button class="geo-player__btn"><i class="fas fa-random"></i></button>
+                <button class="geo-player__btn"><i class="fas fa-step-backward"></i></button>
+                <button class="geo-player__btn geo-player__btn--play"><i class="fas fa-play"></i></button>
+                <button class="geo-player__btn"><i class="fas fa-step-forward"></i></button>
+                <button class="geo-player__btn"><i class="fas fa-redo"></i></button>
+            </div>
+            <div class="geo-player__progress">
+                <span class="geo-player__time">1:24</span>
+                <div class="geo-player__bar">
+                    <div class="geo-player__bar-fill"></div>
+                </div>
+                <span class="geo-player__time">5:18</span>
+            </div>
+        </div>
+        <div class="geo-player__volume">
+            <i class="fas fa-volume-up geo-player__volume-icon"></i>
+            <div class="geo-player__volume-bar">
+                <div class="geo-player__volume-fill"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 播放按钮交互
+        document.querySelectorAll('.geo-player__btn--play, .geo-card__play').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    if (icon.classList.contains('fa-play')) {
+                        icon.classList.remove('fa-play');
+                        icon.classList.add('fa-pause');
+                    } else {
+                        icon.classList.remove('fa-pause');
+                        icon.classList.add('fa-play');
+                    }
+                }
+            });
+        });
+        
+        // 导航链接激活状态
+        document.querySelectorAll('.geo-nav__link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.geo-nav__link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+            });
+        });
+        
+        // 进度条点击
+        document.querySelector('.geo-player__bar').addEventListener('click', function(e) {
+            const rect = this.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width * 100;
+            this.querySelector('.geo-player__bar-fill').style.width = percent + '%';
+        });
+        
+        // 音量条点击
+        document.querySelector('.geo-player__volume-bar').addEventListener('click', function(e) {
+            const rect = this.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width * 100;
+            this.querySelector('.geo-player__volume-fill').style.width = percent + '%';
+        });
+    </script>
+</body>
+</html>

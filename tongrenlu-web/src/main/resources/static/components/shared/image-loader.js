@@ -2,6 +2,37 @@
 const imageCache = new Map(); // 图片缓存
 const pendingRequests = new Map(); // 正在加载的图片请求
 
+/**
+ * 获取优化后的图片URL
+ * 网易云音乐图片支持 ?param=宽y高 参数控制尺寸
+ * @param {string} url - 原始图片URL
+ * @param {number} width - 目标宽度
+ * @param {number} height - 目标高度
+ * @returns {string} - 优化后的URL
+ */
+function getOptimizedImageUrl(url, width, height) {
+    if (!url) return url;
+    
+    // 检测是否是网易云音乐图片URL
+    if (url.includes('music.126.net') || url.includes('127.net')) {
+        // 移除已有的param参数
+        const baseUrl = url.split('?')[0];
+        // 添加尺寸参数
+        return `${baseUrl}?param=${width}y${height}`;
+    }
+    
+    return url;
+}
+
+/**
+ * 直接设置图片URL（不经过canvas处理）
+ * 用于支持服务器端缩略图的图片
+ */
+function setImageDirectly(element, url) {
+    $(element).css('background-image', `url('${url}')`);
+    $(element).find('.fallback-content').remove();
+}
+
 // 使用缓存机制加载图片
 function loadImageWithCache(element, url, width, height) {
     // 生成缓存键
@@ -10,9 +41,12 @@ function loadImageWithCache(element, url, width, height) {
     // 检查是否已经在缓存中
     if (imageCache.has(cacheKey)) {
         const cachedDataUrl = imageCache.get(cacheKey);
-        $(element).css('background-image', `url('${cachedDataUrl}')`);
-        // 移除现有的fallback内容
-        $(element).find('.fallback-content').remove();
+        if (cachedDataUrl.startsWith('http')) {
+            setImageDirectly(element, cachedDataUrl);
+        } else {
+            $(element).css('background-image', `url('${cachedDataUrl}')`);
+            $(element).find('.fallback-content').remove();
+        }
         return;
     }
 
@@ -21,9 +55,14 @@ function loadImageWithCache(element, url, width, height) {
         // 添加到回调队列
         const callbackArray = pendingRequests.get(cacheKey);
         callbackArray.push((dataUrl) => {
-            $(element).css('background-image', `url('${dataUrl}')`);
-            // 移除现有的fallback内容
-            $(element).find('.fallback-content').remove();
+            if (dataUrl) {
+                if (dataUrl.startsWith('http')) {
+                    setImageDirectly(element, dataUrl);
+                } else {
+                    $(element).css('background-image', `url('${dataUrl}')`);
+                    $(element).find('.fallback-content').remove();
+                }
+            }
         });
         return;
     }
@@ -31,7 +70,45 @@ function loadImageWithCache(element, url, width, height) {
     // 标记为正在加载
     pendingRequests.set(cacheKey, []);
 
-    // 创建图片对象
+    // 检测是否是网易云音乐图片，直接使用服务器端缩略图
+    if (url.includes('music.126.net') || url.includes('127.net')) {
+        const optimizedUrl = getOptimizedImageUrl(url, width, height);
+        
+        // 直接使用优化后的URL
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        
+        $(img).on('load', function() {
+            // 缓存优化后的URL
+            imageCache.set(cacheKey, optimizedUrl);
+            setImageDirectly(element, optimizedUrl);
+            
+            // 执行回调队列
+            const callbacks = pendingRequests.get(cacheKey) || [];
+            $.each(callbacks, function(index, callback) {
+                callback(optimizedUrl);
+            });
+            pendingRequests.delete(cacheKey);
+        });
+        
+        $(img).on('error', function() {
+            console.error('图片加载失败:', optimizedUrl);
+            if ($(element).find('.fallback-content').length === 0) {
+                $(element).html('<div class="fallback-content">🎵</div>');
+            }
+            
+            const callbacks = pendingRequests.get(cacheKey) || [];
+            $.each(callbacks, function(index, callback) {
+                callback(null);
+            });
+            pendingRequests.delete(cacheKey);
+        });
+        
+        img.src = optimizedUrl;
+        return;
+    }
+
+    // 非网易云音乐图片，使用canvas处理
     const img = new Image();
     img.crossOrigin = 'Anonymous';
 
@@ -124,7 +201,7 @@ function lazyLoadAlbumCovers() {
 
                 if (url) {
                     // 使用缓存机制加载图片
-                    loadImageWithCache(entry.target, url, 200, 200);
+                    loadImageWithCache(entry.target, url, 300, 300);
                     cover.attr('data-loaded', 'true');
                 }
 

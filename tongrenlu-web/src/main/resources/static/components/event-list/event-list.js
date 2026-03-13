@@ -150,10 +150,14 @@
         showLoading();
 
         try {
+            // 如果有前端筛选条件，获取足够多的数据用于前端过滤
+            const needAllData = state.currentFilter !== 'all' || state.currentSort !== 'album_count';
+            const limit = needAllData ? 1000 : CONFIG.PAGE_SIZE;
+            
             const params = new URLSearchParams({
-                page: state.currentPage,
-                limit: CONFIG.PAGE_SIZE,
-                orderBy: state.currentSort
+                page: 1,
+                limit: limit,
+                orderBy: 'album_count' // 始终按专辑数量获取，前端再排序
             });
 
             if (state.searchKeyword) {
@@ -186,9 +190,15 @@
             console.log('处理后的events:', state.events);
             console.log('total:', state.total);
 
-            // 应用前端筛选（因为API不直接支持状态筛选）
+            // 应用前端筛选和排序
             applyFilter();
-            renderEvents();
+            
+            // 应用分页到过滤后的数据
+            const startIndex = (state.currentPage - 1) * CONFIG.PAGE_SIZE;
+            const endIndex = startIndex + CONFIG.PAGE_SIZE;
+            const paginatedEvents = state.filteredEvents.slice(startIndex, endIndex);
+            
+            renderEvents(paginatedEvents);
             updateStats();
             renderMainPagination();
 
@@ -219,40 +229,95 @@
             { id: 1042, tag: 'C85', type: 'event', album_count: 38 }
         ];
         
-        state.total = state.events.length;
-        state.totalPages = 1;
-        
+        // 应用前端筛选和排序
         applyFilter();
-        renderEvents();
+        
+        // 应用分页
+        const startIndex = (state.currentPage - 1) * CONFIG.PAGE_SIZE;
+        const endIndex = startIndex + CONFIG.PAGE_SIZE;
+        const paginatedEvents = state.filteredEvents.slice(startIndex, endIndex);
+        
+        renderEvents(paginatedEvents);
         updateStats();
         renderMainPagination();
     }
 
     function applyFilter() {
-        // 由于tag表没有状态字段，这里只是简单展示
-        // 如果需要状态筛选，需要在tag表添加额外字段
-        state.filteredEvents = state.events;
+        let filtered = [...state.events];
+        
+        // 根据筛选条件过滤
+        if (state.currentFilter !== 'all') {
+            filtered = filtered.filter(event => {
+                const tagName = (event.tag || '').toLowerCase();
+                const name = event.tag || '';
+                
+                switch (state.currentFilter) {
+                    case 'comiket':
+                        // Comic Market: C开头 + 数字
+                        return tagName.match(/^c\d+/i) || name.includes('Comic Market') || name.includes('コミケ');
+                    case 'reitaisai':
+                        // 例大祭
+                        return name.includes('例大祭') || name.includes('例大祭');
+                    case 'other':
+                        // 其他：不是Comic Market也不是例大祭
+                        const isComiket = tagName.match(/^c\d+/i) || name.includes('Comic Market') || name.includes('コミケ');
+                        const isReitaisai = name.includes('例大祭');
+                        return !isComiket && !isReitaisai;
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // 根据搜索关键词过滤
+        if (state.searchKeyword) {
+            const keyword = state.searchKeyword.toLowerCase();
+            filtered = filtered.filter(event => {
+                return (event.tag || '').toLowerCase().includes(keyword);
+            });
+        }
+        
+        // 排序
+        filtered.sort((a, b) => {
+            const aCount = a.album_count || a.albumCount || 0;
+            const bCount = b.album_count || b.albumCount || 0;
+            const aName = a.tag || '';
+            const bName = b.tag || '';
+            
+            if (state.currentSort === 'album_count') {
+                return bCount - aCount; // 专辑数量降序
+            } else {
+                return aName.localeCompare(bName, 'zh-CN'); // 名称升序
+            }
+        });
+        
+        state.filteredEvents = filtered;
+        state.total = filtered.length;
+        state.totalPages = Math.ceil(filtered.length / CONFIG.PAGE_SIZE) || 1;
     }
 
     // ==================== 渲染函数 ====================
-    function renderEvents() {
+    function renderEvents(eventsToRender) {
+        // 如果没有传入参数，使用过滤后的数据
+        const events = eventsToRender || state.filteredEvents;
+        
         console.log('renderEvents被调用');
         console.log('eventGrid元素:', elements.eventGrid);
-        console.log('filteredEvents数量:', state.filteredEvents.length);
+        console.log('events数量:', events.length);
         
         if (!elements.eventGrid) {
             console.error('eventGrid元素不存在！');
             return;
         }
 
-        if (state.filteredEvents.length === 0) {
+        if (events.length === 0) {
             showEmpty();
             elements.eventGrid.innerHTML = '';
             return;
         }
 
         hideEmpty();
-        const html = state.filteredEvents.map(event => createEventCard(event)).join('');
+        const html = events.map(event => createEventCard(event)).join('');
         console.log('生成的HTML长度:', html.length);
         elements.eventGrid.innerHTML = html;
         console.log('HTML已注入到eventGrid');
@@ -353,7 +418,15 @@
                 const page = parseInt(btn.dataset.page);
                 if (page && page !== state.currentPage && page >= 1 && page <= state.totalPages) {
                     state.currentPage = page;
-                    loadEvents();
+                    
+                    // 使用前端分页渲染
+                    const startIndex = (state.currentPage - 1) * CONFIG.PAGE_SIZE;
+                    const endIndex = startIndex + CONFIG.PAGE_SIZE;
+                    const paginatedEvents = state.filteredEvents.slice(startIndex, endIndex);
+                    
+                    renderEvents(paginatedEvents);
+                    renderMainPagination();
+                    
                     // 滚动到页面顶部
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
@@ -425,7 +498,11 @@
         elements.modalBody.innerHTML = `
             <div class="event-album-list">
                 ${albums.map(album => {
-                    const coverUrl = album.cloud_music_pic_url || album.cloudMusicPicUrl;
+                    let coverUrl = album.cloud_music_pic_url || album.cloudMusicPicUrl;
+                    // 使用优化后的图片URL（150x150）
+                    if (coverUrl && typeof getOptimizedImageUrl === 'function') {
+                        coverUrl = getOptimizedImageUrl(coverUrl, 150, 150);
+                    }
                     return `
                     <div class="event-album-item" data-id="${album.id}">
                         <div class="event-album-item__cover">

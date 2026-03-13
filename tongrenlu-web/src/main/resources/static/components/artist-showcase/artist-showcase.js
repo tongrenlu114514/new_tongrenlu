@@ -112,9 +112,13 @@ function createCard(artist) {
     });
     
     if (artist.cloud_music_pic_url) {
+        // 使用优化后的图片URL（200x200）
+        const optimizedUrl = typeof getOptimizedImageUrl === 'function' 
+            ? getOptimizedImageUrl(artist.cloud_music_pic_url, 200, 200) 
+            : artist.cloud_music_pic_url;
         const img = $('<img>', {
             class: 'artist-card__image',
-            src: artist.cloud_music_pic_url,
+            src: optimizedUrl,
             alt: artist.name,
             loading: 'lazy',
             onerror: 'this.parentElement.innerHTML = \'<div class="artist-card__placeholder"><i class="fas fa-user"></i></div>\''
@@ -312,8 +316,12 @@ function renderAlbums() {
         });
         
         if (album.cloudMusicPicUrl) {
+            // 使用优化后的图片URL（150x150）
+            const optimizedUrl = typeof getOptimizedImageUrl === 'function' 
+                ? getOptimizedImageUrl(album.cloudMusicPicUrl, 150, 150) 
+                : album.cloudMusicPicUrl;
             const img = $('<img>', {
-                src: album.cloudMusicPicUrl,
+                src: optimizedUrl,
                 alt: album.title,
                 loading: 'lazy'
             });

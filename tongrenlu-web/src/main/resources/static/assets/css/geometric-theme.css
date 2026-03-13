@@ -1,0 +1,830 @@
+/**
+ * 几何未来主义风格 - 共享样式
+ * Geometric Futurism Theme
+ */
+
+/* ============================================
+   CSS变量定义
+   ============================================ */
+:root {
+    --geo-bg: #ffffff;
+    --geo-bg-alt: #f8f9fa;
+    --geo-primary: #1a1a2e;
+    --geo-accent: #e94560;
+    --geo-accent-alt: #0f3460;
+    --geo-text: #1a1a2e;
+    --geo-text-light: #4a4a5a;
+    --geo-text-muted: #8a8a9a;
+    --geo-border: #e0e0e5;
+}
+
+/* ============================================
+   基础重置
+   ============================================ */
+.geo-theme * {
+    box-sizing: border-box;
+}
+
+.geo-theme body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--geo-bg);
+    color: var(--geo-text);
+    position: relative;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.geo-theme main,
+.geo-theme .geo-content,
+.geo-theme > div:not(.geo-nav):not(.geo-footer):not(.geo-modal):not(#version-info) {
+    flex: 1;
+}
+
+/* 几何网格背景 */
+.geo-theme body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: 
+        linear-gradient(135deg, transparent 49%, var(--geo-border) 49%, var(--geo-border) 51%, transparent 51%),
+        linear-gradient(45deg, transparent 49%, rgba(233, 69, 96, 0.05) 49%, rgba(233, 69, 96, 0.05) 51%, transparent 51%);
+    background-size: 60px 60px, 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+}
+
+/* ============================================
+   导航栏
+   ============================================ */
+.geo-nav { 
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100; 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 1rem 2.5rem; 
+    background: var(--geo-bg); 
+    border-bottom: 3px solid var(--geo-primary);
+}
+
+.geo-logo { 
+    font-family: 'Bebas Neue', sans-serif; 
+    font-size: 1.8rem; 
+    font-weight: 400; 
+    color: var(--geo-primary); 
+    text-decoration: none; 
+    letter-spacing: 3px; 
+    position: relative; 
+}
+.geo-logo::after { 
+    content: ''; 
+    position: absolute; 
+    bottom: -3px; left: 0; 
+    width: 30px; height: 3px; 
+    background: var(--geo-accent); 
+}
+
+.geo-nav__links { display: flex; gap: 2rem; }
+
+.geo-nav__link { 
+    font-family: 'Space Grotesk', sans-serif; 
+    font-size: 0.85rem; 
+    font-weight: 500; 
+    color: var(--geo-text-light); 
+    text-decoration: none; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    transition: all 0.3s ease; 
+    position: relative; 
+}
+.geo-nav__link::before { 
+    content: ''; 
+    position: absolute; 
+    bottom: -3px; left: 0; 
+    width: 0; height: 3px; 
+    background: var(--geo-accent); 
+    transition: width 0.3s ease; 
+}
+.geo-nav__link:hover { color: var(--geo-primary); }
+.geo-nav__link:hover::before { width: 100%; }
+.geo-nav__link.active { color: var(--geo-primary); }
+.geo-nav__link.active::before { width: 100%; }
+
+.geo-nav__stats { 
+    display: flex; align-items: center; gap: 0.5rem; 
+    background: var(--geo-primary); 
+    color: white; 
+    padding: 0.5rem 1rem; 
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.geo-nav__number { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 1px; }
+.geo-nav__label { font-family: 'Space Grotesk', sans-serif; font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; }
+
+/* ============================================
+   Hero区域
+   ============================================ */
+.geo-hero { 
+    position: relative; z-index: 1; 
+    min-height: 80vh; 
+    display: flex; align-items: center; justify-content: center; 
+    padding: 5rem 2rem 3rem;
+    margin-top: 60px;
+}
+
+.geo-hero__content { text-align: center; max-width: 900px; position: relative; }
+.geo-hero__content::before { 
+    content: ''; 
+    position: absolute; 
+    top: -30px; left: 50%; 
+    transform: translateX(-50%); 
+    width: 100px; height: 100px; 
+    background: var(--geo-accent); 
+    opacity: 0.1; 
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.geo-hero__title { 
+    font-family: 'Bebas Neue', sans-serif; 
+    font-size: 5rem; 
+    line-height: 0.95; 
+    margin-bottom: 1rem; 
+    color: var(--geo-primary); 
+    letter-spacing: 5px; 
+    position: relative; 
+}
+.geo-hero__title span { display: block; }
+.geo-hero__title .accent { color: var(--geo-accent); }
+
+.geo-hero__subtitle { 
+    font-family: 'Space Grotesk', sans-serif; 
+    font-size: 1rem; 
+    color: var(--geo-text-light); 
+    letter-spacing: 3px; 
+    text-transform: uppercase; 
+    margin-bottom: 2rem;
+}
+
+.geo-hero__cta { display: inline-flex; gap: 1.5rem; }
+
+/* ============================================
+   按钮
+   ============================================ */
+.geo-btn { 
+    font-family: 'Space Grotesk', sans-serif; 
+    padding: 0.9rem 2rem; 
+    font-size: 0.85rem; 
+    font-weight: 500; 
+    letter-spacing: 2px; 
+    text-transform: uppercase; 
+    border: none; cursor: pointer; 
+    transition: all 0.3s ease; 
+    position: relative; overflow: hidden;
+}
+.geo-btn--primary { 
+    background: var(--geo-accent); 
+    color: white; 
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.geo-btn--primary:hover { 
+    transform: translateY(-3px); 
+    box-shadow: 8px 8px 0 var(--geo-primary);
+}
+.geo-btn--secondary { 
+    background: transparent; 
+    color: var(--geo-primary); 
+    border: 2px solid var(--geo-primary); 
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.geo-btn--secondary:hover { 
+    background: var(--geo-primary); 
+    color: white;
+}
+
+/* ============================================
+   内容区块
+   ============================================ */
+.geo-section { 
+    position: relative; 
+    z-index: 1; 
+    padding: 3rem 2rem; 
+}
+
+.geo-section__header { 
+    display: flex; align-items: center; gap: 1.5rem; 
+    margin-bottom: 2rem;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.geo-section__shape { 
+    width: 20px; height: 20px; 
+    background: var(--geo-accent); 
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.geo-section__title { 
+    font-family: 'Bebas Neue', sans-serif; 
+    font-size: 2rem; 
+    color: var(--geo-primary); 
+    letter-spacing: 2px;
+}
+.geo-section__line { 
+    flex: 1; height: 3px; 
+    background: linear-gradient(90deg, var(--geo-primary), transparent);
+}
+
+/* ============================================
+   卡片网格
+   ============================================ */
+.geo-grid { 
+    display: grid; 
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.geo-card { 
+    position: relative; 
+    background: var(--geo-bg); 
+    border: 2px solid var(--geo-border); 
+    overflow: hidden; 
+    transition: all 0.4s ease;
+    cursor: pointer;
+}
+.geo-card::before { 
+    content: ''; 
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 20px; height: 20px; 
+    background: var(--geo-accent); 
+    clip-path: polygon(0 0, 100% 0, 0 100%); 
+    opacity: 0; 
+    transition: opacity 0.3s ease;
+}
+.geo-card:hover::before { opacity: 1; }
+.geo-card:hover { 
+    transform: translateY(-5px); 
+    border-color: var(--geo-primary); 
+    box-shadow: 8px 8px 0 var(--geo-accent);
+}
+
+.geo-card__cover { 
+    width: 100%; aspect-ratio: 1; 
+    background: linear-gradient(135deg, var(--geo-bg-alt), #e8e8ed); 
+    position: relative; overflow: hidden;
+}
+.geo-card__fallback { 
+    position: absolute; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); 
+    font-size: 2.5rem; 
+    color: var(--geo-text-muted); 
+    opacity: 0.3;
+}
+.geo-card__play { 
+    position: absolute; 
+    bottom: 10px; right: 10px; 
+    width: 38px; height: 38px;
+    background: var(--geo-accent); 
+    border: none; 
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 0.8rem; cursor: pointer;
+    opacity: 0; transform: scale(0.8);
+    transition: all 0.3s ease;
+}
+.geo-card:hover .geo-card__play { opacity: 1; transform: scale(1); }
+
+.geo-card__info { padding: 1rem; border-top: 2px solid var(--geo-border); }
+.geo-card__title { 
+    font-family: 'Space Grotesk', sans-serif; 
+    font-size: 0.9rem; font-weight: 600;
+    color: var(--geo-primary); 
+    margin-bottom: 0.3rem; 
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.geo-card__artist { 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 0.75rem;
+    color: var(--geo-text-light);
+}
+
+/* ============================================
+   搜索区域
+   ============================================ */
+.geo-search {
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+}
+
+.geo-search__wrapper {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.geo-search__input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    padding-right: 50px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    border: 2px solid var(--geo-border);
+    background: var(--geo-bg);
+    color: var(--geo-text);
+    transition: all 0.3s ease;
+}
+.geo-search__input:focus {
+    outline: none;
+    border-color: var(--geo-accent);
+}
+
+.geo-search__btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 50px;
+    background: var(--geo-accent);
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.geo-search__btn:hover {
+    background: var(--geo-primary);
+}
+
+/* ============================================
+   筛选和排序
+   ============================================ */
+.geo-filter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+}
+
+.geo-filter__tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.geo-filter__tag {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--geo-border);
+    background: var(--geo-bg);
+    color: var(--geo-text-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.geo-filter__tag:hover {
+    border-color: var(--geo-accent);
+    color: var(--geo-accent);
+}
+.geo-filter__tag.active {
+    background: var(--geo-accent);
+    border-color: var(--geo-accent);
+    color: white;
+}
+
+.geo-sort {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.geo-sort__label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.8rem;
+    color: var(--geo-text-muted);
+    text-transform: uppercase;
+}
+
+.geo-sort__select {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--geo-border);
+    background: var(--geo-bg);
+    color: var(--geo-text);
+    cursor: pointer;
+}
+
+/* ============================================
+   分页
+   ============================================ */
+.geo-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.geo-pagination__info {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    color: var(--geo-text-muted);
+}
+
+.geo-pagination__controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.geo-pagination__btn,
+.page-btn {
+    font-family: 'Space Grotesk', sans-serif;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--geo-border);
+    background: var(--geo-bg);
+    color: var(--geo-text);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.geo-pagination__btn:hover,
+.page-btn:hover {
+    border-color: var(--geo-accent);
+    color: var(--geo-accent);
+}
+.geo-pagination__btn.active,
+.page-btn.active {
+    background: var(--geo-accent);
+    border-color: var(--geo-accent);
+    color: white;
+}
+.geo-pagination__btn:disabled,
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   页脚
+   ============================================ */
+.geo-footer {
+    position: relative;
+    z-index: 1;
+    padding: 2rem;
+    background: var(--geo-primary);
+    color: white;
+    text-align: center;
+}
+
+.geo-footer__logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+    margin-bottom: 1rem;
+}
+
+.geo-footer__text {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+}
+
+/* ============================================
+   播放器
+   ============================================ */
+.geo-player { 
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: var(--geo-primary); 
+    padding: 0.75rem 1.5rem;
+    display: flex; align-items: center; gap: 1.5rem;
+    clip-path: polygon(0 12px, 0 0, 100% 0, 100% 100%, 0 100%, 0 calc(100% - 12px));
+}
+.geo-player__info { display: flex; align-items: center; gap: 0.8rem; min-width: 220px; }
+.geo-player__cover { 
+    width: 42px; height: 42px;
+    background: var(--geo-accent); 
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: white;
+    clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%);
+}
+.geo-player__title { 
+    font-family: 'Space Grotesk', sans-serif; 
+    font-size: 0.85rem; 
+    color: white; 
+    font-weight: 500;
+}
+.geo-player__artist { 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 0.7rem; 
+    color: rgba(255,255,255,0.6);
+}
+
+.geo-player__controls {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.geo-player__buttons { display: flex; align-items: center; gap: 1rem; }
+.geo-player__btn { 
+    background: none; 
+    border: none; 
+    color: rgba(255,255,255,0.6); 
+    font-size: 0.85rem; 
+    cursor: pointer; 
+    transition: all 0.3s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.geo-player__btn:hover { color: var(--geo-accent); }
+.geo-player__btn--play { 
+    width: 38px; height: 38px;
+    background: var(--geo-accent); 
+    color: white; 
+    display: flex; align-items: center; justify-content: center;
+    clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%);
+}
+
+.geo-player__progress { 
+    width: 100%;
+    display: flex; align-items: center; gap: 0.8rem;
+}
+.geo-player__bar { 
+    flex: 1; height: 4px; 
+    background: rgba(255,255,255,0.2); 
+    position: relative; cursor: pointer;
+}
+.geo-player__bar-fill { height: 100%; width: 35%; background: var(--geo-accent); }
+.geo-player__time { 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 0.7rem; 
+    color: rgba(255,255,255,0.5); 
+    min-width: 35px;
+}
+
+.geo-player__volume {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px;
+}
+.geo-player__volume-icon {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.85rem;
+}
+.geo-player__volume-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    position: relative;
+    cursor: pointer;
+}
+.geo-player__volume-fill {
+    height: 100%;
+    width: 70%;
+    background: var(--geo-accent);
+}
+
+/* ============================================
+   模态框
+   ============================================ */
+.geo-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(26, 26, 46, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+.geo-modal.active {
+    display: flex;
+}
+
+.geo-modal__content {
+    background: var(--geo-bg);
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 3px solid var(--geo-primary);
+    position: relative;
+}
+
+.geo-modal__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    background: var(--geo-accent);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+.geo-modal__close:hover {
+    background: var(--geo-primary);
+}
+
+.geo-modal__header {
+    display: flex;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: var(--geo-primary);
+    color: white;
+}
+
+.geo-modal__cover {
+    width: 150px;
+    height: 150px;
+    background: var(--geo-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+}
+
+.geo-modal__info {
+    flex: 1;
+}
+
+.geo-modal__title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+}
+
+.geo-modal__artist {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 1rem;
+}
+
+.geo-modal__meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.geo-modal__meta-item {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.geo-modal__body {
+    padding: 1.5rem 2rem;
+}
+
+.geo-modal__description {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    color: var(--geo-text-light);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--geo-border);
+}
+
+.geo-modal__tracklist h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    color: var(--geo-primary);
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.geo-modal__tracks {
+    list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.geo-modal__track {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--geo-border);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.geo-modal__track:hover {
+    background: var(--geo-bg-alt);
+}
+
+.geo-modal__track-num {
+    font-family: 'Bebas Neue', sans-serif;
+    width: 30px;
+    color: var(--geo-text-muted);
+}
+
+.geo-modal__track-title {
+    flex: 1;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    color: var(--geo-text);
+}
+
+.geo-modal__track-duration {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    color: var(--geo-text-muted);
+}
+
+/* ============================================
+   加载状态
+   ============================================ */
+.geo-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    gap: 1rem;
+}
+
+.geo-loading__spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--geo-border);
+    border-top-color: var(--geo-accent);
+    border-radius: 50%;
+    animation: geo-spin 1s linear infinite;
+}
+
+@keyframes geo-spin {
+    to { transform: rotate(360deg); }
+}
+
+.geo-loading__text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    color: var(--geo-text-muted);
+}
+
+/* ============================================
+   响应式布局
+   ============================================ */
+@media (max-width: 1200px) {
+    .geo-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 900px) {
+    .geo-grid { grid-template-columns: repeat(3, 1fr); }
+    .geo-hero__title { font-size: 3.5rem; }
+    .geo-nav { padding: 0.8rem 1.5rem; }
+}
+
+@media (max-width: 600px) {
+    .geo-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .geo-nav__links { display: none; }
+    .geo-hero__title { font-size: 2.5rem; }
+    .geo-hero__subtitle { font-size: 0.85rem; }
+    .geo-section { padding: 2rem 1rem; }
+    .geo-player { 
+        padding: 0.5rem 1rem; 
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .geo-player__info { min-width: auto; }
+    .geo-player__volume { display: none; }
+    .geo-filter { flex-direction: column; align-items: flex-start; }
+}

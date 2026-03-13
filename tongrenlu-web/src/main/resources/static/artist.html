@@ -4,71 +4,418 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>艺人管理 - 东方同人录</title>
-    <link href="components/admin/admin.css" rel="stylesheet">
-    <link href="components/admin/artist.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="components/shared/image-loader.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/geometric-theme.css" rel="stylesheet">
+    
+    <style>
+        /* 后台管理特定样式 */
+        .geo-admin-page {
+            padding-top: 80px;
+            min-height: 100vh;
+            background: var(--geo-bg-alt);
+        }
+        
+        .geo-admin-header {
+            background: var(--geo-primary);
+            padding: 1.5rem 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--geo-accent);
+        }
+        
+        .geo-admin-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            color: white;
+            letter-spacing: 2px;
+        }
+        
+        .geo-admin-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .geo-admin-nav__link {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            padding: 0.6rem 1.2rem;
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .geo-admin-nav__link:hover {
+            border-color: var(--geo-accent);
+            color: var(--geo-accent);
+        }
+        
+        .geo-admin-nav__link.active {
+            background: var(--geo-accent);
+            border-color: var(--geo-accent);
+            color: white;
+        }
+        
+        .geo-admin-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .geo-admin-card {
+            background: var(--geo-bg);
+            border: 2px solid var(--geo-border);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .geo-admin-search {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .geo-admin-search__input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            border: 2px solid var(--geo-border);
+            background: var(--geo-bg);
+            color: var(--geo-text);
+        }
+        
+        .geo-admin-search__input:focus {
+            outline: none;
+            border-color: var(--geo-accent);
+        }
+        
+        .geo-admin-search__btn {
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 0.8rem 1.5rem;
+            background: var(--geo-accent);
+            border: none;
+            color: white;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .geo-admin-search__btn:hover {
+            background: var(--geo-primary);
+        }
+        
+        .geo-admin-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .geo-admin-artist {
+            background: var(--geo-bg);
+            border: 2px solid var(--geo-border);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .geo-admin-artist:hover {
+            border-color: var(--geo-accent);
+            transform: translateY(-3px);
+            box-shadow: 6px 6px 0 var(--geo-primary);
+        }
+        
+        .geo-admin-artist__avatar {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            background: var(--geo-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        
+        .geo-admin-artist__name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--geo-primary);
+            margin-bottom: 0.3rem;
+        }
+        
+        .geo-admin-artist__count {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            color: var(--geo-text-muted);
+        }
+        
+        .geo-admin-empty {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--geo-text-muted);
+        }
+        
+        /* 模态框 */
+        .geo-admin-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .geo-admin-modal.active {
+            display: flex;
+        }
+        
+        .geo-admin-modal__content {
+            background: var(--geo-bg);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 3px solid var(--geo-primary);
+            position: relative;
+        }
+        
+        .geo-admin-modal__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: var(--geo-primary);
+            color: white;
+        }
+        
+        .geo-admin-modal__title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+        }
+        
+        .geo-admin-modal__close {
+            width: 36px;
+            height: 36px;
+            background: var(--geo-accent);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .geo-admin-modal__close:hover {
+            background: white;
+            color: var(--geo-accent);
+        }
+        
+        .geo-admin-modal__body {
+            padding: 2rem;
+        }
+        
+        .geo-admin-modal__detail {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid var(--geo-border);
+        }
+        
+        .geo-admin-modal__avatar {
+            width: 100px;
+            height: 100px;
+            background: var(--geo-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+        }
+        
+        .geo-admin-modal__info {
+            flex: 1;
+        }
+        
+        .geo-admin-modal__name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--geo-primary);
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .geo-admin-modal__alias {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            color: var(--geo-text-light);
+            margin-bottom: 0.5rem;
+        }
+        
+        .geo-admin-modal__stat {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            color: var(--geo-text-muted);
+        }
+        
+        .geo-admin-modal__albums {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        
+        .geo-admin-modal__album {
+            background: var(--geo-bg-alt);
+            border: 2px solid var(--geo-border);
+            padding: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .geo-admin-modal__album:hover {
+            border-color: var(--geo-accent);
+        }
+        
+        .geo-admin-modal__album-cover {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--geo-bg), #e8e8ed);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--geo-text-muted);
+            opacity: 0.3;
+        }
+        
+        .geo-admin-modal__album-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.75rem;
+            color: var(--geo-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .geo-admin-pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 1200px) {
+            .geo-admin-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        
+        @media (max-width: 900px) {
+            .geo-admin-grid { grid-template-columns: repeat(2, 1fr); }
+            .geo-admin-modal__albums { grid-template-columns: repeat(3, 1fr); }
+        }
+        
+        @media (max-width: 600px) {
+            .geo-admin-grid { grid-template-columns: 1fr; }
+            .geo-admin-header { flex-direction: column; gap: 1rem; padding: 1rem; }
+            .geo-admin-search { flex-direction: column; }
+            .geo-admin-modal__detail { flex-direction: column; text-align: center; }
+            .geo-admin-modal__albums { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>管理后台 - 艺人管理</h1>
-                <div class="nav-links">
-                    <a href="unpublish.html" class="admin-nav-item">未发布专辑</a>
-                    <a href="artist.html" class="admin-nav-item active">艺人管理</a>
+<body class="geo-theme">
+    <!-- 导航栏 -->
+    <header class="geo-admin-header">
+        <h1 class="geo-admin-title">管理后台 - 艺人管理</h1>
+        <nav class="geo-admin-nav">
+            <a href="unpublish.html" class="geo-admin-nav__link">未发布专辑</a>
+            <a href="artist.html" class="geo-admin-nav__link active">艺人管理</a>
+        </nav>
+    </header>
+
+    <!-- 主内容 -->
+    <div class="geo-admin-page">
+        <div class="geo-admin-content">
+            <div class="geo-admin-card">
+                <!-- 搜索 -->
+                <div class="geo-admin-search">
+                    <input type="text" class="geo-admin-search__input" id="searchInput" placeholder="搜索艺人...">
+                    <button class="geo-admin-search__btn" id="searchBtn">搜索</button>
                 </div>
-            </div>
-        </header>
-
-        <main>
-            <div class="card">
-
-                <div class="search-box">
-                    <input class="search-input" id="searchInput" placeholder="搜索艺人..." type="text">
-                    <button class="search-btn" id="searchBtn">搜索</button>
-                </div>
-
-                <div id="artistContainer">
-                    <div class="loading" id="loading" style="display: none;">
-                        <i class="fas fa-spinner fa-spin"></i> 加载中...
-                    </div>
-                    <div class="artist-grid" id="artistGrid"></div>
-                    <div class="no-results" id="noResults" style="display: none;">
-                        暂无搜索结果
+                
+                <!-- 艺人网格 -->
+                <div class="geo-admin-grid" id="artistGrid">
+                    <div class="geo-loading" style="grid-column: 1/-1; justify-self: center;">
+                        <div class="geo-loading__spinner"></div>
+                        <div class="geo-loading__text">加载中...</div>
                     </div>
                 </div>
-
-                <div class="pagination" id="pagination"></div>
-            </div>
-        </main>
-    </div>
-
-    <div class="modal" id="artistModal">
-        <div class="modal-content">
-            <button class="close-btn" id="closeModal"><i class="fas fa-times"></i></button>
-            <div class="modal-header">
-                <h2 id="modalArtistName">艺人详情</h2>
-            </div>
-            <div class="modal-body">
-                <div class="artist-detail">
-                    <div class="artist-detail-pic" id="artistPic"></div>
-                    <div class="artist-detail-info">
-                        <h2 id="artistName"></h2>
-                        <p id="artistAlias"></p>
-                        <p>专辑总数: <span id="albumCount"></span></p>
-                    </div>
-                </div>
-
-                <h3>专辑列表</h3>
-                <div class="loading" id="albumLoading" style="display: none;">
-                    <i class="fas fa-spinner fa-spin"></i> 加载专辑中...
-                </div>
-                <div class="album-grid" id="albumGrid"></div>
+                
+                <!-- 分页 -->
+                <div class="geo-admin-pagination" id="pagination"></div>
             </div>
         </div>
     </div>
 
+    <!-- 艺人详情模态框 -->
+    <div class="geo-admin-modal" id="artistModal">
+        <div class="geo-admin-modal__content">
+            <div class="geo-admin-modal__header">
+                <h2 class="geo-admin-modal__title">艺人详情</h2>
+                <button class="geo-admin-modal__close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="geo-admin-modal__body">
+                <div class="geo-admin-modal__detail">
+                    <div class="geo-admin-modal__avatar" id="artistPic">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="geo-admin-modal__info">
+                        <h2 class="geo-admin-modal__name" id="artistName"></h2>
+                        <p class="geo-admin-modal__alias" id="artistAlias"></p>
+                        <p class="geo-admin-modal__stat">专辑总数: <span id="albumCount"></span></p>
+                    </div>
+                </div>
+                
+                <h3 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; color: var(--geo-primary); letter-spacing: 2px; margin-bottom: 1rem;">
+                    专辑列表
+                </h3>
+                <div class="geo-admin-modal__albums" id="albumGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="components/shared/image-loader.js"></script>
     <script src="components/admin/artist.js"></script>
 </body>
 </html>

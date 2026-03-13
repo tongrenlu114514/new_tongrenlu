@@ -3,125 +3,535 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>东方Project同人音乐网站</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="webjars/font-awesome/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
-    <link href="assets/css/home-redesign.css" rel="stylesheet">
-</head>
-<body>
-    <!-- 星空粒子背景 -->
-    <div id="particles-js"></div>
+    <title>东方同人录 - 几何未来主义</title>
     
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/geometric-theme.css" rel="stylesheet">
+    
+    <style>
+        /* Hero区域 */
+        .geo-hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 画廊背景 */
+        .geo-gallery-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 4px;
+            padding: 4px;
+            opacity: 0.6;
+            z-index: 0;
+        }
+        
+        .geo-gallery-bg__item {
+            position: relative;
+            overflow: hidden;
+            background: var(--geo-bg-alt);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .geo-gallery-bg__item:hover {
+            transform: scale(1.05);
+            z-index: 1;
+        }
+        
+        .geo-gallery-bg__cover {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background-size: cover;
+            background-position: center;
+            transition: transform 8s ease, opacity 0.8s ease;
+        }
+        
+        .geo-gallery-bg__cover.zoom {
+            transform: scale(1.15);
+        }
+        
+        .geo-gallery-bg__cover.fade {
+            opacity: 0;
+        }
+        
+        /* 渐变遮罩 */
+        .geo-hero__overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, 
+                rgba(250, 249, 246, 0.98) 0%, 
+                rgba(250, 249, 246, 0.92) 18%,
+                rgba(250, 249, 246, 0.7) 35%,
+                rgba(0, 0, 0, 0.25) 55%,
+                rgba(0, 0, 0, 0.45) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        /* 内容层 */
+        .geo-hero__content {
+            text-align: center;
+            max-width: 900px;
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        .geo-hero__content > * {
+            pointer-events: auto;
+        }
+        
+        .geo-hero__content::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 100px;
+            background: var(--geo-accent);
+            opacity: 0.1;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        
+        .geo-hero__title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 7rem;
+            line-height: 0.95;
+            margin-bottom: 1rem;
+            color: var(--geo-primary);
+            letter-spacing: 5px;
+            position: relative;
+            text-shadow: 4px 4px 0 rgba(233, 69, 96, 0.2);
+        }
+        
+        .geo-hero__title span {
+            display: block;
+        }
+        
+        .geo-hero__title .accent {
+            color: var(--geo-accent);
+        }
+        
+        .geo-hero__subtitle {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            color: var(--geo-text-light);
+            margin-bottom: 2.5rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        
+        .geo-hero__cta {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        /* 按钮 */
+        .geo-btn {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 1rem 2.5rem;
+            border: 2px solid var(--geo-primary);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .geo-btn--primary {
+            background: var(--geo-primary);
+            color: white;
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+        }
+        
+        .geo-btn--primary:hover {
+            background: var(--geo-accent);
+            border-color: var(--geo-accent);
+            transform: translateY(-3px);
+        }
+        
+        /* 统计数字 */
+        .geo-stats {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .geo-stat {
+            text-align: center;
+        }
+        
+        .geo-stat__number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3rem;
+            color: var(--geo-accent);
+            line-height: 1;
+        }
+        
+        .geo-stat__label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.8rem;
+            color: var(--geo-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        @media (max-width: 1024px) {
+            .geo-gallery-bg {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(5, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .geo-gallery-bg {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+            }
+            .geo-hero__title { font-size: 4rem; }
+            .geo-hero__subtitle { font-size: 0.9rem; }
+            .geo-stats { gap: 2rem; flex-wrap: wrap; }
+            .geo-stat__number { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body class="geo-theme">
     <!-- 导航栏 -->
-    <nav>
-        <a href="index.html" class="logo">东方同人录</a>
-        <div class="nav-links">
-            <a href="index.html" class="nav-link active" data-page="home">首页</a>
-            <a href="album.html" class="nav-link" data-page="music">音乐库</a>
-            <a href="artist-showcase.html" class="nav-link" data-page="artist">艺术家</a>
-            <a href="event.html" class="nav-link" data-page="event">展会</a>
-            <a href="#">关于我们</a>
+    <nav class="geo-nav">
+        <a href="index.html" class="geo-logo">TONGRENLU</a>
+        <div class="geo-nav__links">
+            <a href="index.html" class="geo-nav__link active">首页</a>
+            <a href="album.html" class="geo-nav__link">音乐库</a>
+            <a href="artist-showcase.html" class="geo-nav__link">艺术家</a>
+            <a href="event.html" class="geo-nav__link">展会</a>
         </div>
-        <div class="nav-stats">
-            <span class="nav-stats__number" id="navAlbumCount">--</span>
-            <span class="nav-stats__label">张专辑</span>
+        <div class="geo-nav__stats">
+            <span class="geo-nav__number" id="navAlbumCount">--</span>
+            <span class="geo-nav__label">专辑</span>
         </div>
     </nav>
     
-    <!-- 首页内容 -->
-    <div class="home-content" id="homePage">
-        <!-- 图片画廊 Hero 区域 -->
-        <section class="home-hero-gallery">
-            <div class="home-gallery-grid" id="galleryGrid">
-                <!-- 动态加载专辑封面 -->
+    <!-- Hero区域 -->
+    <section class="geo-hero">
+        <!-- 画廊背景 -->
+        <div class="geo-gallery-bg" id="galleryBg">
+            <!-- JavaScript动态生成 -->
+        </div>
+        
+        <!-- 渐变遮罩 -->
+        <div class="geo-hero__overlay"></div>
+        
+        <!-- 内容 -->
+        <div class="geo-hero__content">
+            <h1 class="geo-hero__title">
+                <span>东方</span>
+                <span class="accent">同人录</span>
+            </h1>
+            <div class="geo-hero__cta">
+                <a href="album.html" class="geo-btn geo-btn--primary">
+                    <i class="fas fa-headphones"></i>
+                    进入音乐库
+                </a>
             </div>
-        </section>
-
-        <!-- 最新专辑轮播区域 -->
-        <section class="home-section">
-            <h2 class="home-section__title">最新专辑</h2>
-            <div class="home-carousel" id="latestAlbumsCarousel">
-                <button class="home-carousel__btn home-carousel__btn--prev">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <div class="home-carousel__wrapper">
-                    <div class="home-carousel__track" id="latestAlbumsTrack">
-                        <!-- 动态加载 -->
-                        <div class="home-loading">
-                            <div class="home-loading__spinner"></div>
-                        </div>
-                    </div>
+            <div class="geo-stats">
+                <div class="geo-stat">
+                    <div class="geo-stat__number" id="totalAlbums">--</div>
+                    <div class="geo-stat__label">专辑</div>
                 </div>
-                <button class="home-carousel__btn home-carousel__btn--next">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
+                <div class="geo-stat">
+                    <div class="geo-stat__number" id="totalArtists">--</div>
+                    <div class="geo-stat__label">艺术家</div>
+                </div>
+                <div class="geo-stat">
+                    <div class="geo-stat__number" id="totalEvents">--</div>
+                    <div class="geo-stat__label">展会</div>
+                </div>
             </div>
-        </section>
-    </div>
+        </div>
+    </section>
     
     <!-- 页脚 -->
-    <footer class="home-footer">
-        <p>&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
-        <p>本网站仅为学习交流使用，不涉及任何商业用途</p>
+    <footer class="geo-footer">
+        <div class="geo-footer__logo">TONGRENLU</div>
+        <p class="geo-footer__text">&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
+        <p class="geo-footer__text">本网站仅为学习交流使用，不涉及任何商业用途</p>
     </footer>
     
-    <!-- 底部音乐播放器 -->
-    <div class="player">
-        <div class="now-playing">
-            <div class="now-playing-cover">🎵</div>
-            <div class="now-playing-info">
-                <div class="now-playing-title">梦月仙境</div>
-                <div class="now-playing-artist">上海爱丽丝幻乐团</div>
-            </div>
-        </div>
-        
-        <div class="player-controls">
-            <div class="control-buttons">
-                <button class="control-btn"><i class="fas fa-random"></i></button>
-                <button class="control-btn"><i class="fas fa-step-backward"></i></button>
-                <button class="control-btn play-pause"><i class="fas fa-play"></i></button>
-                <button class="control-btn"><i class="fas fa-step-forward"></i></button>
-                <button class="control-btn"><i class="fas fa-redo"></i></button>
-            </div>
-            
-            <div class="progress-container">
-                <span class="progress-time">1:20</span>
-                <div class="progress-bar">
-                    <div class="progress"></div>
-                </div>
-                <span class="progress-time">4:45</span>
-            </div>
-        </div>
-        
-        <div class="volume-controls">
-            <i class="fas fa-volume-up volume-icon"></i>
-            <div class="volume-slider">
-                <div class="volume-level"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 隐藏的音频播放器 -->
-    <audio id="audioPlayer" style="display: none;"></audio>
-    
-    <!-- 版本号显示 -->
-    <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 1002;">
-        版本: v1.2.1
+    <!-- 版本号 -->
+    <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: var(--geo-primary); color: white; padding: 5px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; z-index: 1002; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
+        v2.0 GEOMETRIC
     </div>
 
-    <!-- 外部JavaScript文件 -->
+    <!-- JavaScript -->
     <script src="webjars/jquery/jquery.min.js"></script>
     <script src="components/shared/image-loader.js"></script>
-    <script src="components/home/gallery-hero.js"></script>
-    <script src="components/home/home.js"></script>
-    <script src="components/home/stats.js"></script>
-    <script src="components/home/latest-albums.js"></script>
-    <script src="components/home/popular-albums.js"></script>
-    <script src="components/home/artist-recommendation.js"></script>
-    <script src="components/player/player-base-core.js"></script>
-    <script src="components/player/player-base-ui.js"></script>
-    <script src="components/player/player-events.js"></script>
-    <script src="components/home/particles.js"></script>
+    <script>
+        // 获取优化后的图片URL
+        function getOptimizedImageUrl(url, width, height) {
+            if (!url) return url;
+            if (url.includes('music.126.net') || url.includes('127.net')) {
+                const baseUrl = url.split('?')[0];
+                return `${baseUrl}?param=${width}y${height}`;
+            }
+            return url;
+        }
+        
+        $(function() {
+            // 画廊配置
+            const gridCols = window.innerWidth <= 768 ? 12 : 
+                            window.innerWidth <= 1024 ? 20 : 24;
+            let albumData = []; // 保存专辑数据（包含id和封面URL）
+            let currentIndex = 0;
+            
+            // 初始化画廊网格
+            function initGalleryGrid() {
+                const $gallery = $('#galleryBg');
+                $gallery.empty();
+                
+                for (let i = 0; i < gridCols; i++) {
+                    const $item = $('<div class="geo-gallery-bg__item" data-album-id=""></div>');
+                    const $cover = $('<div class="geo-gallery-bg__cover"></div>');
+                    $item.append($cover);
+                    $gallery.append($item);
+                }
+                
+                // 绑定点击事件
+                $gallery.on('click', '.geo-gallery-bg__item', function() {
+                    const albumId = $(this).data('album-id');
+                    if (albumId) {
+                        // 跳转到播放器页面
+                        window.open(`player.html?album=${albumId}`, '_blank');
+                    }
+                });
+            }
+            
+            // 加载随机专辑封面（首次加载）
+            function loadRandomCovers() {
+                $.ajax({
+                    url: 'api/music/random-albums',
+                    method: 'GET',
+                    data: { count: 50 },
+                    success: function(response) {
+                        if (response && response.length > 0) {
+                            // 保存专辑数据（id和封面URL）
+                            albumData = response
+                                .filter(album => album.cloudMusicPicUrl)
+                                .map(album => ({
+                                    id: album.id,
+                                    coverUrl: album.cloudMusicPicUrl
+                                }));
+                            
+                            // 打乱顺序
+                            albumData.sort(() => Math.random() - 0.5);
+                            
+                            // 填充画廊
+                            fillGallery();
+                        }
+                    },
+                    error: function() {
+                        console.error('Failed to load album covers');
+                    }
+                });
+            }
+            
+            // 已使用的封面索引，避免重复
+            let usedCoverIndices = new Set();
+            let isLoadingNewCovers = false;
+            
+            // 获取未使用的专辑数据
+            function getUnusedAlbum() {
+                if (albumData.length === 0) return null;
+                
+                // 如果所有封面都用过了，调用API获取新数据
+                if (usedCoverIndices.size >= albumData.length) {
+                    if (!isLoadingNewCovers) {
+                        loadNewCovers();
+                    }
+                    // 返回随机一个
+                    return albumData[Math.floor(Math.random() * albumData.length)];
+                }
+                
+                // 找一个未使用的索引
+                let index;
+                let attempts = 0;
+                do {
+                    index = Math.floor(Math.random() * albumData.length);
+                    attempts++;
+                } while (usedCoverIndices.has(index) && attempts < 100);
+                
+                usedCoverIndices.add(index);
+                return albumData[index];
+            }
+            
+            // 加载新封面数据
+            function loadNewCovers() {
+                if (isLoadingNewCovers) return;
+                isLoadingNewCovers = true;
+                
+                $.ajax({
+                    url: 'api/music/random-albums',
+                    method: 'GET',
+                    data: { count: 50 },
+                    success: function(response) {
+                        if (response && response.length > 0) {
+                            // 更新专辑数据
+                            albumData = response
+                                .filter(album => album.cloudMusicPicUrl)
+                                .map(album => ({
+                                    id: album.id,
+                                    coverUrl: album.cloudMusicPicUrl
+                                }));
+                            
+                            // 打乱顺序
+                            albumData.sort(() => Math.random() - 0.5);
+                            
+                            // 重置已使用索引
+                            usedCoverIndices.clear();
+                        }
+                        isLoadingNewCovers = false;
+                    },
+                    error: function() {
+                        isLoadingNewCovers = false;
+                    }
+                });
+            }
+            
+            // 启动持续轮换（单线程）
+            function startContinuousRefresh() {
+                function doRefresh() {
+                    const $items = $('.geo-gallery-bg__item');
+                    if ($items.length === 0) {
+                        setTimeout(doRefresh, 1000);
+                        return;
+                    }
+                    
+                    // 获取未悬浮的格子
+                    const $notHovered = $items.not(':hover');
+                    if ($notHovered.length === 0) {
+                        // 所有格子都被悬浮，等待后再试
+                        setTimeout(doRefresh, 500);
+                        return;
+                    }
+                    
+                    // 随机选择一个未悬浮的格子
+                    const randomIndex = Math.floor(Math.random() * $notHovered.length);
+                    const $item = $notHovered.eq(randomIndex);
+                    const $cover = $item.find('.geo-gallery-bg__cover');
+                    
+                    // 淡出
+                    $cover.addClass('fade');
+                    
+                    // 淡出完成后换图
+                    setTimeout(function() {
+                        const album = getUnusedAlbum();
+                        if (album) {
+                            const optimizedUrl = getOptimizedImageUrl(album.coverUrl, 300, 300);
+                            $cover.css('background-image', `url('${optimizedUrl}')`);
+                            // 更新专辑ID
+                            $item.data('album-id', album.id);
+                        }
+                        // 淡入
+                        $cover.removeClass('fade');
+                        
+                        // 淡入完成后（约200ms），等待1秒再进行下一次
+                        setTimeout(doRefresh, 1200);
+                    }, 800);
+                }
+                
+                // 首次延迟1秒开始
+                setTimeout(doRefresh, 1000);
+            }
+            
+            // 填充画廊
+            function fillGallery() {
+                const $items = $('.geo-gallery-bg__item');
+                $items.each(function(index) {
+                    const album = albumData[index % albumData.length];
+                    if (album) {
+                        const optimizedUrl = getOptimizedImageUrl(album.coverUrl, 300, 300);
+                        $(this).find('.geo-gallery-bg__cover').css('background-image', `url('${optimizedUrl}')`);
+                        $(this).data('album-id', album.id);
+                    }
+                });
+            }
+            
+            // 初始化
+            initGalleryGrid();
+            
+            // 首次加载
+            loadRandomCovers();
+            
+            // 3秒后开始持续轮换
+            setTimeout(startContinuousRefresh, 3000);
+            
+            // 加载统计数据
+            $.ajax({
+                url: 'api/music/album-stats',
+                method: 'GET',
+                success: function(response) {
+                    if (response && response.success && response.data) {
+                        const count = response.data.published || response.data.total || 0;
+                        $('#navAlbumCount').text(count.toLocaleString());
+                        $('#totalAlbums').text(count.toLocaleString());
+                    }
+                }
+            });
+            
+            $.ajax({
+                url: 'api/music/artists',
+                method: 'GET',
+                data: { limit: 1 },
+                success: function(response) {
+                    if (response && response.total !== undefined) {
+                        $('#totalArtists').text(response.total.toLocaleString());
+                    } else if (response && response.count !== undefined) {
+                        $('#totalArtists').text(response.count.toLocaleString());
+                    }
+                }
+            });
+            
+            $.ajax({
+                url: 'api/events/count',
+                method: 'GET',
+                success: function(response) {
+                    if (response && response.count !== undefined) {
+                        $('#totalEvents').text(response.count.toLocaleString());
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>

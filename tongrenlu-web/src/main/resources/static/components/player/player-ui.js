@@ -7,7 +7,7 @@
 function showPlayOverlay() {
     const $overlay = $('#playOverlay');
     if ($overlay.length > 0) {
-        $overlay.addClass('show');
+        $overlay.removeClass('hidden');
         console.log('播放覆盖层已显示');
     }
 }
@@ -16,7 +16,8 @@ function showPlayOverlay() {
 function hidePlayOverlay() {
     const $overlay = $('#playOverlay');
     if ($overlay.length > 0) {
-        $overlay.removeClass('show');
+        $overlay.addClass('hidden');
+        console.log('播放覆盖层已隐藏');
     }
 
     // 如果当前是歌词模式，确保歌词容器滚动到顶部
@@ -93,7 +94,13 @@ function formatTime(seconds) {
 function updateAlbumInfo(albumData) {
     $('#albumTitle').text(albumData.title || '未知专辑');
     $('#albumArtist').text(albumData.artist || '未知艺术家');
-    $('#albumImage').attr('src', albumData.cloudMusicPicUrl || albumData.image || albumData.coverUrl || 'assets/images/default-album.png');
+    
+    // 使用优化后的图片URL（500x500）
+    let coverUrl = albumData.cloudMusicPicUrl || albumData.image || albumData.coverUrl || 'assets/images/default-album.png';
+    if (coverUrl && coverUrl !== 'assets/images/default-album.png' && typeof getOptimizedImageUrl === 'function') {
+        coverUrl = getOptimizedImageUrl(coverUrl, 500, 500);
+    }
+    $('#albumImage').attr('src', coverUrl);
 }
 
 // 更新当前播放信息
