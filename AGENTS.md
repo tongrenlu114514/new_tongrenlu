@@ -25,7 +25,8 @@
 
 ### 前端技术
 - **基础框架**: 原生 HTML/CSS/JavaScript
-- **UI 库**: Bootstrap CSS + Material Design 原则
+- **UI 主题**: Geometric Futurism (几何未来主义)
+- **字体**: Google Fonts (Bebas Neue, Space Grotesk, Outfit, Noto Sans SC)
 - **工具库**: jQuery 3.7.1, FontAwesome 6.5.1
 - **组件化**: 模块化组件设计
 
@@ -72,18 +73,19 @@ tongrenlu/
     - `home/`: 首页组件 (画廊Hero、最新专辑、热门推荐、艺术家推荐)
     - `music-library/`: 音乐库组件
     - `player/`: 播放器组件
-    - `shared/`: 共享组件
+    - `shared/`: 共享组件 (图片加载器)
   - `assets/`: 静态资源文件
+    - `css/`: 样式文件 (geometric-theme.css 共享主题)
 - **文档**: `/docs/` - PRD、架构设计、API 规范等
 - **OpenSpec**: `/openspec/` - 规格驱动开发变更记录
 
 ### 静态页面
-- `index.html` - 首页 (Hero画廊 + 最新专辑轮播)
-- `album.html` - 专辑详情页
+- `index.html` - 首页 (动态专辑封面画廊背景 + 统计数据)
+- `album.html` - 音乐库页面 (专辑列表、搜索、筛选)
 - `artist.html` - 艺术家管理页 (后台)
 - `artist-showcase.html` - 艺术家展示页 (公开)
 - `event.html` - 展会列表页 (公开)
-- `player.html` - 音乐播放器页面
+- `player.html` - 全屏音乐播放器
 - `unpublish.html` - 未发布内容管理
 
 ## 构建和运行
@@ -185,11 +187,19 @@ sql/20251128/m_artist.sql
 - CloudMusic 网易云音乐集成
 
 ### 首页模块
-- **Hero 画廊**: 图片画廊风格展示专辑封面，背景为随机排列的封面网格
-- **最新专辑轮播**: 展示最近发布的专辑
-- **热门推荐**: 热门专辑展示组件
-- **艺术家推荐**: 推荐艺术家展示组件
-- **专辑统计**: 显示专辑数量统计
+- **Hero 区域**: 动态专辑封面画廊背景，6x4 网格轮播展示
+  - 点击封面跳转到播放器
+  - 鼠标悬浮时暂停轮换
+  - 渐变遮罩保证内容可读性
+- **统计数据**: 显示专辑/艺术家/展会数量
+- **快速入口**: 进入音乐库按钮
+
+### 全屏播放器模块
+- 左侧专辑封面展示 (500x500)
+- 右侧播放列表 (简化显示曲目编号和名称)
+- 底部播放控制栏 (播放/暂停、上一首/下一首、进度条、音量)
+- 支持歌词显示、随机播放、循环播放
+- 全屏模式支持
 
 ### 艺术家展示模块
 - 视觉化展示大量艺术家名称
@@ -217,6 +227,55 @@ sql/20251128/m_artist.sql
 - 歌单批量导入 (`PlaylistImportJob`) - 支持网易云歌单ID导入
 - 批处理任务支持 (断点续传)
 
+## UI 主题设计
+
+### Geometric Futurism (几何未来主义)
+
+项目使用统一的几何未来主义主题，主要特点：
+
+- **色彩方案**:
+  - 主色: `#1a1a2e` (深蓝黑)
+  - 强调色: `#e94560` (玫红)
+  - 背景: `#ffffff` / `#f8f9fa`
+  - 边框: `#e0e0e5`
+
+- **字体**:
+  - 标题: Bebas Neue
+  - 正文: Space Grotesk, Noto Sans SC
+  - 辅助: Outfit
+
+- **设计元素**:
+  - 几何网格背景
+  - 切角按钮和卡片 (clip-path)
+  - 阴影偏移动画效果
+  - 响应式布局
+
+- **共享样式**: `assets/css/geometric-theme.css`
+
+## 图片优化
+
+### 网易云音乐图片参数
+
+网易云音乐图片支持 URL 参数控制尺寸，格式为 `?param=宽y高`：
+
+```javascript
+// 图片加载器 (components/shared/image-loader.js)
+function getOptimizedImageUrl(url, width, height) {
+    if (url.includes('music.126.net') || url.includes('127.net')) {
+        const baseUrl = url.split('?')[0];
+        return `${baseUrl}?param=${width}y${height}`;
+    }
+    return url;
+}
+```
+
+### 各页面图片尺寸
+| 页面/组件 | 尺寸 |
+|-----------|------|
+| 首页画廊背景 | 300x300 |
+| 音乐库封面 | 300x300 |
+| 播放器封面 | 500x500 |
+
 ## 外部集成
 
 ### CloudMusic (网易云音乐)
@@ -239,10 +298,13 @@ sql/20251128/m_artist.sql
 ### 公开 API
 | 端点 | 方法 | 描述 |
 |------|------|------|
-| `/api/music` | GET | 获取音乐列表 (支持分页、搜索、排序) |
-| `/api/music/suggestions` | GET | 搜索建议与自动补全 |
+| `/api/music/search` | GET | 搜索音乐 (支持分页、关键词、排序) |
+| `/api/music/detail` | GET | 获取专辑详情 |
+| `/api/music/track` | GET | 获取曲目播放地址 |
+| `/api/music/random-albums` | GET | 获取随机专辑列表 |
+| `/api/music/album-stats` | GET | 获取专辑统计数据 |
 | `/api/music/tags` | GET | 获取标签列表 |
-| `/api/artists` | GET | 获取艺术家列表 (支持搜索) |
+| `/api/music/artists` | GET | 获取艺术家列表 (支持搜索) |
 | `/api/events` | GET | 获取展会列表 (支持分页、搜索、排序) |
 | `/api/events/{id}` | GET | 获取展会详情 |
 | `/api/events/{id}/albums` | GET | 获取展会专辑列表 |
@@ -264,6 +326,7 @@ sql/20251128/m_artist.sql
 | 2026-03-08 | playlist-album-import | 网易云歌单批量导入功能 |
 | 2026-03-10 | optimize-music-library-ux | 音乐库UX优化 (搜索建议、动态筛选、排序) |
 | 2026-03-11 | artist-page | 艺术家展示页面 (粒子特效背景) |
+| 2026-03-13 | geometric-futurism-theme | Geometric Futurism 主题重构全站页面 |
 
 ## 重要约束
 
@@ -349,6 +412,6 @@ server.port=8080
 
 ---
 
-**文档版本**: v1.2
+**文档版本**: v1.3
 **创建日期**: 2026-03-04
-**最后更新**: 2026-03-13
+**最后更新**: 2026-03-14
