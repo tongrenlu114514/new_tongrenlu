@@ -150,9 +150,8 @@
         showLoading();
 
         try {
-            // 如果有前端筛选条件，获取足够多的数据用于前端过滤
-            const needAllData = state.currentFilter !== 'all' || state.currentSort !== 'album_count';
-            const limit = needAllData ? 1000 : CONFIG.PAGE_SIZE;
+            // 始终获取足够多的数据用于前端筛选和分页
+            const limit = 1000;
             
             const params = new URLSearchParams({
                 page: 1,
@@ -258,11 +257,19 @@
                     case 'reitaisai':
                         // 例大祭
                         return name.includes('例大祭') || name.includes('例大祭');
+                    case 'kouroumu':
+                        // 东方红楼梦
+                        return name.includes('紅楼夢') || name.includes('红楼梦');
+                    case 'm3':
+                        // M3
+                        return tagName.match(/^m3/i) || name.includes('M3');
                     case 'other':
-                        // 其他：不是Comic Market也不是例大祭
+                        // 其他：不是Comic Market、例大祭、红楼梦、M3
                         const isComiket = tagName.match(/^c\d+/i) || name.includes('Comic Market') || name.includes('コミケ');
                         const isReitaisai = name.includes('例大祭');
-                        return !isComiket && !isReitaisai;
+                        const isKouroumu = name.includes('紅楼夢') || name.includes('红楼梦');
+                        const isM3 = tagName.match(/^m3/i) || name.includes('M3');
+                        return !isComiket && !isReitaisai && !isKouroumu && !isM3;
                     default:
                         return true;
                 }
@@ -520,8 +527,8 @@
         elements.modalBody.querySelectorAll('.event-album-item').forEach(item => {
             item.addEventListener('click', () => {
                 const albumId = item.dataset.id;
-                // 跳转到专辑详情页
-                window.location.href = `album.html?id=${albumId}`;
+                // 跳转到播放器
+                window.location.href = `player.html?album=${albumId}`;
             });
         });
     }

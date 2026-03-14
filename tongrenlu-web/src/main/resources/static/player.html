@@ -356,10 +356,26 @@
             color: rgba(255,255,255,0.6);
         }
         
-        .playlist li .track-title {
+        .playlist li .track-info {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        
+        .playlist li .track-title {
             font-family: 'Space Grotesk', sans-serif;
             font-size: 0.9rem;
+        }
+        
+        .playlist li .track-subtitle {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.75rem;
+            color: var(--geo-text-muted);
+        }
+        
+        .playlist li.active .track-subtitle {
+            color: rgba(255,255,255,0.5);
         }
         
         .playlist li .track-duration {

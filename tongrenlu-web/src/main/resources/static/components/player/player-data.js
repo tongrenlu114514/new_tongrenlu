@@ -91,10 +91,14 @@ function generatePlaylist(tracks, playlistContainer) {
     $playlist.empty();
 
     tracks.forEach((track, index) => {
+        const originalText = track.original ? `<span class="track-subtitle">${track.original}</span>` : '';
         const $trackItem = $(`
             <li class="playlist-item ${index === 0 ? 'active' : ''}" data-index="${index}">
                 <span class="track-num">${(index + 1).toString().padStart(2, '0')}</span>
-                <span class="track-title">${track.name || '未命名曲目'}</span>
+                <div class="track-info">
+                    <span class="track-title">${track.name || '未命名曲目'}</span>
+                    ${originalText}
+                </div>
             </li>
         `);
 
