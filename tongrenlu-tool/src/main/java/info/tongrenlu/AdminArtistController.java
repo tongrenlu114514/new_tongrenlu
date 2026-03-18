@@ -1,4 +1,4 @@
-package info.tongrenlu.www;
+package info.tongrenlu;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -228,4 +228,26 @@ public class AdminArtistController {
         }
     }
 
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Map<String, Object>> deleteArtist(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            artistService.deleteArtist(id);
+            response.put("success", true);
+            response.put("message", "艺人删除成功");
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            log.error("Error deleting artist", e);
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Error deleting artist", e);
+            response.put("success", false);
+            response.put("message", "删除艺人失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 }

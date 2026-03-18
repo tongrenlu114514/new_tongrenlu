@@ -1,4 +1,4 @@
-package info.tongrenlu.www;
+package info.tongrenlu;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import info.tongrenlu.domain.ArticleBean;

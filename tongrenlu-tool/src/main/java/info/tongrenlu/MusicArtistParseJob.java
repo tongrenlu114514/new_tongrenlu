@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,14 +21,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//@Component
 @RequiredArgsConstructor
 @Slf4j
-public class MusicArtistParseJob implements CommandLineRunner {
+@RestController
+public class MusicArtistParseJob  {
     private final MusicArtistParser musicArtistParser;
 
-    @Override
-    public void run(String... args) throws Exception {
+    @GetMapping("/artist/import")
+    public void run() throws Exception {
         int lastProgress = 0;
         try {
             String progress = FileUtils.readFileToString(new File("E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\artist_progress.txt"), StandardCharsets.UTF_8);

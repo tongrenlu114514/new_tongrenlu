@@ -654,7 +654,7 @@ $(window).on('click', function (event) {
     }
     
     // 点击外部关闭搜索建议
-    if (!$(event.target).closest('.search-box-wrapper').length) {
+    if (!$(event.target).closest('.geo-search').length) {
         hideSuggestions();
     }
 });
@@ -685,7 +685,7 @@ $(function () {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('keyword')) {
         currentKeyword = urlParams.get('keyword');
-        $('.search-input').val(currentKeyword);
+        $('.geo-search__input').val(currentKeyword);
     }
     if (urlParams.has('orderBy')) {
         currentOrderBy = urlParams.get('orderBy');
@@ -721,14 +721,14 @@ $(function () {
 });
 
 // 搜索按钮点击
-$('.search-button').on('click', function () {
-    const searchTerm = $('.search-input').val();
+$('.geo-search__btn').on('click', function () {
+    const searchTerm = $('.geo-search__input').val();
     hideSuggestions();
     searchMusic(searchTerm, 1, currentOrderBy, currentTag);
 });
 
 // 搜索输入框事件
-$('.search-input').on('input', function() {
+$('.geo-search__input').on('input', function() {
     const keyword = $(this).val().trim();
     
     if (keyword.length > 0) {
@@ -739,7 +739,7 @@ $('.search-input').on('input', function() {
 });
 
 // 搜索输入框聚焦
-$('.search-input').on('focus', function() {
+$('.geo-search__input').on('focus', function() {
     const keyword = $(this).val().trim();
     
     if (keyword.length === 0) {
@@ -748,7 +748,7 @@ $('.search-input').on('focus', function() {
 });
 
 // 键盘导航
-$('.search-input').on('keydown', function(e) {
+$('.geo-search__input').on('keydown', function(e) {
     const $items = $('.suggestion-item');
     const itemCount = $items.length;
     
@@ -766,12 +766,12 @@ $('.search-input').on('keydown', function(e) {
             
             if ($selected.hasClass('history-item')) {
                 const keyword = $selected.data('keyword');
-                $('.search-input').val(keyword);
+                $('.geo-search__input').val(keyword);
                 hideSuggestions();
                 searchMusic(keyword, 1, currentOrderBy, currentTag);
             } else {
                 const title = $selected.data('title');
-                $('.search-input').val(title);
+                $('.geo-search__input').val(title);
                 hideSuggestions();
                 searchMusic(title, 1, currentOrderBy, currentTag);
             }
@@ -787,7 +787,7 @@ $('.search-input').on('keydown', function(e) {
 // 搜索建议点击
 $(document).on('click', '.suggestion-item:not(.history-item)', function() {
     const title = $(this).data('title');
-    $('.search-input').val(title);
+    $('.geo-search__input').val(title);
     hideSuggestions();
     searchMusic(title, 1, currentOrderBy, currentTag);
 });
@@ -797,7 +797,7 @@ $(document).on('click', '.history-item', function(e) {
     if ($(e.target).closest('.history-delete').length) return;
     
     const keyword = $(this).data('keyword');
-    $('.search-input').val(keyword);
+    $('.geo-search__input').val(keyword);
     hideSuggestions();
     searchMusic(keyword, 1, currentOrderBy, currentTag);
 });

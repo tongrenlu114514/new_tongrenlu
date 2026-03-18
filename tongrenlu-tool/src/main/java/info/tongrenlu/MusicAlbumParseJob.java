@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,14 +17,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//@Component
 @RequiredArgsConstructor
 @Slf4j
-public class MusicAlbumParseJob implements CommandLineRunner {
+@RestController
+public class MusicAlbumParseJob {
     private final MusicAlbumParser musicAlbumParser;
 
-    @Override
-    public void run(String... args) throws Exception {
+    @GetMapping("/album/import")
+    public void run() throws Exception {
         String input = "E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\ls.txt";
         List<MusicTrack> tracks = musicAlbumParser.parseMusicAlbumFile(input);
 

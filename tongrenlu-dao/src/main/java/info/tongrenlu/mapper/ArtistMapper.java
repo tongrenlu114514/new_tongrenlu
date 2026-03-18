@@ -114,4 +114,15 @@ public interface ArtistMapper extends BaseMapper<ArtistBean> {
         """)
     long countSearchArtistsWithAlbums(@Param("keyword") String keyword);
 
+    /**
+     * 统计单个艺术家的专辑数量（已发布）
+     */
+    @Select("""
+        SELECT COUNT(DISTINCT rat.article_id)
+        FROM r_article_tag rat
+        LEFT JOIN m_article art ON rat.article_id = art.id AND art.publish_flg = '1'
+        WHERE rat.tag_id = #{tagId}
+        """)
+    long countAlbumsByTagId(@Param("tagId") Long tagId);
+
 }

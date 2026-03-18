@@ -82,8 +82,18 @@ $(document).ready(function () {
                 $info.append(`<div class="artist-alias" title="${artist.cloudMusicName}">${artist.cloudMusicName}</div>`);
             }
 
+            // 显示专辑数量
+            const albumCount = artist.albumCount || 0;
+            $info.append(`<div class="artist-album-count">专辑数: ${albumCount}</div>`);
+
             $card.append($pic);
             $card.append($info);
+
+            // 所有艺人都显示删除按钮
+            const $deleteBtn = $('<button class="artist-delete-btn" title="删除艺人"><i class="fas fa-trash"></i></button>');
+            $deleteBtn.data('artist', artist);
+            $card.append($deleteBtn);
+
             $artistGrid.append($card);
         });
 
@@ -137,7 +147,7 @@ $(document).ready(function () {
             $('#artistAlias').text('');
         }
 
-        $('#albumCount').text(artist.albumSize || 0);
+        $('#albumCount').text(artist.albumCount || 0);
         $('#albumGrid').empty();
 
         $('#artistModal').addClass('active');
@@ -282,6 +292,44 @@ $(document).ready(function () {
         });
     }
 
+    function deleteArtist(artist, $card) {
+        const albumCount = artist.albumCount || 0;
+        let confirmMsg = `确定要删除艺人 "${artist.name}" 吗？`;
+        if (albumCount > 0) {
+            confirmMsg = `确定要删除艺人 "${artist.name}" 吗？\n\n该艺人有 ${albumCount} 张关联专辑，删除后专辑与艺人的关联也会被移除。`;
+        }
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        $.ajax({
+            url: `api/artist/delete/${artist.id}`,
+            method: 'DELETE',
+            success: function (response) {
+                if (response.success) {
+                    // 删除成功，移除卡片并显示提示
+                    $card.fadeOut(300, function() {
+                        $(this).remove();
+                        // 检查是否还有卡片，如果没有则显示空状态
+                        if ($('#artistGrid').children().length === 0) {
+                            $('#noResults').removeClass('hidden').show();
+                        }
+                    });
+                } else {
+                    alert('删除失败: ' + (response.message || '未知错误'));
+                }
+            },
+            error: function (xhr, status, error) {
+                let message = '删除失败: ' + error;
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = '删除失败: ' + xhr.responseJSON.message;
+                }
+                alert(message);
+            }
+        });
+    }
+
     $('#searchBtn').on('click', searchArtists);
 
     $('#searchInput').on('keypress', function (e) {
@@ -293,6 +341,14 @@ $(document).ready(function () {
     $('#artistGrid').on('click', '.artist-card', function () {
         const artist = $(this).data('artist');
         showArtistDetail(artist);
+    });
+
+    // 删除按钮点击事件（阻止事件冒泡）
+    $('#artistGrid').on('click', '.artist-delete-btn', function (e) {
+        e.stopPropagation();
+        const artist = $(this).data('artist');
+        const $card = $(this).closest('.artist-card');
+        deleteArtist(artist, $card);
     });
 
     $('#closeModal').on('click', function () {

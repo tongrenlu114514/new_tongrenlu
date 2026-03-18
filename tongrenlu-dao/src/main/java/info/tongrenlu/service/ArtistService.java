@@ -5,10 +5,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import info.tongrenlu.domain.ArticleTagBean;
 import info.tongrenlu.domain.ArtistBean;
+import info.tongrenlu.domain.TagBean;
+import info.tongrenlu.mapper.ArticleTagMapper;
 import info.tongrenlu.mapper.ArtistMapper;
+import info.tongrenlu.mapper.TagMapper;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +22,11 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
+
+    private final ArticleTagMapper articleTagMapper;
+    private final TagMapper tagMapper;
 
     /**
      * 分页查询歌手列表
@@ -40,7 +50,19 @@ public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
         queryWrapper.orderByDesc(ArtistBean::getId);
 
         // 执行分页查询
-        return this.getBaseMapper().selectPage(new PageDTO<>(page, limit), queryWrapper);
+        Page<ArtistBean> resultPage = this.getBaseMapper().selectPage(new PageDTO<>(page, limit), queryWrapper);
+        
+        // 填充每个艺人的专辑数量
+        resultPage.getRecords().forEach(artist -> {
+            if (artist.getTagId() != null) {
+                long albumCount = this.getBaseMapper().countAlbumsByTagId(artist.getTagId());
+                artist.setAlbumCount(albumCount);
+            } else {
+                artist.setAlbumCount(0L);
+            }
+        });
+        
+        return resultPage;
     }
 
     public ArtistBean getByCloudMusicId(long cloudMusicId) {
@@ -101,5 +123,33 @@ public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
         result.put("totalPages", (int) Math.ceil((double) total / limit));
         
         return result;
+    }
+
+    /**
+     * 删除艺人及其关联数据
+     *
+     * @param artistId 艺人ID
+     */
+    @Transactional
+    public void deleteArtist(Long artistId) {
+        ArtistBean artist = this.getById(artistId);
+        if (artist == null) {
+            throw new RuntimeException("艺人不存在");
+        }
+
+        Long tagId = artist.getTagId();
+
+        // 1. 删除 r_article_tag 中与艺人 tag_id 相关的关联记录
+        if (tagId != null) {
+            LambdaQueryWrapper<ArticleTagBean> atQueryWrapper = new LambdaQueryWrapper<>();
+            atQueryWrapper.eq(ArticleTagBean::getTagId, tagId);
+            articleTagMapper.delete(atQueryWrapper);
+
+            // 2. 删除 m_tag 中的艺人标签
+            tagMapper.deleteById(tagId);
+        }
+
+        // 3. 删除艺人记录
+        this.removeById(artistId);
     }
 }

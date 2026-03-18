@@ -291,6 +291,27 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        
+        /* 自定义滚动条 */
+        .geo-admin-modal__albums::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .geo-admin-modal__albums::-webkit-scrollbar-track {
+            background: var(--geo-bg-alt);
+        }
+        
+        .geo-admin-modal__albums::-webkit-scrollbar-thumb {
+            background: var(--geo-border);
+            border-radius: 3px;
+        }
+        
+        .geo-admin-modal__albums::-webkit-scrollbar-thumb:hover {
+            background: var(--geo-accent);
         }
         
         .geo-admin-modal__album {
@@ -333,6 +354,248 @@
             margin-top: 2rem;
         }
         
+        /* 艺术家卡片样式 */
+        .artist-card {
+            background: var(--geo-bg);
+            border: 2px solid var(--geo-border);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .artist-card:hover {
+            border-color: var(--geo-accent);
+            transform: translateY(-3px);
+            box-shadow: 6px 6px 0 var(--geo-primary);
+        }
+        
+        .artist-pic {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            background: var(--geo-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .artist-info {
+            text-align: center;
+        }
+        
+        .artist-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--geo-primary);
+            margin-bottom: 0.3rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .artist-alias {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            color: var(--geo-text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .artist-album-count {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.7rem;
+            color: var(--geo-text-light);
+            margin-top: 0.3rem;
+        }
+
+        .artist-delete-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 28px;
+            height: 28px;
+            background: var(--geo-accent);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+            font-size: 0.75rem;
+        }
+
+        .artist-card {
+            position: relative;
+        }
+
+        .artist-card:hover .artist-delete-btn {
+            opacity: 1;
+        }
+
+        .artist-delete-btn:hover {
+            background: #c73e54;
+            transform: scale(1.1);
+        }
+        
+        /* 分页样式 */
+        .page-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            padding: 0 0.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            border: 2px solid var(--geo-border);
+            background: var(--geo-bg);
+            color: var(--geo-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 0.25rem;
+        }
+        
+        .page-item:hover {
+            border-color: var(--geo-accent);
+            color: var(--geo-accent);
+        }
+        
+        .page-item.active {
+            background: var(--geo-accent);
+            border-color: var(--geo-accent);
+            color: white;
+        }
+        
+        .page-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 专辑卡片样式 */
+        .album-card {
+            background: var(--geo-bg);
+            border: 2px solid var(--geo-border);
+            transition: all 0.3s ease;
+            width: 150px;
+        }
+        
+        .album-card:hover {
+            border-color: var(--geo-accent);
+        }
+        
+        .album-pic {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, var(--geo-bg-alt), #e8e8ed);
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .album-description-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 46, 0.85);
+            padding: 0.5rem;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .album-card:hover .album-description-overlay {
+            transform: translateY(0);
+        }
+        
+        .album-description-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.7rem;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .album-info {
+            padding: 0.8rem;
+            border-top: 2px solid var(--geo-border);
+            overflow: hidden;
+        }
+        
+        .album-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--geo-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.2rem;
+            max-width: 134px;
+        }
+        
+        .album-date {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            color: var(--geo-text-muted);
+        }
+        
+        .album-status {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.7rem;
+            padding: 0.4rem 0.8rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-top: 2px solid var(--geo-border);
+        }
+        
+        .album-status.unsaved {
+            background: var(--geo-accent);
+            color: white;
+        }
+        
+        .album-status.unsaved:hover {
+            background: var(--geo-primary);
+        }
+        
+        .album-status.saved {
+            background: var(--geo-primary);
+            color: white;
+            cursor: default;
+        }
+        
+        /* 无结果样式 */
+        .no-results {
+            padding: 2rem;
+            text-align: center;
+            color: var(--geo-text-muted);
+            font-family: 'Outfit', sans-serif;
+        }
+        
+        /* 加载和隐藏状态 */
+        #loading, #noResults {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
         @media (max-width: 1200px) {
             .geo-admin-grid { grid-template-columns: repeat(3, 1fr); }
         }
@@ -356,7 +619,6 @@
     <header class="geo-admin-header">
         <h1 class="geo-admin-title">管理后台 - 艺人管理</h1>
         <nav class="geo-admin-nav">
-            <a href="unpublish.html" class="geo-admin-nav__link">未发布专辑</a>
             <a href="artist.html" class="geo-admin-nav__link active">艺人管理</a>
         </nav>
     </header>
@@ -371,13 +633,17 @@
                     <button class="geo-admin-search__btn" id="searchBtn">搜索</button>
                 </div>
                 
-                <!-- 艺人网格 -->
-                <div class="geo-admin-grid" id="artistGrid">
-                    <div class="geo-loading" style="grid-column: 1/-1; justify-self: center;">
-                        <div class="geo-loading__spinner"></div>
-                        <div class="geo-loading__text">加载中...</div>
-                    </div>
+                <!-- 加载状态 -->
+                <div id="loading" class="geo-loading">
+                    <div class="geo-loading__spinner"></div>
+                    <div class="geo-loading__text">加载中...</div>
                 </div>
+                
+                <!-- 无结果提示 -->
+                <div id="noResults" class="no-results hidden">暂无艺人数据</div>
+                
+                <!-- 艺人网格 -->
+                <div class="geo-admin-grid" id="artistGrid"></div>
                 
                 <!-- 分页 -->
                 <div class="geo-admin-pagination" id="pagination"></div>
@@ -409,7 +675,12 @@
                 <h3 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; color: var(--geo-primary); letter-spacing: 2px; margin-bottom: 1rem;">
                     专辑列表
                 </h3>
+                <span id="modalArtistName" class="hidden"></span>
                 <div class="geo-admin-modal__albums" id="albumGrid"></div>
+                <div id="albumLoading" class="geo-loading hidden">
+                    <div class="geo-loading__spinner"></div>
+                    <div class="geo-loading__text">加载专辑中...</div>
+                </div>
             </div>
         </div>
     </div>

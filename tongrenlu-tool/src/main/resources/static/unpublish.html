@@ -378,6 +378,117 @@
             font-size: 0.75rem;
             color: var(--geo-text-muted);
         }
+
+        /* 管理后台额外样式 */
+        .clickable {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .clickable:hover {
+            color: var(--geo-accent);
+        }
+        .status {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 2px;
+        }
+        .status-0 {
+            background: var(--geo-accent);
+            color: white;
+        }
+        .status-2 {
+            background: var(--geo-primary);
+            color: white;
+        }
+        .btn {
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            border: 2px solid var(--geo-border);
+            background: var(--geo-bg);
+            color: var(--geo-text-light);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            border-color: var(--geo-accent);
+            color: var(--geo-accent);
+        }
+        .btn-edit {
+            background: var(--geo-accent);
+            border-color: var(--geo-accent);
+            color: white;
+        }
+        .btn-edit:hover {
+            background: var(--geo-primary);
+            border-color: var(--geo-primary);
+            color: white;
+        }
+        .btn-warning {
+            background: var(--geo-primary);
+            border-color: var(--geo-primary);
+            color: white;
+        }
+        .btn-warning:hover {
+            background: var(--geo-accent);
+            border-color: var(--geo-accent);
+        }
+        .page-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            padding: 0 0.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            border: 2px solid var(--geo-border);
+            background: var(--geo-bg);
+            color: var(--geo-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 0.25rem;
+        }
+        .page-item:hover {
+            border-color: var(--geo-accent);
+            color: var(--geo-accent);
+        }
+        .page-item.active {
+            background: var(--geo-accent);
+            border-color: var(--geo-accent);
+            color: white;
+        }
+        .page-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .no-results {
+            padding: 2rem;
+            text-align: center;
+            color: var(--geo-text-muted);
+            font-family: 'Outfit', sans-serif;
+        }
+        .result-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--geo-border);
+            transition: all 0.3s ease;
+        }
+        .result-item:hover {
+            background: var(--geo-bg-alt);
+        }
+        .highlight-match {
+            color: var(--geo-accent);
+            font-weight: 600;
+        }
+        .search-section {
+            margin-bottom: 1rem;
+        }
         
         @media (max-width: 900px) {
             .geo-admin-header {
@@ -416,7 +527,6 @@
         <h1 class="geo-admin-title">管理后台 - 未发布专辑</h1>
         <nav class="geo-admin-nav">
             <a href="unpublish.html" class="geo-admin-nav__link active">未发布专辑</a>
-            <a href="artist.html" class="geo-admin-nav__link">艺人管理</a>
         </nav>
     </header>
 
@@ -469,10 +579,10 @@
         <div class="geo-admin-modal__content">
             <div class="geo-admin-modal__header">
                 <h3 class="geo-admin-modal__title">搜索网易云专辑</h3>
-                <button class="geo-admin-modal__close">&times;</button>
+                <button class="geo-admin-modal__close close-btn">&times;</button>
             </div>
             <div class="geo-admin-modal__body">
-                <div class="geo-admin-modal__info">
+                <div class="geo-admin-modal__info search-section">
                     <p>当前专辑: <strong id="searchAlbumTitle"></strong></p>
                     <p>艺术家: <strong id="searchAlbumArtist"></strong></p>
                     <p>发布日期: <strong id="searchAlbumPublishDate"></strong></p>

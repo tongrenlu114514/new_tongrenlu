@@ -37,4 +37,10 @@ public class ArtistBean {
     @TableField(value = "tag_id", jdbcType = JdbcType.INTEGER)
     private Long tagId;
 
+    /**
+     * 已保存的专辑数量（非数据库字段，由服务层填充）
+     */
+    @TableField(exist = false)
+    private Long albumCount;
+
 }

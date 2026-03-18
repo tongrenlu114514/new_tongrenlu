@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,10 +20,10 @@ import java.util.List;
  * 网易云歌单专辑批量导入任务
  * 通过歌单ID获取所有专辑并批量导入到数据库
  */
-@Component
 @RequiredArgsConstructor
 @Slf4j
-public class PlaylistImportJob implements CommandLineRunner {
+@RestController
+public class PlaylistImportJob {
 
     private final HomeMusicService homeMusicService;
     private final ArticleService articleService;
@@ -31,15 +33,8 @@ public class PlaylistImportJob implements CommandLineRunner {
      */
     private static final String PROGRESS_FILE = "E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\playlist_progress.txt";
 
-    /**
-     * 默认歌单ID（可通过命令行参数覆盖）
-     */
-    private static final Long DEFAULT_PLAYLIST_ID = 149405221L;
-
-    @Override
-    public void run(String... args) throws Exception {
-        // 解析歌单ID（优先使用命令行参数）
-        Long playlistId = parsePlaylistId(args);
+    @GetMapping("/playlist/import")
+    public void run(Long playlistId) {
         log.info("========================================");
         log.info("开始导入歌单专辑，歌单ID: {}", playlistId);
         log.info("========================================");
@@ -114,23 +109,6 @@ public class PlaylistImportJob implements CommandLineRunner {
 
         // 清除进度文件
         clearProgress();
-    }
-
-    /**
-     * 解析歌单ID
-     * 支持命令行参数：--playlist.id=123456789
-     */
-    private Long parsePlaylistId(String[] args) {
-        for (String arg : args) {
-            if (arg.startsWith("--playlist.id=")) {
-                try {
-                    return Long.parseLong(arg.substring("--playlist.id=".length()));
-                } catch (NumberFormatException e) {
-                    log.warn("无效的歌单ID参数: {}", arg);
-                }
-            }
-        }
-        return DEFAULT_PLAYLIST_ID;
     }
 
     /**
