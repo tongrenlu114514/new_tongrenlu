@@ -34,7 +34,7 @@
 - **Lombok**: 减少样板代码
 - **Hutool**: Java 工具类库 5.8.40
 - **Guava**: Google 工具库 33.3.1-jre
-- **Apache Commons**: 通用工具库 (commons-io 2.14.0, commons-lang3 3.18.0, commons-collections4 4.4)
+- **Apache Commons**: 通用工具库 (commons-io 2.18.0, commons-lang3 3.18.0, commons-collections4 4.4)
 
 ## 项目结构
 
@@ -42,9 +42,9 @@
 
 ```
 tongrenlu/
-├── tongrenlu-web/          # Web 应用层 (Spring Boot Web)
+├── tongrenlu-web/          # 公开 Web 应用层 (Spring Boot Web)
 │   └── info.tongrenlu/
-│       ├── www/                    # 控制器层 (Controller)
+│       ├── www/                    # 公开 API 控制器层
 │       ├── manager/                # 业务逻辑层 (当前为空)
 │       ├── domain/                 # 数据传输对象 (DTO/VO)
 │       ├── config/                 # 配置类
@@ -58,16 +58,28 @@ tongrenlu/
 │       ├── model/                  # 数据模型 (CloudMusic 集成)
 │       ├── service/                # 服务层
 │       └── support/                # 支持类
-└── tongrenlu-tool/         # 工具模块
-    └── info.tongrenlu.support/    # 批处理工具类 (数据解析)
+└── tongrenlu-tool/         # 管理后台 + 数据工具模块 (Spring Boot Web)
+    └── info.tongrenlu/
+        ├── AdminArtistController.java    # 艺人管理 API
+        ├── AdminUnpublishController.java # 未发布专辑管理 API
+        ├── MusicAlbumParseJob.java       # 专辑解析 HTTP 端点
+        ├── MusicArtistParseJob.java      # 艺人解析 HTTP 端点
+        ├── PlaylistImportJob.java        # 歌单导入 HTTP 端点
+        └── support/                      # 解析器工具类
 ```
+
+### 模块职责划分
+
+| 模块 | 职责 | 访问权限 |
+|------|------|----------|
+| `tongrenlu-web` | 公开访问的 Web 应用，提供音乐库、播放器、展会等公开功能 | 公开 |
+| `tongrenlu-tool` | 管理后台 + 数据导入工具，提供艺人管理、专辑发布、数据解析等功能 | 内部/管理员 |
+| `tongrenlu-dao` | 数据访问层，提供实体类、Mapper、Service 等数据服务 | 共享 |
 
 ### 目录组织
 - **SQL 文件**: 按日期组织 `/sql/YYYYMMDD/`
-- **静态资源**: `/tongrenlu-web/src/main/resources/static/`
-  - `admin/`: 管理后台页面
+- **公开静态资源**: `/tongrenlu-web/src/main/resources/static/`
   - `components/`: 可复用组件
-    - `admin/`: 管理后台组件
     - `artist-showcase/`: 艺术家展示组件
     - `event-list/`: 展会列表组件
     - `home/`: 首页组件 (画廊Hero、最新专辑、热门推荐、艺术家推荐)
@@ -76,17 +88,27 @@ tongrenlu/
     - `shared/`: 共享组件 (图片加载器)
   - `assets/`: 静态资源文件
     - `css/`: 样式文件 (geometric-theme.css 共享主题)
+- **管理后台静态资源**: `/tongrenlu-tool/src/main/resources/static/`
+  - `artist.html`: 艺人管理页面
+  - `unpublish.html`: 未发布专辑管理页面
+  - `components/admin/`: 管理后台组件
+  - `components/shared/`: 共享组件
+  - `assets/css/`: 样式文件
 - **文档**: `/docs/` - PRD、架构设计、API 规范等
 - **OpenSpec**: `/openspec/` - 规格驱动开发变更记录
 
 ### 静态页面
+
+**公开页面 (tongrenlu-web)**
 - `index.html` - 首页 (动态专辑封面画廊背景 + 统计数据)
 - `album.html` - 音乐库页面 (专辑列表、搜索、筛选)
-- `artist.html` - 艺术家管理页 (后台)
-- `artist-showcase.html` - 艺术家展示页 (公开)
+- `artist-showcase.html` - 艺术家展示页 (粒子特效背景)
 - `event.html` - 展会列表页 (公开)
 - `player.html` - 全屏音乐播放器
-- `unpublish.html` - 未发布内容管理
+
+**管理后台页面 (tongrenlu-tool)**
+- `artist.html` - 艺人管理页 (搜索网易云艺人、导入专辑)
+- `unpublish.html` - 未发布专辑管理 (匹配网易云专辑并发布)
 
 ## 构建和运行
 
@@ -221,11 +243,25 @@ sql/20251128/m_artist.sql
 - 标签分类系统
 - 访问统计
 
-### 数据解析工具 (tongrenlu-tool)
-- 音乐专辑解析 (`MusicAlbumParseJob`)
-- 艺术家信息解析 (`MusicArtistParseJob`)
-- 歌单批量导入 (`PlaylistImportJob`) - 支持网易云歌单ID导入
-- 批处理任务支持 (断点续传)
+### 管理后台模块 (tongrenlu-tool)
+
+**艺人管理功能**
+- 搜索网易云音乐艺人
+- 分页查询本地艺人列表 (含专辑数量统计)
+- 获取艺人专辑列表 (标记已导入状态)
+- 保存专辑到数据库
+- 删除艺人及其关联数据
+
+**未发布专辑管理**
+- 获取未发布专辑列表 (publishFlg=0 或 2)
+- 搜索网易云音乐匹配专辑
+- 更新专辑信息并发布
+- 标记专辑为无匹配状态
+
+**数据导入 HTTP 端点**
+- `GET /album/import` - 专辑解析导入
+- `GET /artist/import` - 艺人信息解析
+- `GET /playlist/import?playlistId=xxx` - 网易云歌单批量导入
 
 ## UI 主题设计
 
@@ -295,7 +331,7 @@ function getOptimizedImageUrl(url, width, height) {
 
 ## API 端点
 
-### 公开 API
+### 公开 API (tongrenlu-web)
 | 端点 | 方法 | 描述 |
 |------|------|------|
 | `/api/music/search` | GET | 搜索音乐 (支持分页、关键词、排序) |
@@ -311,11 +347,21 @@ function getOptimizedImageUrl(url, width, height) {
 | `/api/events/stats` | GET | 获取展会统计数据 |
 | `/api/events/count` | GET | 获取展会总数 |
 
-### 管理 API
+### 管理 API (tongrenlu-tool)
 | 端点 | 方法 | 描述 |
 |------|------|------|
-| `/admin/artist` | GET | 艺术家管理页面 |
-| `/admin/unpublish` | GET | 未发布内容管理 |
+| `/api/artist/search` | GET | 搜索网易云音乐艺人 |
+| `/api/artist/list` | GET | 分页查询本地艺人列表 |
+| `/api/artist/albums` | POST | 获取艺人专辑列表 |
+| `/api/artist/save-album` | POST | 保存专辑到数据库 |
+| `/api/artist/delete/{id}` | DELETE | 删除艺人及其关联数据 |
+| `/api/admin/unpublished-list` | GET | 获取未发布专辑列表 |
+| `/api/admin/search-cloud-music` | GET | 搜索网易云音乐专辑 |
+| `/api/admin/update-album` | POST | 更新专辑信息并发布 |
+| `/api/admin/mark-no-match` | POST | 标记专辑为无匹配状态 |
+| `/album/import` | GET | 专辑解析导入 |
+| `/artist/import` | GET | 艺人信息解析 |
+| `/playlist/import` | GET | 歌单批量导入 |
 
 ## OpenSpec 变更记录
 
@@ -327,6 +373,7 @@ function getOptimizedImageUrl(url, width, height) {
 | 2026-03-10 | optimize-music-library-ux | 音乐库UX优化 (搜索建议、动态筛选、排序) |
 | 2026-03-11 | artist-page | 艺术家展示页面 (粒子特效背景) |
 | 2026-03-13 | geometric-futurism-theme | Geometric Futurism 主题重构全站页面 |
+| 2026-03-19 | admin-migration | 管理后台迁移至 tool 模块，批处理改为 HTTP 端点 |
 
 ## 重要约束
 
@@ -412,6 +459,6 @@ server.port=8080
 
 ---
 
-**文档版本**: v1.3
+**文档版本**: v1.4
 **创建日期**: 2026-03-04
-**最后更新**: 2026-03-14
+**最后更新**: 2026-03-19
