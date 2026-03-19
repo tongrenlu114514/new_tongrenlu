@@ -207,7 +207,12 @@ async function updateAlbumModal(albumId) {
             errorButton.data('album-id', albumId);
             errorButton.prop('disabled', false);
             errorButton.html('<i class="fas fa-flag"></i>');
-            errorButton.removeClass('loading', 'success', 'error');
+            errorButton.removeClass('loading success error');
+            // 绑定点击事件
+            errorButton.off('click').on('click', function(e) {
+                e.stopPropagation();
+                reportAlbumError();
+            });
         }
 
         // 更新播放全部按钮
@@ -893,8 +898,8 @@ async function reportAlbumError() {
         setTimeout(() => {
             if (errorButton.length > 0) {
                 errorButton.prop('disabled', false);
-                errorButton.html('<i class="fas fa-flag"></i> 报告错误');
-                errorButton.removeClass('loading', 'success', 'error');
+                errorButton.html('<i class="fas fa-flag"></i>');
+                errorButton.removeClass('loading success error');
             }
         }, 3000);
     }
