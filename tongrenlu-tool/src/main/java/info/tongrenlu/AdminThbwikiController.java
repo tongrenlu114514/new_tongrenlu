@@ -39,20 +39,12 @@ public class AdminThbwikiController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        try {
-            List<ThbwikiAlbum> results = thbwikiService.searchAlbum(albumName.trim());
+        List<ThbwikiAlbum> results = thbwikiService.searchAlbum(albumName.trim());
 
-            response.put("success", true);
-            response.put("data", results);
-            response.put("count", results.size());
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            log.error("Error searching THBWiki for album: {}", albumName, e);
-            response.put("success", false);
-            response.put("message", "搜索失败: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
-        }
+        response.put("success", true);
+        response.put("data", results);
+        response.put("count", results.size());
+        return ResponseEntity.ok(response);
     }
 
     /**
