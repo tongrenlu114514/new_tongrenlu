@@ -136,27 +136,53 @@ public record ThbwikiTrack(
 
 ## Open Questions
 
-1. **THBWiki API 可用性**: THBWiki 可能没有公开 API，研究建议使用 HTML 抓取。需要验证 MediaWiki API (`/api.php`) 是否可用。
-2. **robots.txt 合规性**: 需要验证 THBWiki 是否允许抓取
-3. **HTML 结构验证**: 需要实际访问 THBWiki 验证页面结构
+~~THBWiki API 可用性~~ - **已验证：MediaWiki OpenSearch API 可用**
+- [ ] robots.txt 合规性
 
 ## API vs Scraping 决策
 
-**研究结论**: THBWiki 可能没有公开文档的 API，建议使用 HTML 抓取。
+**✅ 已验证**: THBWiki MediaWiki OpenSearch API 可用
 
-**MediaWiki API 试探** (待验证):
+### 搜索 API
+
 ```bash
-# MediaWiki 标准 API 格式
-curl "https://thbwiki.cc/api.php?action=query&list=search&srsearch=Satori+Maiden&format=json"
+# MediaWiki OpenSearch API - 返回 JSON 数组
+curl "https://thbwiki.cc/api.php?action=opensearch&search=Satori+Maiden&format=json"
 ```
 
-**备选方案 - HTML 抓取**:
-```bash
-# 直接搜索页面
-curl "https://thbwiki.cc/index.php?search=Satori+Maiden"
+**返回格式**:
+```json
+["Satori Maiden", "http://thbwiki.cc/Satori_Maiden", ...]
 ```
 
-**建议**: 先尝试 MediaWiki API (结构化数据)，不可用时回退到 HTML 抓取。
+### 页面抓取
+
+```bash
+# 直接访问专辑页面
+curl "https://thbwiki.cc/Satori_Maiden"
+```
+
+### 页面结构 (已验证)
+
+| 元素 | CSS 选择器 |
+|------|------------|
+| 专辑名称 | `.mw-page-title-main` |
+| 专辑信息表 | `.wikitable.doujininfo` |
+| 曲目列表表 | `.wikitable.musicTable` |
+| 原曲信息 | `.ogmusic` |
+| 原曲出处 | `.source` |
+| 曲目行 | `#musicTable tr` |
+
+### 示例数据 (Satori Maiden)
+
+```
+专辑: Satori Maiden
+曲名: Satori Maiden
+原曲来源:
+  - 少女さとり　～ 3rd eye
+  - ハルトマンの妖怪少女
+  - 东方地灵殿　～ Subterranean Animism.
+```
 
 ## Next Steps
 
