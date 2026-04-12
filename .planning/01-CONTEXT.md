@@ -136,9 +136,27 @@ public record ThbwikiTrack(
 
 ## Open Questions
 
-1. **THBWiki API 可用性**: 如 thwiki.cc 有可用 API，可优化为直接 API 调用
+1. **THBWiki API 可用性**: THBWiki 可能没有公开 API，研究建议使用 HTML 抓取。需要验证 MediaWiki API (`/api.php`) 是否可用。
 2. **robots.txt 合规性**: 需要验证 THBWiki 是否允许抓取
 3. **HTML 结构验证**: 需要实际访问 THBWiki 验证页面结构
+
+## API vs Scraping 决策
+
+**研究结论**: THBWiki 可能没有公开文档的 API，建议使用 HTML 抓取。
+
+**MediaWiki API 试探** (待验证):
+```bash
+# MediaWiki 标准 API 格式
+curl "https://thbwiki.cc/api.php?action=query&list=search&srsearch=Satori+Maiden&format=json"
+```
+
+**备选方案 - HTML 抓取**:
+```bash
+# 直接搜索页面
+curl "https://thbwiki.cc/index.php?search=Satori+Maiden"
+```
+
+**建议**: 先尝试 MediaWiki API (结构化数据)，不可用时回退到 HTML 抓取。
 
 ## Next Steps
 
