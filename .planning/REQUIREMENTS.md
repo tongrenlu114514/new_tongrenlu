@@ -48,19 +48,19 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| ORIGINAL-01.1 | — | — |
-| ORIGINAL-01.2 | — | — |
-| ORIGINAL-01.3 | — | — |
-| ORIGINAL-01.4 | — | — |
-| ORIGINAL-01.5 | — | — |
-| ORIGINAL-02.1 | — | — |
-| ORIGINAL-02.2 | — | — |
-| ORIGINAL-02.3 | — | — |
-| ORIGINAL-03.1 | — | — |
-| ORIGINAL-03.2 | — | — |
-| ORIGINAL-04.1 | — | — |
-| ORIGINAL-04.2 | — | — |
-| ORIGINAL-04.3 | — | — |
+| ORIGINAL-01.1 | Phase 1 | Pending |
+| ORIGINAL-01.2 | Phase 2 | Pending |
+| ORIGINAL-01.3 | Phase 2 | Pending |
+| ORIGINAL-01.4 | Phase 3 | Pending |
+| ORIGINAL-01.5 | Phase 4 | Pending |
+| ORIGINAL-02.1 | Phase 5 | Pending |
+| ORIGINAL-02.2 | Phase 6 | Pending |
+| ORIGINAL-02.3 | Phase 6 | Pending |
+| ORIGINAL-03.1 | Phase 9 | Pending |
+| ORIGINAL-03.2 | Phase 9 | Pending |
+| ORIGINAL-04.1 | Phase 7 | Pending |
+| ORIGINAL-04.2 | Phase 7 | Pending |
+| ORIGINAL-04.3 | Phase 8 | Pending |
 
 ---
 
