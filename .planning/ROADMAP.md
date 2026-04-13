@@ -2,7 +2,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: THBWiki服务基础** - 专辑搜索接口实现
+- [x] **Phase 1: THBWiki服务基础** - 专辑搜索接口实现 ✓
 - [ ] **Phase 2: HTML解析层** - 解析THBWiki页面提取原曲信息
 - [ ] **Phase 3: 速率限制** - 防止THBWiki封禁
 - [ ] **Phase 4: 缓存层** - 减少重复请求
@@ -29,7 +29,10 @@
 2. 系统返回THBWiki中匹配的专辑列表
 3. 搜索结果包含专辑名和THBWiki链接
 
-**Plans**: TBD
+**Plans**:
+- [x] `01-PLAN.md` — 基础依赖、模型、服务、接口 (已完成)
+
+**Completed**: 2026-04-13
 
 ---
 
@@ -46,7 +49,9 @@
 2. 每首曲目能提取出原曲出处和原曲名称
 3. 解析结果格式为"原曲出处/原曲名称"
 
-**Plans**: TBD
+**Plans**:
+- [ ] `02-W0-PLAN.md` — 测试基础设施（测试类 + 样本HTML）
+- [ ] `02-PLAN.md` — HTML解析实现（3个任务）
 
 ---
 
@@ -175,8 +180,8 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. THBWiki服务基础 | 0/3 | Not started | - |
-| 2. HTML解析层 | 0/3 | Not started | - |
+| 1. THBWiki服务基础 | 2/2 | ✓ Completed | 2026-04-13 |
+| 2. HTML解析层 | 0/2 | In planning | - |
 | 3. 速率限制 | 0/3 | Not started | - |
 | 4. 缓存层 | 0/3 | Not started | - |
 | 5. 文本规范化 | 0/3 | Not started | - |
@@ -187,4 +192,17 @@
 
 ---
 
-*Last updated: 2026-04-13*
+*Last updated: 2026-04-14*
+
+## 代码审查状态
+
+### Phase 1 审查结果
+
+| 严重级别 | 数量 | 状态 |
+|---------|------|------|
+| CRITICAL | 1 | 待修复 |
+| HIGH | 2 | 待修复 |
+| MEDIUM | 3 | 建议修复 |
+| LOW | 2 | 可选 |
+
+**建议**: 在进入 Phase 2 前修复 CRITICAL 和 HIGH 级别问题
