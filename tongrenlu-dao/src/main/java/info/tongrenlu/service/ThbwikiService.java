@@ -5,8 +5,12 @@ import cn.hutool.http.HttpResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.cache.ThbwikiCacheService;
 import info.tongrenlu.model.ThbwikiAlbum;
+import info.tongrenlu.model.ThbwikiTrack;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -126,5 +130,147 @@ public class ThbwikiService {
      */
     public void cacheAlbum(String key, ThbwikiAlbum album) {
         cacheService.put(key, album);
+    }
+
+    /**
+     * 根据专辑页面 URL 获取专辑详情（包含曲目列表）
+     *
+     * @param url THBWiki 专辑页面 URL
+     * @return 专辑详情（包含曲目列表），失败时返回空 Optional
+     */
+    public Optional<ThbwikiAlbum> fetchAlbumDetail(String url) {
+        // URL validation
+        if (!isValidThbwikiUrl(url)) {
+            log.warn("Invalid THBWiki URL: {}", url);
+            return Optional.empty();
+        }
+
+        try (HttpResponse response = HttpRequest.get(url)
+                .header("User-Agent", "tongrenlu/1.0 (同人音乐库管理)")
+                .timeout(10000)
+                .execute()) {
+
+            if (!response.isOk()) {
+                log.warn("THBWiki page returned status: {} for URL: {}", response.getStatus(), url);
+                return Optional.empty();
+            }
+
+            String html = response.body();
+            Document doc = org.jsoup.Jsoup.parse(html);
+            return parseAlbumDetail(doc, url);
+
+        } catch (Exception e) {
+            log.warn("Error fetching THBWiki page: {}", url, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 验证 URL 是否为有效的 THBWiki URL
+     */
+    private boolean isValidThbwikiUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return false;
+        }
+        // Must start with THBWiki base URL
+        if (!url.startsWith(THBWIKI_BASE_URL)) {
+            return false;
+        }
+        // Length limit
+        if (url.length() > 500) {
+            return false;
+        }
+        // No control characters
+        if (url.contains("\n") || url.contains("\r") || url.contains("\t")) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 解析专辑页面 HTML，提取专辑信息和曲目列表
+     */
+    Optional<ThbwikiAlbum> parseAlbumDetail(Document doc, String url) {
+        // Extract album name from page title
+        String albumName = "";
+        Element titleElement = doc.selectFirst(".mw-page-title-main");
+        if (titleElement != null) {
+            albumName = titleElement.text().trim();
+        }
+
+        // Parse tracks
+        List<ThbwikiTrack> tracks = parseTracks(doc);
+
+        // Create album
+        ThbwikiAlbum album = new ThbwikiAlbum();
+        album.setName(albumName);
+        album.setUrl(url);
+        album.setTracks(tracks);
+
+        if (tracks.isEmpty()) {
+            log.warn("No tracks parsed from album page: {}", url);
+        }
+
+        return Optional.of(album);
+    }
+
+    /**
+     * 解析曲目列表
+     */
+    List<ThbwikiTrack> parseTracks(Document doc) {
+        List<ThbwikiTrack> tracks = new ArrayList<>();
+
+        // Try multiple CSS selector strategies (fallback pattern)
+        Elements rows = doc.select("#musicTable tr");
+        if (rows.isEmpty()) {
+            rows = doc.select(".wikitable.musicTable tr");
+        }
+        if (rows.isEmpty()) {
+            rows = doc.select(".wikitable tr");
+        }
+
+        for (Element row : rows) {
+            ThbwikiTrack track = parseTrackRow(row);
+            if (track != null) {
+                tracks.add(track);
+            }
+        }
+
+        return tracks;
+    }
+
+    /**
+     * 解析单行曲目数据
+     */
+    ThbwikiTrack parseTrackRow(Element row) {
+        Elements cells = row.select("td");
+        if (cells.isEmpty()) {
+            return null;
+        }
+
+        ThbwikiTrack track = new ThbwikiTrack();
+        // Track name from first cell
+        track.setName(cells.get(0).text().trim());
+
+        // Original source from second cell (index 1)
+        if (cells.size() > 1) {
+            Element ogmusic = cells.get(1).selectFirst(".ogmusic");
+            if (ogmusic != null) {
+                Element source = ogmusic.selectFirst(".source");
+                if (source != null) {
+                    track.setOriginalSource(source.text().trim());
+                    String href = source.attr("href");
+                    if (!href.startsWith("http")) {
+                        href = THBWIKI_BASE_URL + href;
+                    }
+                    track.setOriginalUrl(href);
+                    // Original name: ogmusic text minus source text
+                    String originalName = ogmusic.text().replace(source.text(), "").trim();
+                    track.setOriginalName(originalName);
+                }
+            }
+        }
+
+        return track;
     }
 }
