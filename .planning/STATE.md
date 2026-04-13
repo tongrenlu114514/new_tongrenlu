@@ -10,10 +10,10 @@
 
 ## Current Position
 
-**Phase**: 2 - HTML解析层 (待开始)
+**Phase**: 2 - HTML解析层 (执行中)
 
 **Phase Status**: Phase 1 已完成
-**Status**: Phase 1 ✓ VERIFIED (3/3 success criteria passed)
+**Status**: Phase 2 执行中 (Wave 0 + Wave 1 完成)
 
 **Progress**: [█████████--] 33% (3/9 phases)
 
@@ -135,22 +135,77 @@ tongrenlu-tool/
 
 **Next action**: /gsd-discuss-phase 2
 
+### Session 5 (2026-04-13)
+
+**Work done**:
+- Phase 2 讨论完成 ✓
+- 创建 02-CONTEXT.md (Phase 2 决策文档)
+- 创建 02-DISCUSSION-LOG.md (讨论审计跟踪)
+
+**Phase 2 Decisions**:
+| Decision | Choice |
+|----------|--------|
+| D-01: 解析器位置 | 直接在 ThbwikiService 内解析 |
+| D-02: 容错策略 | 返回空列表 + 日志警告 |
+| D-03: 验证方式 | 集成测试 + 真实 HTML |
+
+**Next action**: /gsd-plan-phase 2
+
+### Session 6 (2026-04-14)
+
+**Work done**:
+- Phase 2 执行完成 ✓
+- Wave 0: 创建测试基础设施
+  - sample-album.html (3 tracks, Satori Maiden)
+  - sample-track-no-source.html (边缘情况)
+  - ThbwikiServiceTest.java (JUnit 5 测试类)
+- Wave 1: 实现 HTML 解析层
+  - fetchAlbumDetail(String url) - 公共 API + URL 验证
+  - isValidThbwikiUrl() - SSRF 安全防护
+  - parseAlbumDetail() - 解析专辑详情
+  - parseTracks() - 多选择器回退模式
+  - parseTrackRow() - 曲目行解析
+- 创建总结文档:
+  - 02-W0-SUMMARY.md
+  - 02-01-SUMMARY.md
+
+**实现状态**:
+| 任务 | 状态 |
+|------|------|
+| fetchAlbumDetail() | ✓ 完成 |
+| parseAlbumDetail() | ✓ 完成 |
+| parseTracks() | ✓ 完成 |
+| parseTrackRow() | ✓ 完成 |
+| URL 验证 | ✓ 完成 |
+
+**待完成**:
+- Maven 测试验证 (环境无 Maven)
+- 代码审查
+- Git 提交
+
+**Next action**: 运行 Maven 测试并提交代码
+
 ---
 
-*Last updated: 2026-04-13*
+*Last updated: 2026-04-14*
 
 ## 下一步
 
 ### 待处理项
 
-1. **Phase 2 规划** - 开始 HTML 解析层的讨论和规划
+1. **Phase 2 测试验证** - 运行 Maven 测试确认实现正确
+2. **Phase 2 代码审查** - 使用 code-reviewer agent
+3. **Phase 2 Git 提交** - 提交 Wave 0 + Wave 1 实现
 
-### 建议工作流
+### Phase 2 执行状态
 
-```
-/gsd-discuss-phase 2  # 讨论 Phase 2 决策
-/gsd-plan-phase 2     # 规划 Phase 2
-```
+| Wave | 任务 | 状态 |
+|------|------|------|
+| W0 | 测试基础设施 | ✓ 完成 |
+| W1 | HTML 解析实现 | ✓ 完成 |
+| - | Maven 测试 | ⏳ 待验证 |
+| - | 代码审查 | ⏳ 待进行 |
+| - | Git 提交 | ⏳ 待提交 |
 
 ## Implementation Artifacts
 
@@ -163,6 +218,17 @@ tongrenlu-tool/
 | 03-管理后台接口 | Admin API | ✓ DONE | 7f80ae8 |
 
 **Verification**: 3/3 success criteria passed
+
+### Phase 2 - HTML 解析层 (执行中)
+
+| Wave | Description | Status | Files |
+|------|-------------|--------|-------|
+| W0 | 测试基础设施 | ✓ DONE | sample-album.html, sample-track-no-source.html, ThbwikiServiceTest.java |
+| W1 | HTML 解析实现 | ✓ DONE | ThbwikiService.java (fetchAlbumDetail, parseAlbumDetail, parseTracks, parseTrackRow) |
+
+**Summary Files**:
+- 02-W0-SUMMARY.md
+- 02-01-SUMMARY.md
 
 ### Created Files
 
