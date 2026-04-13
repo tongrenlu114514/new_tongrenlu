@@ -9,6 +9,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import info.tongrenlu.model.ThbwikiAlbum;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -42,28 +44,28 @@ class ThbwikiServiceTest {
         @Test
         @DisplayName("returns empty for null URL")
         void fetchAlbumDetail_nullUrl_returnsEmpty() {
-            Optional<?> result = service.fetchAlbumDetail(null);
+            Optional<ThbwikiAlbum> result = service.fetchAlbumDetail(null);
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("returns empty for empty URL")
         void fetchAlbumDetail_emptyUrl_returnsEmpty() {
-            Optional<?> result = service.fetchAlbumDetail("");
+            Optional<ThbwikiAlbum> result = service.fetchAlbumDetail("");
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("returns empty for invalid URL (not THBWiki)")
         void fetchAlbumDetail_invalidUrl_returnsEmpty() {
-            Optional<?> result = service.fetchAlbumDetail("https://evil.com/page");
+            Optional<ThbwikiAlbum> result = service.fetchAlbumDetail("https://evil.com/page");
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("returns empty for URL with control characters")
         void fetchAlbumDetail_controlCharsUrl_returnsEmpty() {
-            Optional<?> result = service.fetchAlbumDetail("https://thbwiki.cc/test\n");
+            Optional<ThbwikiAlbum> result = service.fetchAlbumDetail("https://thbwiki.cc/test\n");
             assertThat(result).isEmpty();
         }
     }
@@ -78,7 +80,7 @@ class ThbwikiServiceTest {
             String html = loadHtml("/thbwiki/sample-album.html");
             Document doc = Jsoup.parse(html);
 
-            Optional<?> result = service.parseAlbumDetail(doc, "https://thbwiki.cc/Satori_Maiden");
+            Optional<ThbwikiAlbum> result = service.parseAlbumDetail(doc, "https://thbwiki.cc/Satori_Maiden");
             assertThat(result).isPresent();
         }
 
@@ -88,9 +90,9 @@ class ThbwikiServiceTest {
             String html = loadHtml("/thbwiki/sample-album.html");
             Document doc = Jsoup.parse(html);
 
-            Optional<?> result = service.parseAlbumDetail(doc, "https://thbwiki.cc/Satori_Maiden");
+            Optional<ThbwikiAlbum> result = service.parseAlbumDetail(doc, "https://thbwiki.cc/Satori_Maiden");
             assertThat(result).isPresent();
-            var album = result.get();
+            ThbwikiAlbum album = result.get();
             assertThat(album.getName()).isEqualTo("Satori Maiden");
         }
 
@@ -101,7 +103,7 @@ class ThbwikiServiceTest {
             Document doc = Jsoup.parse(html);
             String expectedUrl = "https://thbwiki.cc/Test_Album";
 
-            Optional<?> result = service.parseAlbumDetail(doc, expectedUrl);
+            Optional<ThbwikiAlbum> result = service.parseAlbumDetail(doc, expectedUrl);
             assertThat(result).isPresent();
             assertThat(result.get().getUrl()).isEqualTo(expectedUrl);
         }
