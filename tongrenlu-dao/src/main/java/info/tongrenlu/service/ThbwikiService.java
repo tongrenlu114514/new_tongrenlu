@@ -4,10 +4,14 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.cache.ThbwikiCacheService;
+import info.tongrenlu.domain.TrackBean;
+import info.tongrenlu.mapper.TrackMapper;
+import info.tongrenlu.model.MatchResult;
 import info.tongrenlu.model.ThbwikiAlbum;
 import info.tongrenlu.model.ThbwikiTrack;
 import info.tongrenlu.support.TextNormalizer;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -235,6 +239,10 @@ public class ThbwikiService {
     }
 
     private static final String DETAIL_CACHE_KEY_PREFIX = "detail:";
+    private static final double MIN_CONFIDENCE_THRESHOLD = 0.85;
+    private static final LevenshteinDistance LEVENSHTEIN = new LevenshteinDistance(Integer.MAX_VALUE);
+
+    private TrackMapper trackMapper;
 
     /**
      * 获取缓存的专辑
@@ -430,5 +438,147 @@ public class ThbwikiService {
         }
 
         return track;
+    }
+
+    public void setTrackMapper(TrackMapper trackMapper) {
+        this.trackMapper = trackMapper;
+    }
+
+    /**
+     * Match a track name against a list of THBWiki tracks using Levenshtein distance.
+     * Uses TextNormalizer.normalizeForComparison() to normalize both strings before comparison.
+     *
+     * @param trackName the local track name to match
+     * @param thbwikiTracks the list of THBWiki tracks to match against
+     * @return the best match result with confidence score
+     */
+    public MatchResult matchTrack(String trackName, java.util.List<ThbwikiTrack> thbwikiTracks) {
+        if (trackName == null || trackName.isBlank()) {
+            log.debug("Match attempted with empty track name");
+            return MatchResult.noMatch(null);
+        }
+        if (thbwikiTracks == null || thbwikiTracks.isEmpty()) {
+            log.debug("Match attempted with empty THBWiki track list");
+            return MatchResult.noMatch(TextNormalizer.normalizeForComparison(trackName));
+        }
+
+        String normalizedInput = TextNormalizer.normalizeForComparison(trackName);
+        MatchResult bestMatch = MatchResult.noMatch(normalizedInput);
+
+        for (ThbwikiTrack thbwikiTrack : thbwikiTracks) {
+            String candidateName = thbwikiTrack.getName();
+            if (candidateName == null || candidateName.isBlank()) {
+                continue;
+            }
+
+            String normalizedCandidate = TextNormalizer.normalizeForComparison(candidateName);
+            double confidence = calculateConfidence(normalizedInput, normalizedCandidate);
+
+            if (confidence >= MIN_CONFIDENCE_THRESHOLD && confidence > bestMatch.getConfidence()) {
+                bestMatch = MatchResult.matched(
+                        normalizedInput,
+                        normalizedCandidate,
+                        thbwikiTrack,
+                        confidence
+                );
+                log.debug("New best match found: '{}' matched '{}' with confidence {}",
+                        normalizedInput, normalizedCandidate, String.format("%.2f", confidence));
+            }
+        }
+
+        if (!bestMatch.isMatched()) {
+            log.debug("No match found for track: {} (best candidate was '{}' with confidence {})",
+                    trackName, bestMatch.getNormalizedMatch(), String.format("%.2f", bestMatch.getConfidence()));
+        }
+
+        return bestMatch;
+    }
+
+    /**
+     * Calculate confidence score based on Levenshtein distance.
+     * Returns 1.0 for exact match, decreasing as edit distance increases.
+     * Uses normalized strings for comparison.
+     *
+     * @param normalizedInput the normalized input string
+     * @param normalizedCandidate the normalized candidate string
+     * @return confidence score between 0.0 and 1.0
+     */
+    double calculateConfidence(String normalizedInput, String normalizedCandidate) {
+        if (normalizedInput == null || normalizedCandidate == null) {
+            return 0.0;
+        }
+        if (normalizedInput.equals(normalizedCandidate)) {
+            return 1.0;
+        }
+
+        int maxLength = Math.max(normalizedInput.length(), normalizedCandidate.length());
+        if (maxLength == 0) {
+            return 1.0;
+        }
+
+        int distance = LEVENSHTEIN.apply(normalizedInput, normalizedCandidate);
+        return 1.0 - ((double) distance / maxLength);
+    }
+
+    /**
+     * Match a track against THBWiki album tracks and save the original info to database.
+     * Logs the input track name, matched THBWiki track, confidence score, and save outcome.
+     *
+     * @param track the local track to match and update
+     * @param thbwikiTracks the list of THBWiki tracks to match against
+     * @return true if a match was found and saved (confidence >= 0.85)
+     */
+    public boolean matchAndSave(TrackBean track, java.util.List<ThbwikiTrack> thbwikiTracks) {
+        if (track == null) {
+            log.info("Track is null, skipping match");
+            return false;
+        }
+
+        String trackName = track.getName();
+        log.info("Matching track: {}", trackName);
+
+        MatchResult result = matchTrack(trackName, thbwikiTracks);
+
+        if (result.isMatched()) {
+            ThbwikiTrack matchedThbwikiTrack = result.getThbwikiTrack();
+            String originalInfo = buildOriginalInfo(matchedThbwikiTrack);
+
+            log.info("Track '{}' matched to THBWiki '{}' with confidence {}, saving original: '{}'",
+                    trackName,
+                    matchedThbwikiTrack.getName(),
+                    String.format("%.2f", result.getConfidence()),
+                    originalInfo);
+
+            track.setOriginal(originalInfo);
+            if (this.trackMapper != null) {
+                this.trackMapper.updateById(track);
+                log.info("Successfully saved original '{}' to track id={}", originalInfo, track.getId());
+            } else {
+                log.warn("TrackMapper not set, cannot persist match for track id={}", track.getId());
+            }
+            return true;
+        } else {
+            log.info("Track '{}' had no match (best confidence: {}), skipping save",
+                    trackName, String.format("%.2f", result.getConfidence()));
+            return false;
+        }
+    }
+
+    /**
+     * Build a formatted original info string from a THBWiki track.
+     * Format: "原曲出处 - 原曲名称" or just "原曲出处" if name is missing.
+     */
+    private String buildOriginalInfo(ThbwikiTrack thbwikiTrack) {
+        String source = thbwikiTrack.getOriginalSource();
+        String name = thbwikiTrack.getOriginalName();
+
+        if (source != null && name != null && !name.isBlank()) {
+            return source + " - " + name;
+        } else if (source != null && !source.isBlank()) {
+            return source;
+        } else if (name != null && !name.isBlank()) {
+            return name;
+        }
+        return "";
     }
 }
