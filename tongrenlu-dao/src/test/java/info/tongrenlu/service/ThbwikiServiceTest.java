@@ -251,8 +251,7 @@ class ThbwikiServiceTest {
             ThbwikiCacheService localCache = new ThbwikiCacheService();
             ThbwikiService svc = new ThbwikiService(
                 localCache,
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             // Pre-populate cache
@@ -288,8 +287,7 @@ class ThbwikiServiceTest {
             ThbwikiCacheService localCache = new ThbwikiCacheService();
             ThbwikiService svc = new ThbwikiService(
                 localCache,
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             String html = loadHtml("/thbwiki/sample-album.html");
@@ -323,8 +321,7 @@ class ThbwikiServiceTest {
             ThbwikiCacheService localCache = new ThbwikiCacheService();
             ThbwikiService svc = new ThbwikiService(
                 localCache,
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             svc.setHttpClient(url -> {
@@ -353,8 +350,7 @@ class ThbwikiServiceTest {
             ThbwikiCacheService localCache = new ThbwikiCacheService();
             ThbwikiService svc = new ThbwikiService(
                 localCache,
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             svc.setHttpClient(url -> {
@@ -385,8 +381,7 @@ class ThbwikiServiceTest {
             ThbwikiCacheService localCache = new ThbwikiCacheService();
             ThbwikiService svc = new ThbwikiService(
                 localCache,
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             String stats = svc.getCacheStats();
@@ -408,8 +403,7 @@ class ThbwikiServiceTest {
             ThbwikiCacheService localCache = new ThbwikiCacheService();
             ThbwikiService svc = new ThbwikiService(
                 localCache,
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             String html = loadHtml("/thbwiki/sample-album.html");
@@ -447,8 +441,7 @@ class ThbwikiServiceTest {
             ThbwikiCacheService localCache = new ThbwikiCacheService();
             ThbwikiService svc = new ThbwikiService(
                 localCache,
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             svc.setHttpClient(url -> {
@@ -479,8 +472,7 @@ class ThbwikiServiceTest {
             );
             ThbwikiService svc = new ThbwikiService(
                 new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             long start = System.currentTimeMillis();
@@ -501,8 +493,7 @@ class ThbwikiServiceTest {
 
             ThbwikiService svc = new ThbwikiService(
                 new ThbwikiCacheService(),
-                new ObjectMapper(),
-                mockClock
+                new ObjectMapper()
             );
 
             // Mock HTTP client that just records call count
@@ -558,8 +549,7 @@ class ThbwikiServiceTest {
 
             ThbwikiService svc = new ThbwikiService(
                 new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             svc.setHttpClient(url -> {
@@ -589,8 +579,7 @@ class ThbwikiServiceTest {
 
             ThbwikiService svc = new ThbwikiService(
                 new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
+                new ObjectMapper()
             );
 
             svc.setHttpClient(url -> {
