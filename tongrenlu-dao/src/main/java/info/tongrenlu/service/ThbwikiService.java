@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.cache.ThbwikiCacheService;
 import info.tongrenlu.model.ThbwikiAlbum;
 import info.tongrenlu.model.ThbwikiTrack;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,20 +15,71 @@ import org.springframework.util.StringUtils;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ThbwikiService {
 
     private static final String THBWIKI_BASE_URL = "https://thbwiki.cc";
     private static final String OPENSEARCH_API = THBWIKI_BASE_URL + "/api.php?action=opensearch&search=%s&format=json&limit=10";
+    private static final long MIN_REQUEST_INTERVAL_MS = 1500;
 
     private final ThbwikiCacheService cacheService;
     private final ObjectMapper objectMapper;
+    private final Clock clock;
+
+    /** Functional interface for HTTP execution — enables test mocking. */
+    private ThbwikiHttpClient httpClient = url -> HttpRequest.get(url)
+            .header("User-Agent", "tongrenlu/1.0 (同人音乐库管理)")
+            .timeout(10000)
+            .execute();
+
+    /** Tracks the last HTTP request timestamp for rate limiting. */
+    private final AtomicReference<Instant> lastRequestTime = new AtomicReference<>();
+
+    public ThbwikiService(ThbwikiCacheService cacheService, ObjectMapper objectMapper) {
+        this(cacheService, objectMapper, Clock.systemUTC());
+    }
+
+    ThbwikiService(ThbwikiCacheService cacheService, ObjectMapper objectMapper, Clock clock) {
+        this.cacheService = cacheService;
+        this.objectMapper = objectMapper;
+        this.clock = clock;
+    }
+
+    /**
+     * Enforce minimum interval between HTTP requests to THBWiki.
+     * If the last request was less than {@value #MIN_REQUEST_INTERVAL_MS}ms ago, sleep the difference.
+     * Logs a warning when a delay is triggered.
+     */
+    void enforceRateLimit() {
+        Instant now = Instant.now(clock);
+        Instant last = lastRequestTime.get();
+        if (last != null) {
+            long elapsed = now.toEpochMilli() - last.toEpochMilli();
+            if (elapsed < MIN_REQUEST_INTERVAL_MS) {
+                long delay = MIN_REQUEST_INTERVAL_MS - elapsed;
+                log.warn("Rate limit triggered: waiting {}ms before next request", delay);
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Rate limit sleep interrupted");
+                }
+            }
+        }
+        lastRequestTime.set(Instant.now(clock));
+    }
+
+    void setHttpClient(ThbwikiHttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
     /**
      * 根据专辑名搜索 THBWiki
@@ -48,10 +98,9 @@ public class ThbwikiService {
 
         log.info("Searching THBWiki: {}", apiUrl);
 
-        try (HttpResponse response = HttpRequest.get(apiUrl)
-                .header("User-Agent", "tongrenlu/1.0 (同人音乐库管理)")
-                .timeout(10000)
-                .execute()) {
+        enforceRateLimit();
+
+        try (HttpResponse response = httpClient.execute(apiUrl)) {
 
             if (!response.isOk()) {
                 log.error("THBWiki API returned status: {}", response.getStatus());
@@ -145,10 +194,9 @@ public class ThbwikiService {
             return Optional.empty();
         }
 
-        try (HttpResponse response = HttpRequest.get(url)
-                .header("User-Agent", "tongrenlu/1.0 (同人音乐库管理)")
-                .timeout(10000)
-                .execute()) {
+        enforceRateLimit();
+
+        try (HttpResponse response = httpClient.execute(url)) {
 
             if (!response.isOk()) {
                 log.warn("THBWiki page returned status: {} for URL: {}", response.getStatus(), url);
