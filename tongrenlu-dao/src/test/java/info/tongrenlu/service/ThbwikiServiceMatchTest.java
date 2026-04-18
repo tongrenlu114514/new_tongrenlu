@@ -49,10 +49,15 @@ class ThbwikiServiceMatchTest {
     }
 
     private ThbwikiTrack createTrack(String name, String originalSource, String originalName) {
+        return createTrack(name, originalSource, originalName, null);
+    }
+
+    private ThbwikiTrack createTrack(String name, String originalSource, String originalName, String originalUrl) {
         ThbwikiTrack track = new ThbwikiTrack();
         track.setName(name);
         track.setOriginalSource(originalSource);
         track.setOriginalName(originalName);
+        track.setOriginalUrl(originalUrl);
         return track;
     }
 
@@ -460,6 +465,26 @@ class ThbwikiServiceMatchTest {
             boolean result = service.matchAndSave(null, List.of());
 
             assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("matchAndSave saves originalUrl alongside original info")
+        void matchAndSave_savesOriginalUrl() {
+            ThbwikiTrack thbwikiTrack = createTrack(
+                    "Satori Maiden", "少女さとり", "3rd eye",
+                    "https://thbwiki.cc/少女さとり"
+            );
+            List<ThbwikiTrack> tracks = createTrackList(thbwikiTrack);
+
+            TrackBean track = new TrackBean();
+            track.setId(1L);
+            track.setName("Satori Maiden");
+
+            boolean result = service.matchAndSave(track, tracks);
+
+            assertThat(result).isTrue();
+            assertThat(track.getOriginal()).isEqualTo("少女さとり - 3rd eye");
+            assertThat(track.getOriginalUrl()).isEqualTo("https://thbwiki.cc/少女さとり");
         }
     }
 

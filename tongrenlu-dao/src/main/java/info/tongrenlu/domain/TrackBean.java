@@ -40,6 +40,9 @@ public class TrackBean {
     @TableField(value = "original", jdbcType = JdbcType.VARCHAR)
     private String original ;
 
+    @TableField(value = "original_url", jdbcType = JdbcType.VARCHAR)
+    private String originalUrl ;
+
     @TableField(value = "instrumental", jdbcType = JdbcType.CHAR)
     private String instrumental ;
 

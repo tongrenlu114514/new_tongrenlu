@@ -542,17 +542,20 @@ public class ThbwikiService {
         if (result.isMatched()) {
             ThbwikiTrack matchedThbwikiTrack = result.getThbwikiTrack();
             String originalInfo = buildOriginalInfo(matchedThbwikiTrack);
+            String originalUrl = matchedThbwikiTrack.getOriginalUrl();
 
-            log.info("Track '{}' matched to THBWiki '{}' with confidence {}, saving original: '{}'",
+            log.info("Track '{}' matched to THBWiki '{}' with confidence {}, saving original: '{}', originalUrl: '{}'",
                     trackName,
                     matchedThbwikiTrack.getName(),
                     String.format("%.2f", result.getConfidence()),
-                    originalInfo);
+                    originalInfo,
+                    originalUrl);
 
             track.setOriginal(originalInfo);
+            track.setOriginalUrl(originalUrl);
             if (this.trackMapper != null) {
                 this.trackMapper.updateById(track);
-                log.info("Successfully saved original '{}' to track id={}", originalInfo, track.getId());
+                log.info("Successfully saved original '{}' originalUrl '{}' to track id={}", originalInfo, originalUrl, track.getId());
             } else {
                 log.warn("TrackMapper not set, cannot persist match for track id={}", track.getId());
             }
