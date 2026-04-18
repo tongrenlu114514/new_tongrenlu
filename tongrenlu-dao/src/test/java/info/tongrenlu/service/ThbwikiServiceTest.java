@@ -278,7 +278,7 @@ class ThbwikiServiceTest {
 
         @Test
         @DisplayName("fetchAlbumDetail caches result after successful fetch")
-        void fetchAlbumDetail_cacheMiss_cachesResult() {
+        void fetchAlbumDetail_cacheMiss_cachesResult() throws Exception {
             Clock fixedClock = Clock.fixed(
                 Instant.parse("2026-04-18T12:00:00Z"),
                 ZoneId.of("UTC")
@@ -391,14 +391,14 @@ class ThbwikiServiceTest {
 
             String stats = svc.getCacheStats();
             assertThat(stats).isNotNull();
-            // Caffeine stats contain "hits=" and "misses="
-            assertThat(stats).contains("hits=");
-            assertThat(stats).contains("misses=");
+            // Caffeine CacheStats format: CacheStats{hitCount=N, missCount=N, ...}
+            assertThat(stats).contains("hitCount=");
+            assertThat(stats).contains("missCount=");
         }
 
         @Test
         @DisplayName("invalidateAlbumDetail removes cached entry")
-        void invalidateAlbumDetail_removesCachedEntry() {
+        void invalidateAlbumDetail_removesCachedEntry() throws Exception {
             Clock fixedClock = Clock.fixed(
                 Instant.parse("2026-04-18T12:00:00Z"),
                 ZoneId.of("UTC")
