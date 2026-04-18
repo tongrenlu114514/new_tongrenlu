@@ -10,6 +10,7 @@ import info.tongrenlu.model.MatchResult;
 import info.tongrenlu.model.ThbwikiAlbum;
 import info.tongrenlu.model.ThbwikiTrack;
 import info.tongrenlu.support.TextNormalizer;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.jsoup.nodes.Document;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ThbwikiService {
 
     private static final String THBWIKI_BASE_URL = "https://thbwiki.cc";
@@ -37,7 +39,7 @@ public class ThbwikiService {
 
     private final ThbwikiCacheService cacheService;
     private final ObjectMapper objectMapper;
-    private final Clock clock;
+    private final Clock clock = Clock.systemUTC();
 
     /** Functional interface for HTTP execution — enables test mocking. */
     private ThbwikiHttpClient httpClient = url -> HttpRequest.get(url)
@@ -47,16 +49,6 @@ public class ThbwikiService {
 
     /** Tracks the last HTTP request timestamp for rate limiting. */
     private final AtomicReference<Instant> lastRequestTime = new AtomicReference<>();
-
-    public ThbwikiService(ThbwikiCacheService cacheService, ObjectMapper objectMapper) {
-        this(cacheService, objectMapper, Clock.systemUTC());
-    }
-
-    ThbwikiService(ThbwikiCacheService cacheService, ObjectMapper objectMapper, Clock clock) {
-        this.cacheService = cacheService;
-        this.objectMapper = objectMapper;
-        this.clock = clock;
-    }
 
     /**
      * Enforce minimum interval between HTTP requests to THBWiki.

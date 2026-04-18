@@ -2,22 +2,19 @@ package info.tongrenlu.service;
 
 import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.mapper.TrackMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  * Service for managing track data, including updating original track information.
  */
+@RequiredArgsConstructor
 @Service
 @Slf4j
 public class TrackService {
 
     private final TrackMapper trackMapper;
-
-    public TrackService(TrackMapper trackMapper) {
-        this.trackMapper = trackMapper;
-    }
-
     /**
      * Update the original field for a track.
      *

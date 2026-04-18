@@ -4,7 +4,6 @@ import info.tongrenlu.callback.TrackBatchCallback;
 import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.model.BatchStatistics;
 import info.tongrenlu.model.ThbwikiTrack;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +17,18 @@ import java.util.List;
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class TrackBatchService {
 
     private final ThbwikiService thbwikiService;
+
+    /** Spring 反射实例化必须 */
+    public TrackBatchService() {
+        this.thbwikiService = null;
+    }
+
+    public TrackBatchService(ThbwikiService thbwikiService) {
+        this.thbwikiService = thbwikiService;
+    }
 
     /**
      * Batch match tracks against THBWiki tracks and save matches.
