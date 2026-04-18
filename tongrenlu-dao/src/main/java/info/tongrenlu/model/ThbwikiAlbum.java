@@ -17,7 +17,6 @@ public class ThbwikiAlbum {
         this.tracks.add(track);
     }
 
-    @Override
     public List<ThbwikiTrack> getTracks() {
         return List.copyOf(this.tracks);
     }
