@@ -195,9 +195,32 @@ tongrenlu-tool/
 
 **Next action**: 等待用户环境运行 Maven 测试验证
 
+### Session 8 (2026-04-18)
+
+**Work done**:
+- Phase 3 讨论完成 ✓
+- 创建 03-CONTEXT.md (Phase 3 决策文档)
+- 创建 03-DISCUSSION-LOG.md (讨论审计跟踪)
+
+**Phase 3 Decisions**:
+| Decision | Choice |
+|----------|--------|
+| D-01: 退避策略 | 指数退避 + 抖动（±5s jitter） |
+| D-02: 实现方式 | HTTP 拦截器（封装 Hutool HttpRequest） |
+| D-03: 最小间隔 | 可配置，默认 1 秒 |
+| D-04: 配置化 | @Value 注入 |
+
+**退避参数**:
+- 初始退避：60 秒
+- 最大退避：10 分钟
+- 抖动：±5 秒
+- 最大重试：3 次
+
+**Next action**: /gsd-plan-phase 3
+
 ---
 
-*Last updated: 2026-04-14*
+*Last updated: 2026-04-18*
 
 ## 下一步
 
