@@ -828,3 +828,62 @@
     .geo-player__volume { display: none; }
     .geo-filter { flex-direction: column; align-items: flex-start; }
 }
+
+/* ============================================
+   曲目原始信息样式
+   ============================================ */
+.track-subtitle {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--geo-text-muted);
+    font-family: 'Outfit', sans-serif;
+    margin-top: 2px;
+}
+
+.track-original {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.track-original-link {
+    color: var(--geo-accent);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.track-original-link:hover {
+    color: var(--geo-primary);
+}
+
+.track-confidence {
+    flex-shrink: 0;
+}
+
+.track-confidence--high {
+    color: #28a745;
+}
+
+.track-confidence--medium {
+    color: #ffc107;
+}
+
+.track-confidence--low {
+    color: var(--geo-text-muted);
+}
+
+/* THBWiki link in playlist */
+.playlist-item .track-original-link {
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Confidence badge in playlist */
+.playlist-item .track-confidence {
+    font-size: 0.7rem;
+    margin-left: 0.25rem;
+}

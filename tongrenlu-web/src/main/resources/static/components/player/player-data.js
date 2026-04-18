@@ -91,13 +91,40 @@ function generatePlaylist(tracks, playlistContainer) {
     $playlist.empty();
 
     tracks.forEach((track, index) => {
-        const originalText = track.original ? `<span class="track-subtitle">${track.original}</span>` : '';
+        const originalInfo = track.original || '';
+        const originalUrl = track.originalUrl || '';
+
+        // Build original info badge components
+        let originalSubtitle = '';
+        let thbwikiLink = '';
+        let confidenceIndicator = '';
+
+        if (originalInfo) {
+            originalSubtitle = `<span class="track-subtitle">${originalInfo}</span>`;
+
+            if (originalUrl) {
+                // High confidence: has URL → green dot
+                thbwikiLink = `<a href="${originalUrl}" target="_blank" class="track-original-link" title="THBWiki" onclick="event.stopPropagation();"><i class="fas fa-external-link-alt"></i></a>`;
+                confidenceIndicator = `<span class="track-confidence track-confidence--high" title="已匹配THBWiki">●</span>`;
+            } else {
+                // Medium confidence: has original info but no URL → amber circle
+                confidenceIndicator = `<span class="track-confidence track-confidence--medium" title="原始信息">○</span>`;
+            }
+        } else {
+            // Low confidence: no original info → gray dash
+            confidenceIndicator = `<span class="track-confidence track-confidence--low" title="未匹配">-</span>`;
+        }
+
         const $trackItem = $(`
             <li class="playlist-item ${index === 0 ? 'active' : ''}" data-index="${index}">
                 <span class="track-num">${(index + 1).toString().padStart(2, '0')}</span>
                 <div class="track-info">
                     <span class="track-title">${track.name || '未命名曲目'}</span>
-                    ${originalText}
+                    ${originalSubtitle}
+                </div>
+                <div class="track-original">
+                    ${thbwikiLink}
+                    ${confidenceIndicator}
                 </div>
             </li>
         `);

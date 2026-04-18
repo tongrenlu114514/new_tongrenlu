@@ -307,6 +307,15 @@ body {
 .track-info {
     flex: 1;
     margin-left: 12px;
+    min-width: 0;
+}
+
+.track-original {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    margin-left: 8px;
 }
 
 .track-name {
