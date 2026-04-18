@@ -596,14 +596,66 @@
             width: 30px;
             color: var(--geo-text-muted);
         }
-        
-        .track-title {
+
+        .track-info {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .track-title {
             font-family: 'Space Grotesk', sans-serif;
             font-size: 0.9rem;
             color: var(--geo-text);
         }
-        
+
+        .track-subtitle {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            color: var(--geo-text-muted);
+            margin-top: 2px;
+        }
+
+        .track-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 0.5rem;
+        }
+
+        .thbwiki-link {
+            color: var(--geo-accent);
+            font-size: 0.8rem;
+            transition: color 0.3s ease;
+        }
+
+        .thbwiki-link:hover {
+            color: var(--geo-primary);
+        }
+
+        .confidence-badge {
+            font-size: 0.7rem;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .confidence-high {
+            color: #22c55e;
+        }
+
+        .confidence-medium {
+            color: #f59e0b;
+        }
+
+        .confidence-low {
+            color: var(--geo-text-muted);
+        }
+
         .track-duration {
             font-family: 'Outfit', sans-serif;
             font-size: 0.8rem;

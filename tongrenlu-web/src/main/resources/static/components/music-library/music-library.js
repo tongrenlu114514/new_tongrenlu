@@ -162,13 +162,45 @@ async function updateAlbumModal(albumId) {
                     const duration = track.duration || '0:00';
                     const trackTitle = track.name || `曲目 ${index + 1}`;
                     const hasMusicUrl = track.cloudMusicId;
+                    const originalInfo = track.original || '';
+                    const originalUrl = track.originalUrl || '';
+
+                    // Generate original info subtitle and badges
+                    let originalSubtitle = '';
+                    let thbwikiLink = '';
+                    let confidenceBadge = '';
+
+                    if (originalInfo) {
+                        // Original info exists
+                        originalSubtitle = `<span class="track-subtitle">${originalInfo}</span>`;
+
+                        // Determine confidence based on originalUrl
+                        if (originalUrl) {
+                            // High confidence: has URL
+                            thbwikiLink = `<a href="${originalUrl}" target="_blank" class="thbwiki-link" title="THBWiki" onclick="event.stopPropagation();"><i class="fas fa-external-link-alt"></i></a>`;
+                            confidenceBadge = `<span class="confidence-badge confidence-high" title="已匹配THBWiki">●</span>`;
+                        } else {
+                            // Medium confidence: has original info but no URL
+                            confidenceBadge = `<span class="confidence-badge confidence-medium" title="原始信息">○</span>`;
+                        }
+                    } else {
+                        // Low confidence: no original info
+                        confidenceBadge = `<span class="confidence-badge confidence-low" title="未匹配">-</span>`;
+                    }
 
                     if (hasMusicUrl) {
                         tracksHtml += `
                             <li class="track">
                                 <button class="track-play-btn"><i class="fas fa-play"></i></button>
                                 <span class="track-number">${trackNumber}</span>
-                                <span class="track-title">${trackTitle}</span>
+                                <div class="track-info">
+                                    <span class="track-title">${trackTitle}</span>
+                                    ${originalSubtitle}
+                                </div>
+                                <div class="track-actions">
+                                    ${thbwikiLink}
+                                    ${confidenceBadge}
+                                </div>
                                 <span class="track-duration">${duration}</span>
                             </li>
                         `;
@@ -177,7 +209,14 @@ async function updateAlbumModal(albumId) {
                             <li class="track">
                                 <button class="track-play-btn" disabled style="opacity: 0.5; cursor: not-allowed;"><i class="fas fa-play"></i></button>
                                 <span class="track-number">${trackNumber}</span>
-                                <span class="track-title">${trackTitle} <span style="color: #999; font-size: 0.8em;">(无法播放)</span></span>
+                                <div class="track-info">
+                                    <span class="track-title">${trackTitle} <span style="color: #999; font-size: 0.8em;">(无法播放)</span></span>
+                                    ${originalSubtitle}
+                                </div>
+                                <div class="track-actions">
+                                    ${thbwikiLink}
+                                    ${confidenceBadge}
+                                </div>
                                 <span class="track-duration">${duration}</span>
                             </li>
                         `;
