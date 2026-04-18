@@ -234,6 +234,238 @@ class ThbwikiServiceTest {
     }
 
     @Nested
+    @DisplayName("Cache integration tests")
+    class CacheIntegrationTests {
+
+        private static final String VALID_URL = "https://thbwiki.cc/Test_Album";
+
+        @Test
+        @DisplayName("fetchAlbumDetail returns cached result on cache hit without HTTP call")
+        void fetchAlbumDetail_cacheHit_noHttpCall() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger httpCallCount = new AtomicInteger(0);
+
+            ThbwikiCacheService localCache = new ThbwikiCacheService();
+            ThbwikiService svc = new ThbwikiService(
+                localCache,
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            // Pre-populate cache
+            ThbwikiAlbum cachedAlbum = new ThbwikiAlbum();
+            cachedAlbum.setName("Cached Album");
+            cachedAlbum.setUrl(VALID_URL);
+            localCache.put("detail:" + VALID_URL, cachedAlbum);
+
+            svc.setHttpClient(url -> {
+                httpCallCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(true);
+                when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
+                return mockResponse;
+            });
+
+            Optional<ThbwikiAlbum> result = svc.fetchAlbumDetail(VALID_URL);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getName()).isEqualTo("Cached Album");
+            assertThat(httpCallCount.get()).isZero();
+        }
+
+        @Test
+        @DisplayName("fetchAlbumDetail caches result after successful fetch")
+        void fetchAlbumDetail_cacheMiss_cachesResult() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger httpCallCount = new AtomicInteger(0);
+
+            ThbwikiCacheService localCache = new ThbwikiCacheService();
+            ThbwikiService svc = new ThbwikiService(
+                localCache,
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            String html = loadHtml("/thbwiki/sample-album.html");
+            svc.setHttpClient(url -> {
+                httpCallCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(true);
+                when(mockResponse.body()).thenReturn(html);
+                return mockResponse;
+            });
+
+            // First call - should hit network and cache
+            Optional<ThbwikiAlbum> result1 = svc.fetchAlbumDetail(VALID_URL);
+            assertThat(result1).isPresent();
+            assertThat(httpCallCount.get()).isEqualTo(1);
+
+            // Verify cache now contains the result
+            Optional<ThbwikiAlbum> cached = localCache.get("detail:" + VALID_URL);
+            assertThat(cached).isPresent();
+            assertThat(cached.get().getName()).isEqualTo(result1.get().getName());
+        }
+
+        @Test
+        @DisplayName("fetchAlbumDetail does not cache empty result on HTTP failure")
+        void fetchAlbumDetail_httpFailure_noCacheWrite() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+
+            ThbwikiCacheService localCache = new ThbwikiCacheService();
+            ThbwikiService svc = new ThbwikiService(
+                localCache,
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(false);
+                when(mockResponse.getStatus()).thenReturn(404);
+                return mockResponse;
+            });
+
+            svc.fetchAlbumDetail(VALID_URL);
+
+            // Cache should be empty (no cache write on failure)
+            Optional<ThbwikiAlbum> cached = localCache.get("detail:" + VALID_URL);
+            assertThat(cached).isEmpty();
+        }
+
+        @Test
+        @DisplayName("fetchAlbumDetail does not cache result for invalid URL")
+        void fetchAlbumDetail_invalidUrl_noCacheWrite() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger httpCallCount = new AtomicInteger(0);
+
+            ThbwikiCacheService localCache = new ThbwikiCacheService();
+            ThbwikiService svc = new ThbwikiService(
+                localCache,
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                httpCallCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(true);
+                when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
+                return mockResponse;
+            });
+
+            // Invalid URL - should return empty and not call HTTP
+            Optional<ThbwikiAlbum> result = svc.fetchAlbumDetail("https://evil.com/page");
+            assertThat(result).isEmpty();
+            assertThat(httpCallCount.get()).isZero();
+
+            // Cache should be empty
+            Optional<ThbwikiAlbum> cached = localCache.get("detail:https://evil.com/page");
+            assertThat(cached).isEmpty();
+        }
+
+        @Test
+        @DisplayName("getCacheStats delegates to cache service")
+        void getCacheStats_delegatesToCacheService() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            ThbwikiCacheService localCache = new ThbwikiCacheService();
+            ThbwikiService svc = new ThbwikiService(
+                localCache,
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            String stats = svc.getCacheStats();
+            assertThat(stats).isNotNull();
+            // Caffeine stats contain "hits=" and "misses="
+            assertThat(stats).contains("hits=");
+            assertThat(stats).contains("misses=");
+        }
+
+        @Test
+        @DisplayName("invalidateAlbumDetail removes cached entry")
+        void invalidateAlbumDetail_removesCachedEntry() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger httpCallCount = new AtomicInteger(0);
+
+            ThbwikiCacheService localCache = new ThbwikiCacheService();
+            ThbwikiService svc = new ThbwikiService(
+                localCache,
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            String html = loadHtml("/thbwiki/sample-album.html");
+            svc.setHttpClient(url -> {
+                httpCallCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(true);
+                when(mockResponse.body()).thenReturn(html);
+                return mockResponse;
+            });
+
+            // First call - caches result
+            svc.fetchAlbumDetail(VALID_URL);
+            assertThat(httpCallCount.get()).isEqualTo(1);
+            assertThat(localCache.get("detail:" + VALID_URL)).isPresent();
+
+            // Invalidate
+            svc.invalidateAlbumDetail(VALID_URL);
+            assertThat(localCache.get("detail:" + VALID_URL)).isEmpty();
+
+            // Second call - should hit network again
+            svc.fetchAlbumDetail(VALID_URL);
+            assertThat(httpCallCount.get()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("invalidateAlbumDetail does nothing for invalid URL")
+        void invalidateAlbumDetail_invalidUrl_noAction() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger httpCallCount = new AtomicInteger(0);
+
+            ThbwikiCacheService localCache = new ThbwikiCacheService();
+            ThbwikiService svc = new ThbwikiService(
+                localCache,
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                httpCallCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(true);
+                when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
+                return mockResponse;
+            });
+
+            // Should not throw and should not call HTTP
+            svc.invalidateAlbumDetail("https://evil.com/page");
+            assertThat(httpCallCount.get()).isZero();
+        }
+    }
+
+    @Nested
     @DisplayName("Rate limit tests")
     class RateLimitTests {
 

@@ -233,6 +233,8 @@ public class ThbwikiService {
         }
     }
 
+    private static final String DETAIL_CACHE_KEY_PREFIX = "detail:";
+
     /**
      * 获取缓存的专辑
      */
@@ -249,15 +251,24 @@ public class ThbwikiService {
 
     /**
      * 根据专辑页面 URL 获取专辑详情（包含曲目列表）
+     * 先检查缓存，命中则直接返回；未命中则抓取并缓存结果。
      *
      * @param url THBWiki 专辑页面 URL
      * @return 专辑详情（包含曲目列表），失败时返回空 Optional
      */
     public Optional<ThbwikiAlbum> fetchAlbumDetail(String url) {
-        // URL validation
+        // URL validation rejects invalid URLs before cache lookup
         if (!isValidThbwikiUrl(url)) {
             log.warn("Invalid THBWiki URL: {}", url);
             return Optional.empty();
+        }
+
+        // Check cache first
+        String cacheKey = DETAIL_CACHE_KEY_PREFIX + url;
+        Optional<ThbwikiAlbum> cached = cacheService.get(cacheKey);
+        if (cached.isPresent()) {
+            log.debug("Cache hit for album detail: {}", url);
+            return cached;
         }
 
         enforceRateLimit();
@@ -271,12 +282,44 @@ public class ThbwikiService {
 
             String html = response.body();
             Document doc = org.jsoup.Jsoup.parse(html);
-            return parseAlbumDetail(doc, url);
+            Optional<ThbwikiAlbum> result = parseAlbumDetail(doc, url);
+
+            // Cache successful parse result
+            result.ifPresent(album -> {
+                cacheService.put(cacheKey, album);
+                log.debug("Cached album detail: {} (key: {})", album.getName(), cacheKey);
+            });
+
+            return result;
 
         } catch (Exception e) {
             log.warn("Error fetching THBWiki page: {}", url, e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * 获取缓存统计信息
+     *
+     * @return Caffeine CacheStats 字符串表示
+     */
+    public String getCacheStats() {
+        return cacheService.getStats();
+    }
+
+    /**
+     * 手动清除指定专辑的缓存
+     *
+     * @param url THBWiki 专辑页面 URL
+     */
+    public void invalidateAlbumDetail(String url) {
+        if (!isValidThbwikiUrl(url)) {
+            log.warn("Invalid THBWiki URL for cache invalidation: {}", url);
+            return;
+        }
+        String cacheKey = DETAIL_CACHE_KEY_PREFIX + url;
+        cacheService.invalidate(cacheKey);
+        log.debug("Invalidated cache for album detail: {}", url);
     }
 
     /**
