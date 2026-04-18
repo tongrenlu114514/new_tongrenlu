@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.cache.ThbwikiCacheService;
 import info.tongrenlu.model.ThbwikiAlbum;
 import info.tongrenlu.model.ThbwikiTrack;
+import info.tongrenlu.support.TextNormalizer;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -352,7 +353,7 @@ public class ThbwikiService {
         String albumName = "";
         Element titleElement = doc.selectFirst(".mw-page-title-main");
         if (titleElement != null) {
-            albumName = titleElement.text().trim();
+            albumName = TextNormalizer.normalize(titleElement.text());
         }
 
         // Parse tracks
@@ -407,7 +408,7 @@ public class ThbwikiService {
 
         ThbwikiTrack track = new ThbwikiTrack();
         // Track name from first cell
-        track.setName(cells.get(0).text().trim());
+        track.setName(TextNormalizer.normalize(cells.get(0).text()));
 
         // Original source from second cell (index 1)
         if (cells.size() > 1) {
@@ -415,7 +416,7 @@ public class ThbwikiService {
             if (ogmusic != null) {
                 Element source = ogmusic.selectFirst(".source");
                 if (source != null) {
-                    track.setOriginalSource(source.text().trim());
+                    track.setOriginalSource(TextNormalizer.normalize(source.text()));
                     String href = source.attr("href");
                     if (!href.startsWith("http")) {
                         href = THBWIKI_BASE_URL + href;
@@ -423,7 +424,7 @@ public class ThbwikiService {
                     track.setOriginalUrl(href);
                     // Original name: ogmusic text minus source text
                     String originalName = ogmusic.text().replace(source.text(), "").trim();
-                    track.setOriginalName(originalName);
+                    track.setOriginalName(TextNormalizer.normalize(originalName));
                 }
             }
         }

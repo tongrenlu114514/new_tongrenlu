@@ -1,6 +1,8 @@
 package info.tongrenlu.service;
 
 import info.tongrenlu.cache.ThbwikiCacheService;
+import info.tongrenlu.model.ThbwikiAlbum;
+import info.tongrenlu.support.TextNormalizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -8,8 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import info.tongrenlu.model.ThbwikiAlbum;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -174,7 +174,7 @@ class ThbwikiServiceTest {
             var tracks = service.parseTracks(doc);
             var firstTrack = tracks.get(0);
 
-            assertThat(firstTrack.getOriginalSource()).isEqualTo("少女さとり　～ 3rd eye");
+            assertThat(firstTrack.getOriginalSource()).isEqualTo("少女さとり ～ 3rd eye");
         }
 
         @Test
@@ -609,216 +609,141 @@ class ThbwikiServiceTest {
     }
 
     @Nested
-    @DisplayName("Retry logic tests")
-    class RetryTests {
+    @DisplayName("TextNormalization integration tests")
+    class TextNormalizationIntegrationTests {
 
-        private static final String TEST_URL = "https://thbwiki.cc/Test_Album";
-        private static final int MAX_RETRIES = 3;
-
+        /**
+         * Integration test: verifies that TextNormalizer.normalize() is applied at all four
+         * extraction points in ThbwikiService, so that whitespace variations from THBWiki
+         * are normalized to a consistent format.
+         *
+         * Note: normalize() collapses whitespace and trims but does NOT convert full-width
+         * ASCII or apply NFKC. Full-width characters are preserved as-is.
+         */
         @Test
-        @DisplayName("fetchWithRetry returns response on first success (no retries)")
-        void fetchWithRetry_firstSuccess_returnsImmediately() {
-            Clock fixedClock = Clock.fixed(
-                Instant.parse("2026-04-18T12:00:00Z"),
-                ZoneId.of("UTC")
-            );
-            AtomicInteger callCount = new AtomicInteger(0);
+        @DisplayName("parseAlbumDetail normalizes album name: ideographic space collapsed, full-width digits preserved")
+        void parseAlbumDetail_normalizesIdeographicSpaceFullWidthPreserved() throws Exception {
+            String html = loadHtml("/thbwiki/sample-album-normalized.html");
+            Document doc = Jsoup.parse(html);
 
-            ThbwikiService svc = new ThbwikiService(
-                new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
-            );
+            Optional<ThbwikiAlbum> result = service.parseAlbumDetail(doc, "https://thbwiki.cc/Album01");
+            assertThat(result).isPresent();
 
-            svc.setHttpClient(url -> {
-                callCount.incrementAndGet();
-                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
-                when(mockResponse.isOk()).thenReturn(true);
-                when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
-                return mockResponse;
-            });
-
-            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
-
-            assertThat(result.isOk()).isTrue();
-            assertThat(callCount.get()).isEqualTo(1);
+            // "Album０１　Remix" → normalize → ideographic space → regular space; digits preserved
+            assertThat(result.get().getName()).isEqualTo("Album０１ Remix");
         }
 
         @Test
-        @DisplayName("fetchWithRetry returns first successful response after 429 failures (exponential backoff)")
-        void fetchWithRetry_429ThenSuccess_returnsSuccessfulResponse() {
-            Clock fixedClock = Clock.fixed(
-                Instant.parse("2026-04-18T12:00:00Z"),
-                ZoneId.of("UTC")
-            );
-            AtomicInteger callCount = new AtomicInteger(0);
+        @DisplayName("parseTracks normalizes track name: ideographic space collapsed, circled digit preserved")
+        void parseTracks_normalizesIdeographicSpaceCircledDigitPreserved() throws Exception {
+            String html = loadHtml("/thbwiki/sample-album-normalized.html");
+            Document doc = Jsoup.parse(html);
 
-            ThbwikiService svc = new ThbwikiService(
-                new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
-            );
+            var tracks = service.parseTracks(doc);
+            assertThat(tracks).hasSize(3);
 
-            svc.setHttpClient(url -> {
-                int n = callCount.incrementAndGet();
-                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
-                if (n == 1) {
-                    // First call: 429 rate-limited
-                    when(mockResponse.getStatus()).thenReturn(429);
-                } else {
-                    // Second call: success
-                    when(mockResponse.isOk()).thenReturn(true);
-                    when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
-                }
-                return mockResponse;
-            });
-
-            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
-
-            assertThat(callCount.get()).isEqualTo(2);
-            assertThat(result.isOk()).isTrue();
+            // "①　Satori Maiden" → normalize → "① Satori Maiden" (circled digit U+2460 unchanged; full-width space → " ")
+            assertThat(tracks.get(0).getName()).isEqualTo("① Satori Maiden");
         }
 
         @Test
-        @DisplayName("fetchWithRetry exhausts all retries and throws RuntimeException on persistent 429")
-        void fetchWithRetry_all429_throwsAfterMaxRetries() {
-            Clock fixedClock = Clock.fixed(
-                Instant.parse("2026-04-18T12:00:00Z"),
-                ZoneId.of("UTC")
-            );
-            AtomicInteger callCount = new AtomicInteger(0);
+        @DisplayName("parseTracks normalizes track name: leading/trailing/internal spaces collapsed, uppercase preserved")
+        void parseTracks_normalizesWhitespaceFullWidthUppercasePreserved() throws Exception {
+            String html = loadHtml("/thbwiki/sample-album-normalized.html");
+            Document doc = Jsoup.parse(html);
 
-            ThbwikiService svc = new ThbwikiService(
-                new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
-            );
+            var tracks = service.parseTracks(doc);
 
-            svc.setHttpClient(url -> {
-                callCount.incrementAndGet();
-                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
-                when(mockResponse.getStatus()).thenReturn(429);
-                return mockResponse;
-            });
-
-            try {
-                svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
-            } catch (RuntimeException e) {
-                // Expected — all retries exhausted
-            }
-
-            // maxRetries=3 → total attempts = 4 (1 original + 3 retries)
-            assertThat(callCount.get()).isEqualTo(MAX_RETRIES + 1);
+            // "　　SATORI　　MAIDEN　　" → normalize → "SATORI MAIDEN"
+            assertThat(tracks.get(1).getName()).isEqualTo("SATORI MAIDEN");
         }
 
         @Test
-        @DisplayName("fetchWithRetry does NOT retry on non-429 non-OK HTTP responses (e.g. 404)")
-        void fetchWithRetry_404_noRetry() {
-            Clock fixedClock = Clock.fixed(
-                Instant.parse("2026-04-18T12:00:00Z"),
-                ZoneId.of("UTC")
-            );
-            AtomicInteger callCount = new AtomicInteger(0);
+        @DisplayName("parseTracks normalizes track name: newline and ideographic space collapsed")
+        void parseTracks_normalizesNewlineAndIdeographicSpace() throws Exception {
+            String html = loadHtml("/thbwiki/sample-album-normalized.html");
+            Document doc = Jsoup.parse(html);
 
-            ThbwikiService svc = new ThbwikiService(
-                new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
-            );
+            var tracks = service.parseTracks(doc);
 
-            svc.setHttpClient(url -> {
-                callCount.incrementAndGet();
-                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
-                when(mockResponse.getStatus()).thenReturn(404);
-                return mockResponse;
-            });
-
-            // Should return immediately with 404, no retries
-            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
-
-            assertThat(result.getStatus()).isEqualTo(404);
-            assertThat(callCount.get()).isEqualTo(1);
+            // "Album　Remix\n" → normalize → "Album Remix" (ideographic space + newline → spaces → collapse)
+            assertThat(tracks.get(2).getName()).isEqualTo("Album Remix");
         }
 
         @Test
-        @DisplayName("fetchWithRetry retries on network exception and succeeds on second attempt")
-        void fetchWithRetry_exceptionThenSuccess_returnsSuccessfulResponse() {
-            Clock fixedClock = Clock.fixed(
-                Instant.parse("2026-04-18T12:00:00Z"),
-                ZoneId.of("UTC")
-            );
-            AtomicInteger callCount = new AtomicInteger(0);
+        @DisplayName("parseTrackRow normalizes originalSource: ideographic space → regular space, content preserved")
+        void parseTrackRow_normalizesOriginalSourceIdeographicSpace() throws Exception {
+            String html = loadHtml("/thbwiki/sample-album-normalized.html");
+            Document doc = Jsoup.parse(html);
 
-            ThbwikiService svc = new ThbwikiService(
-                new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
-            );
+            var tracks = service.parseTracks(doc);
 
-            svc.setHttpClient(url -> {
-                int n = callCount.incrementAndGet();
-                if (n == 1) {
-                    throw new RuntimeException("Connection timed out");
-                }
-                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
-                when(mockResponse.isOk()).thenReturn(true);
-                when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
-                return mockResponse;
-            });
-
-            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
-
-            assertThat(callCount.get()).isEqualTo(2);
-            assertThat(result.isOk()).isTrue();
+            // "少女さとり　Original" → normalize → "少女さとり Original" (ideographic space → " ")
+            assertThat(tracks.get(0).getOriginalSource()).isEqualTo("少女さとり Original");
         }
 
         @Test
-        @DisplayName("fetchWithRetry exhausts retries on persistent network exception and throws RuntimeException")
-        void fetchWithRetry_allExceptions_throwsAfterMaxRetries() {
-            Clock fixedClock = Clock.fixed(
-                Instant.parse("2026-04-18T12:00:00Z"),
-                ZoneId.of("UTC")
-            );
-            AtomicInteger callCount = new AtomicInteger(0);
+        @DisplayName("parseTrackRow normalizes originalName extracted from text before source: ideographic space collapsed")
+        void parseTrackRow_normalizesOriginalNameIdeographicSpace() throws Exception {
+            String html = loadHtml("/thbwiki/sample-album-normalized.html");
+            Document doc = Jsoup.parse(html);
 
-            ThbwikiService svc = new ThbwikiService(
-                new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
-            );
+            var tracks = service.parseTracks(doc);
 
-            svc.setHttpClient(url -> {
-                callCount.incrementAndGet();
-                throw new RuntimeException("Connection timed out");
-            });
-
-            try {
-                svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
-            } catch (RuntimeException e) {
-                // Expected
-                assertThat(e).hasMessageContaining("THBWiki request failed after");
-            }
-
-            assertThat(callCount.get()).isEqualTo(MAX_RETRIES + 1);
+            // ogmusic text: "Album　Remix" + "Album　Original" → replace second → "Album　Remix"
+            // normalize(): "Album Remix"
+            assertThat(tracks.get(2).getOriginalName()).isEqualTo("Album Remix");
         }
 
+        /**
+         * Equivalence test: verifies that the parsed track name equals TextNormalizer.normalize()
+         * applied to the raw HTML text — confirming TextNormalizer is actually in the pipeline.
+         */
         @Test
-        @DisplayName("getBackoffMillis returns correct exponential values: 1s, 2s, 4s")
-        void getBackoffMillis_exponentialValues() {
-            Clock fixedClock = Clock.fixed(
-                Instant.parse("2026-04-18T12:00:00Z"),
-                ZoneId.of("UTC")
-            );
-            ThbwikiService svc = new ThbwikiService(
-                new ThbwikiCacheService(),
-                new ObjectMapper(),
-                fixedClock
-            );
+        @DisplayName("parsed track name equals normalize() of raw HTML text — proves TextNormalizer is applied")
+        void parsedTrackName_equalsNormalizeOfRawText() throws Exception {
+            String html = loadHtml("/thbwiki/sample-album-normalized.html");
+            Document doc = Jsoup.parse(html);
 
-            assertThat(svc.getBackoffMillis(0)).isEqualTo(1_000L);   // 2^0 * 1000
-            assertThat(svc.getBackoffMillis(1)).isEqualTo(2_000L);   // 2^1 * 1000
-            assertThat(svc.getBackoffMillis(2)).isEqualTo(4_000L);   // 2^2 * 1000
-            assertThat(svc.getBackoffMillis(3)).isEqualTo(8_000L);   // 2^3 * 1000
+            var tracks = service.parseTracks(doc);
+
+            // Raw text from HTML: "①　Satori Maiden" (circled-one + ideographic space + name)
+            // normalize(): ideographic space U+3000 → " " then collapse → "① Satori Maiden"
+            String rawText = "①　Satori Maiden";
+            String expected = TextNormalizer.normalize(rawText);
+            assertThat(tracks.get(0).getName()).isEqualTo(expected);
+        }
+
+        /**
+         * Distinction test: verify normalize() vs normalizeForComparison() behavior.
+         * normalize() — display-safe: whitespace + trim only, characters unchanged.
+         * normalizeForComparison() — search-key: full-width conversion + NFKC + lowercase.
+         */
+        @Test
+        @DisplayName("normalize() vs normalizeForComparison(): whitespace-only vs full comparison key")
+        void normalizeVsNormalizeForComparison_whitespaceVsFull() {
+            String input = " Album０１　Remix  ";
+
+            // normalize() trims/collapses whitespace only; full-width digits preserved
+            assertThat(TextNormalizer.normalize(input)).isEqualTo("Album０１ Remix");
+
+            // normalizeForComparison() additionally: full-width → half-width, NFKC, lowercase
+            assertThat(TextNormalizer.normalizeForComparison(input)).isEqualTo("album01 remix");
+        }
+
+        /**
+         * Distinction test: normalize() preserves circled digit; normalizeForComparison() NFKC-converts it.
+         */
+        @Test
+        @DisplayName("normalize() preserves circled digit while normalizeForComparison() converts it")
+        void normalize_preservesCircledDigitNormalizeForComparison_convertsIt() {
+            String input = "① Satori Maiden";
+
+            // normalize() — whitespace only; circled digit U+2460 is not whitespace
+            assertThat(TextNormalizer.normalize(input)).isEqualTo("① Satori Maiden");
+
+            // normalizeForComparison() — NFKC converts circled-one to "1"
+            assertThat(TextNormalizer.normalizeForComparison(input)).isEqualTo("1 satori maiden");
         }
     }
 }

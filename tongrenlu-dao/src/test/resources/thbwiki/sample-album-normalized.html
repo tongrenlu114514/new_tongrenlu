@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Album01 - THBWiki</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1 id="firstHeading">
+        <span class="mw-page-title-main">Album０１　Remix</span>
+    </h1>
+
+    <table id="musicTable" class="wikitable musicTable">
+        <thead>
+            <tr>
+                <th>曲名</th>
+                <th>原曲</th>
+                <th>备注</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Track 0: circled digit in name; originalSource has ideographic space → normalize collapses it -->
+            <tr>
+                <td>①　Satori Maiden</td>
+                <td class="ogmusic">
+                    <a class="source" href="/少女さとり_-_original">少女さとり　Original</a>
+                </td>
+                <td></td>
+            </tr>
+            <!-- Track 1: leading/trailing/internal spaces collapsed -->
+            <tr>
+                <td>　　SATORI　　MAIDEN　　</td>
+                <td class="ogmusic">
+                    <a class="source" href="/さとり_-_maiden">さとり - maiden</a>
+                </td>
+                <td></td>
+            </tr>
+            <!-- Track 2: originalName from text BEFORE source in ogmusic; ideographic space normalized -->
+            <tr>
+                <td>Album Remix</td>
+                <td class="ogmusic">
+                    Album　Remix<a class="source" href="/album_original">Album　Original</a>
+                </td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

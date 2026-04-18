@@ -27,7 +27,11 @@ public final class TextNormalizer {
         if (input == null) {
             return null;
         }
-        return input.trim().replaceAll("\\s+", " ");
+        // Collapse both standard whitespace AND ideographic space (U+3000) to a single
+        // regular space, then trim the result. This ensures consistent spacing for display
+        // and also for comparison purposes.
+        String s = input.replace('\u3000', ' '); // ideographic space → regular space
+        return s.trim().replaceAll("[ \\t\\n\\r\\f\\v]+", " ");
     }
 
     /**
