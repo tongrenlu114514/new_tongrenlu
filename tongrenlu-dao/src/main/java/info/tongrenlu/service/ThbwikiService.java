@@ -168,6 +168,72 @@ public class ThbwikiService {
     }
 
     /**
+     * Execute an HTTP GET with automatic retry and exponential backoff.
+     * Calls {@link #enforceRateLimit()} before every attempt.
+     * Retries on 429 (Too Many Requests) or any non-IOException network exception.
+     * Does NOT retry on non-OK non-429 responses — those propagate immediately.
+     *
+     * @param url the URL to fetch
+     * @param maxRetries the maximum number of retries (total attempts = maxRetries + 1)
+     * @return the successful HTTP response; never null
+     * @throws RuntimeException wrapping the underlying cause after all retries are exhausted
+     */
+    HttpResponse fetchWithRetry(String url, int maxRetries) {
+        Exception lastCause = null;
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            enforceRateLimit();
+            try {
+                HttpResponse response = httpClient.execute(url);
+                if (response.getStatus() == 429) {
+                    if (attempt < maxRetries) {
+                        long backoffMs = getBackoffMillis(attempt);
+                        log.warn("THBWiki rate-limited (429) on attempt {}/{}, backing off {}ms before retry",
+                                attempt + 1, maxRetries + 1, backoffMs);
+                        sleepQuietly(backoffMs);
+                    }
+                    // Continue to next iteration to retry
+                } else {
+                    // Return immediately regardless of status — caller decides what to do with it
+                    return response;
+                }
+            } catch (Exception e) {
+                lastCause = e;
+                if (attempt < maxRetries) {
+                    long backoffMs = getBackoffMillis(attempt);
+                    log.warn("THBWiki request failed on attempt {}/{} ({}), backing off {}ms before retry",
+                            attempt + 1, maxRetries + 1, e.getClass().getSimpleName(), backoffMs);
+                    sleepQuietly(backoffMs);
+                }
+            }
+        }
+        // All retries exhausted
+        log.error("THBWiki request failed after {} retries for URL: {}", maxRetries + 1, url);
+        if (lastCause != null) {
+            throw new RuntimeException("THBWiki request failed after " + (maxRetries + 1)
+                    + " attempts: " + url, lastCause);
+        }
+        throw new RuntimeException("THBWiki request failed after " + (maxRetries + 1) + " attempts: " + url);
+    }
+
+    /**
+     * Compute exponential backoff in milliseconds: 1s, 2s, 4s, …
+     * Exposed for unit testing.
+     */
+    long getBackoffMillis(int attempt) {
+        return (long) Math.pow(2, attempt) * 1000L;
+    }
+
+    /** Sleep without propagating InterruptedException. */
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Backoff sleep interrupted");
+        }
+    }
+
+    /**
      * 获取缓存的专辑
      */
     public Optional<ThbwikiAlbum> getCachedAlbum(String key) {

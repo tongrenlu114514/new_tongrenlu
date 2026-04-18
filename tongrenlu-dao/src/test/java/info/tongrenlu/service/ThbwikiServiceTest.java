@@ -375,4 +375,218 @@ class ThbwikiServiceTest {
             assertThat(httpCallCount.get()).isEqualTo(2);
         }
     }
+
+    @Nested
+    @DisplayName("Retry logic tests")
+    class RetryTests {
+
+        private static final String TEST_URL = "https://thbwiki.cc/Test_Album";
+        private static final int MAX_RETRIES = 3;
+
+        @Test
+        @DisplayName("fetchWithRetry returns response on first success (no retries)")
+        void fetchWithRetry_firstSuccess_returnsImmediately() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger callCount = new AtomicInteger(0);
+
+            ThbwikiService svc = new ThbwikiService(
+                new ThbwikiCacheService(),
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                callCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(true);
+                when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
+                return mockResponse;
+            });
+
+            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
+
+            assertThat(result.isOk()).isTrue();
+            assertThat(callCount.get()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("fetchWithRetry returns first successful response after 429 failures (exponential backoff)")
+        void fetchWithRetry_429ThenSuccess_returnsSuccessfulResponse() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger callCount = new AtomicInteger(0);
+
+            ThbwikiService svc = new ThbwikiService(
+                new ThbwikiCacheService(),
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                int n = callCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                if (n == 1) {
+                    // First call: 429 rate-limited
+                    when(mockResponse.getStatus()).thenReturn(429);
+                } else {
+                    // Second call: success
+                    when(mockResponse.isOk()).thenReturn(true);
+                    when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
+                }
+                return mockResponse;
+            });
+
+            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
+
+            assertThat(callCount.get()).isEqualTo(2);
+            assertThat(result.isOk()).isTrue();
+        }
+
+        @Test
+        @DisplayName("fetchWithRetry exhausts all retries and throws RuntimeException on persistent 429")
+        void fetchWithRetry_all429_throwsAfterMaxRetries() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger callCount = new AtomicInteger(0);
+
+            ThbwikiService svc = new ThbwikiService(
+                new ThbwikiCacheService(),
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                callCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.getStatus()).thenReturn(429);
+                return mockResponse;
+            });
+
+            try {
+                svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
+            } catch (RuntimeException e) {
+                // Expected — all retries exhausted
+            }
+
+            // maxRetries=3 → total attempts = 4 (1 original + 3 retries)
+            assertThat(callCount.get()).isEqualTo(MAX_RETRIES + 1);
+        }
+
+        @Test
+        @DisplayName("fetchWithRetry does NOT retry on non-429 non-OK HTTP responses (e.g. 404)")
+        void fetchWithRetry_404_noRetry() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger callCount = new AtomicInteger(0);
+
+            ThbwikiService svc = new ThbwikiService(
+                new ThbwikiCacheService(),
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                callCount.incrementAndGet();
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.getStatus()).thenReturn(404);
+                return mockResponse;
+            });
+
+            // Should return immediately with 404, no retries
+            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
+
+            assertThat(result.getStatus()).isEqualTo(404);
+            assertThat(callCount.get()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("fetchWithRetry retries on network exception and succeeds on second attempt")
+        void fetchWithRetry_exceptionThenSuccess_returnsSuccessfulResponse() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger callCount = new AtomicInteger(0);
+
+            ThbwikiService svc = new ThbwikiService(
+                new ThbwikiCacheService(),
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                int n = callCount.incrementAndGet();
+                if (n == 1) {
+                    throw new RuntimeException("Connection timed out");
+                }
+                cn.hutool.http.HttpResponse mockResponse = mock(cn.hutool.http.HttpResponse.class);
+                when(mockResponse.isOk()).thenReturn(true);
+                when(mockResponse.body()).thenReturn("<html><body>OK</body></html>");
+                return mockResponse;
+            });
+
+            cn.hutool.http.HttpResponse result = svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
+
+            assertThat(callCount.get()).isEqualTo(2);
+            assertThat(result.isOk()).isTrue();
+        }
+
+        @Test
+        @DisplayName("fetchWithRetry exhausts retries on persistent network exception and throws RuntimeException")
+        void fetchWithRetry_allExceptions_throwsAfterMaxRetries() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            AtomicInteger callCount = new AtomicInteger(0);
+
+            ThbwikiService svc = new ThbwikiService(
+                new ThbwikiCacheService(),
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            svc.setHttpClient(url -> {
+                callCount.incrementAndGet();
+                throw new RuntimeException("Connection timed out");
+            });
+
+            try {
+                svc.fetchWithRetry(TEST_URL, MAX_RETRIES);
+            } catch (RuntimeException e) {
+                // Expected
+                assertThat(e).hasMessageContaining("THBWiki request failed after");
+            }
+
+            assertThat(callCount.get()).isEqualTo(MAX_RETRIES + 1);
+        }
+
+        @Test
+        @DisplayName("getBackoffMillis returns correct exponential values: 1s, 2s, 4s")
+        void getBackoffMillis_exponentialValues() {
+            Clock fixedClock = Clock.fixed(
+                Instant.parse("2026-04-18T12:00:00Z"),
+                ZoneId.of("UTC")
+            );
+            ThbwikiService svc = new ThbwikiService(
+                new ThbwikiCacheService(),
+                new ObjectMapper(),
+                fixedClock
+            );
+
+            assertThat(svc.getBackoffMillis(0)).isEqualTo(1_000L);   // 2^0 * 1000
+            assertThat(svc.getBackoffMillis(1)).isEqualTo(2_000L);   // 2^1 * 1000
+            assertThat(svc.getBackoffMillis(2)).isEqualTo(4_000L);   // 2^2 * 1000
+            assertThat(svc.getBackoffMillis(3)).isEqualTo(8_000L);   // 2^3 * 1000
+        }
+    }
 }
