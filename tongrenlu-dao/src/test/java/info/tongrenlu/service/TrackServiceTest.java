@@ -60,8 +60,9 @@ class TrackServiceTest {
 
             assertThat(result).isTrue();
 
+            @SuppressWarnings("unchecked")
             ArgumentCaptor<TrackBean> captor = ArgumentCaptor.forClass(TrackBean.class);
-            verify(trackMapper).updateById(captor.capture());
+            verify(trackMapper).updateById((TrackBean) captor.capture());
 
             TrackBean updated = captor.getValue();
             assertThat(updated.getId()).isEqualTo(1L);
@@ -75,7 +76,7 @@ class TrackServiceTest {
 
             assertThat(result).isFalse();
             verify(trackMapper, never()).selectById(any());
-            verify(trackMapper, never()).updateById(any());
+            verify(trackMapper, never()).updateById(any(TrackBean.class));
         }
 
         @Test
@@ -86,7 +87,7 @@ class TrackServiceTest {
             boolean result = trackService.updateTrackOriginal(999L, "some original");
 
             assertThat(result).isFalse();
-            verify(trackMapper, never()).updateById(any());
+            verify(trackMapper, never()).updateById(any(TrackBean.class));
         }
 
         @Test
@@ -258,7 +259,7 @@ class TrackServiceTest {
 
             assertThat(result).isFalse();
             assertThat(track.getOriginal()).isNull();
-            verify(trackMapper, never()).updateById(any());
+            verify(trackMapper, never()).updateById(any(TrackBean.class));
         }
 
         @Test
@@ -267,7 +268,7 @@ class TrackServiceTest {
             boolean result = thbwikiService.matchAndSave(null, List.of());
 
             assertThat(result).isFalse();
-            verify(trackMapper, never()).updateById(any());
+            verify(trackMapper, never()).updateById(any(TrackBean.class));
         }
 
         @Test
