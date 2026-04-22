@@ -1,0 +1,1 @@
+ALTER TABLE m_article ADD COLUMN thb_wiki_url VARCHAR(1024) DEFAULT NULL COMMENT 'THBWiki专辑页面URL，处理完成后记录';

@@ -49,4 +49,10 @@ public class ArticleBean {
     @TableField(value = "cloud_music_name", jdbcType = JdbcType.VARCHAR)
     private String cloudMusicName;
 
+    @TableField(value = "thb_wiki_url", jdbcType = JdbcType.VARCHAR)
+    private String thbWikiUrl;
+
+    @TableField(value = "upd_date", jdbcType = JdbcType.TIMESTAMP)
+    private Date updDate;
+
 }

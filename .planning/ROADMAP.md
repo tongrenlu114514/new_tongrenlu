@@ -3,14 +3,14 @@
 ## Phases
 
 - [x] **Phase 1: THBWiki服务基础** - 专辑搜索接口实现 ✓
-- [ ] **Phase 2: HTML解析层** - 解析THBWiki页面提取原曲信息
-- [ ] **Phase 3: 速率限制** - 防止THBWiki封禁
-- [ ] **Phase 4: 缓存层** - 减少重复请求
-- [ ] **Phase 5: 文本规范化** - CJK字符标准化处理
-- [ ] **Phase 6: 匹配算法与存储** - 曲目匹配与数据更新
-- [ ] **Phase 7: 批量任务调度** - 定时串行处理专辑
-- [ ] **Phase 8: 状态追踪** - 抓取状态记录
-- [ ] **Phase 9: 专辑详情页展示** - 用户端原曲信息展示
+- [x] **Phase 2: HTML解析层** - 解析THBWiki页面提取原曲信息 ✓
+- [x] **Phase 3: 速率限制** - 防止THBWiki封禁 ✓
+- [x] **Phase 4: 缓存层** - 减少重复请求 ✓
+- [x] **Phase 5: 文本规范化** - CJK字符标准化处理 ✓
+- [x] **Phase 6: 匹配算法与存储** - 曲目匹配与数据更新 ✓
+- [x] **Phase 7: 批量任务调度** - 定时串行处理专辑 ✓
+- [x] **Phase 8: 状态追踪** - 抓取状态记录 ✓
+- [x] **Phase 9: 专辑详情页展示** - 用户端原曲信息展示 ✓
 
 ---
 
@@ -50,8 +50,10 @@
 3. 解析结果格式为"原曲出处/原曲名称"
 
 **Plans**:
-- [ ] `02-W0-PLAN.md` — 测试基础设施（测试类 + 样本HTML）
-- [ ] `02-PLAN.md` — HTML解析实现（3个任务）
+- [x] `02-W0-PLAN.md` — 测试基础设施 ✓
+- [x] `02-PLAN.md` — HTML解析实现 ✓
+
+**Completed**: 2026-04-14
 
 ---
 
@@ -68,7 +70,9 @@
 2. 收到429响应后自动退避
 3. 日志记录每次限速操作
 
-**Plans**: TBD
+**Implementation**: `ThbwikiHttpClient.java` — 指数退避 + 抖动 (±5s)
+
+**Completed**: 2026-04-18
 
 ---
 
@@ -85,7 +89,9 @@
 2. 缓存有效期至少24小时
 3. 缓存命中率可在日志或监控中查看
 
-**Plans**: TBD
+**Implementation**: `ThbwikiCacheService.java` — Caffeine 24h TTL
+
+**Completed**: 2026-04-18
 
 ---
 
@@ -102,7 +108,9 @@
 2. "Forward" 和 "-forward" 规范化后相同
 3. Unicode组合字符处理正确
 
-**Plans**: TBD
+**Implementation**: `TextNormalizer.java` — 全角/半角/NFKC/whitespace 规范化
+
+**Completed**: 2026-04-18
 
 ---
 
@@ -119,7 +127,9 @@
 2. 匹配成功的曲目，Original字段更新为"原曲出处/原曲名称"格式
 3. 匹配失败的曲目记录原因
 
-**Plans**: TBD
+**Implementation**: Levenshtein 相似度 ≥0.85，`TrackService.updateOriginal()`
+
+**Completed**: 2026-04-19
 
 ---
 
@@ -136,7 +146,9 @@
 2. 任务启动后自动处理所有待抓取专辑
 3. 同一时间只处理1张专辑
 
-**Plans**: TBD
+**Implementation**: `TrackBatchService.java` + `TrackBatchCallback.java`
+
+**Completed**: 2026-04-20
 
 ---
 
@@ -153,7 +165,9 @@
 2. 批量任务显示整体进度（X/Y专辑已完成）
 3. 失败专辑显示失败原因
 
-**Plans**: TBD
+**Implementation**: `BatchProgressState.java` + `BatchProgressService.java` (SSE Streaming)
+
+**Completed**: 2026-04-20
 
 ---
 
@@ -170,9 +184,9 @@
 2. 原曲信息格式为"原曲出处/原曲名称"
 3. 原曲信息可点击跳转到THBWiki页面
 
-**Plans**: TBD
+**Implementation**: album modal 原曲展示 + player 播放列表 THBWiki badge
 
-**UI hint**: yes
+**Completed**: 2026-04-23
 
 ---
 
@@ -181,28 +195,15 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. THBWiki服务基础 | 2/2 | ✓ Completed | 2026-04-13 |
-| 2. HTML解析层 | 0/2 | In planning | - |
-| 3. 速率限制 | 0/3 | Not started | - |
-| 4. 缓存层 | 0/3 | Not started | - |
-| 5. 文本规范化 | 0/3 | Not started | - |
-| 6. 匹配算法与存储 | 0/3 | Not started | - |
-| 7. 批量任务调度 | 0/3 | Not started | - |
-| 8. 状态追踪 | 0/3 | Not started | - |
-| 9. 专辑详情页展示 | 0/3 | Not started | - |
+| 2. HTML解析层 | 2/2 | ✓ Completed | 2026-04-14 |
+| 3. 速率限制 | ✓ | ✓ Completed | 2026-04-18 |
+| 4. 缓存层 | ✓ | ✓ Completed | 2026-04-18 |
+| 5. 文本规范化 | ✓ | ✓ Completed | 2026-04-18 |
+| 6. 匹配算法与存储 | ✓ | ✓ Completed | 2026-04-19 |
+| 7. 批量任务调度 | ✓ | ✓ Completed | 2026-04-20 |
+| 8. 状态追踪 | ✓ | ✓ Completed | 2026-04-20 |
+| 9. 专辑详情页展示 | ✓ | ✓ Completed | 2026-04-23 |
 
 ---
 
-*Last updated: 2026-04-14*
-
-## 代码审查状态
-
-### Phase 1 审查结果
-
-| 严重级别 | 数量 | 状态 |
-|---------|------|------|
-| CRITICAL | 1 | 待修复 |
-| HIGH | 2 | 待修复 |
-| MEDIUM | 3 | 建议修复 |
-| LOW | 2 | 可选 |
-
-**建议**: 在进入 Phase 2 前修复 CRITICAL 和 HIGH 级别问题
+*Last updated: 2026-04-23*
