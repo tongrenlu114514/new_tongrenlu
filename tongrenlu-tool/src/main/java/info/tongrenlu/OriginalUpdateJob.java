@@ -147,12 +147,17 @@ public class OriginalUpdateJob {
     }
 
     public JobStatus status() {
+        long totalRemaining = articleMapper.selectCount(
+                new LambdaQueryWrapper<ArticleBean>()
+                        .isNull(ArticleBean::getThbWikiUrl)
+                        .eq(ArticleBean::getPublishFlg, "1"));
         return new JobStatus(
                 currentPhase.get(),
                 lastAlbumTitle.get(),
                 lastError.get(),
                 processedCount.get(),
-                currentPage
+                currentPage,
+                totalRemaining
         );
     }
 
@@ -161,6 +166,7 @@ public class OriginalUpdateJob {
             String lastAlbumTitle,
             String lastError,
             int processedCount,
-            int currentPage
+            int currentPage,
+            long totalRemaining
     ) {}
 }

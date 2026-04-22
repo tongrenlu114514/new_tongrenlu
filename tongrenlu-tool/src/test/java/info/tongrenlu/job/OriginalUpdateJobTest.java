@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 /**
  * Unit tests for OriginalUpdateJob.
@@ -69,6 +70,13 @@ class OriginalUpdateJobTest {
         }).when(articleMapper).selectPage(any(Page.class), any(LambdaQueryWrapper.class));
     }
 
+    /**
+     * Stub selectCount to return total unprocessed albums.
+     */
+    private void stubSelectCount(long count) {
+        lenient().when(articleMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(count);
+    }
+
     @Nested
     @DisplayName("testPausePreventsProcessing")
     class PausePreventsProcessing {
@@ -76,6 +84,7 @@ class OriginalUpdateJobTest {
         @Test
         @DisplayName("paused job skips all processing")
         void pausedJobSkipsAllProcessing() {
+            stubSelectCount(0);
             // Given: job is paused before running
             job.pause();
 
@@ -94,6 +103,7 @@ class OriginalUpdateJobTest {
         @Test
         @DisplayName("resume after pause allows processing to proceed")
         void resumeAfterPauseAllowsProcessing() {
+            stubSelectCount(0);
             // Given: one album needing processing
             ArticleBean album = new ArticleBean();
             album.setId(1L);
@@ -122,6 +132,7 @@ class OriginalUpdateJobTest {
         @Test
         @DisplayName("only albums with null thbWikiUrl are fetched from the database")
         void onlyAlbumsWithNullThbWikiUrlAreProcessed() {
+            stubSelectCount(2);
             // Given: two unprocessed albums
             ArticleBean album1 = new ArticleBean();
             album1.setId(1L);
@@ -165,6 +176,7 @@ class OriginalUpdateJobTest {
         @Test
         @DisplayName("successful processing writes thbWikiUrl to article")
         void successfulProcessingWritesThbWikiUrl() {
+            stubSelectCount(0);
             // Given: album with one track
             ArticleBean album = new ArticleBean();
             album.setId(1L);
@@ -208,6 +220,19 @@ class OriginalUpdateJobTest {
             verify(articleMapper).updateById(articleCaptor.capture());
             ArticleBean updatedAlbum = articleCaptor.getValue();
             assertThat(updatedAlbum.getThbWikiUrl()).isEqualTo("https://thbwiki.cc/Test_Album");
+        }
+    }
+
+    @Nested
+    @DisplayName("testStatusTotalRemaining")
+    class StatusTotalRemaining {
+
+        @Test
+        @DisplayName("status() returns totalRemaining from articleMapper.selectCount")
+        void statusReturnsTotalRemaining() {
+            stubSelectCount(42);
+            OriginalUpdateJob.JobStatus status = job.status();
+            assertThat(status.totalRemaining()).isEqualTo(42L);
         }
     }
 }
