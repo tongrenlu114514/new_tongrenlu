@@ -273,6 +273,31 @@
             letter-spacing: 2px;
             margin-bottom: 0.5rem;
         }
+
+        .geo-admin-modal__name-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .geo-admin-thbwiki-link {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            color: var(--geo-text-muted);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .geo-admin-thbwiki-link:hover {
+            color: var(--geo-accent);
+        }
+
+        .geo-admin-thbwiki-link i {
+            margin-right: 0.3rem;
+        }
         
         .geo-admin-modal__alias {
             font-family: 'Outfit', sans-serif;
@@ -666,7 +691,12 @@
                         <i class="fas fa-user"></i>
                     </div>
                     <div class="geo-admin-modal__info">
-                        <h2 class="geo-admin-modal__name" id="artistName"></h2>
+                        <div class="geo-admin-modal__name-row">
+                            <h2 class="geo-admin-modal__name" id="artistName"></h2>
+                            <a class="geo-admin-thbwiki-link" id="artistThbwikiLink" href="#" target="_blank" title="THBWiki">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                         <p class="geo-admin-modal__alias" id="artistAlias"></p>
                         <p class="geo-admin-modal__stat">专辑总数: <span id="albumCount"></span></p>
                     </div>

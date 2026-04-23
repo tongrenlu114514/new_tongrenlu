@@ -140,6 +140,7 @@ $(document).ready(function () {
         }
         $('#artistName').text(artist.name);
         $('#modalArtistName').text(artist.name);
+        $('#artistThbwikiLink').attr('href', 'https://thbwiki.cc/' + encodeURIComponent(artist.name));
 
         if (artist.alias && artist.alias.length > 0) {
             $('#artistAlias').text('别名: ' + artist.alias.join(', '));
@@ -151,6 +152,7 @@ $(document).ready(function () {
         $('#albumGrid').empty();
 
         $('#artistModal').addClass('active');
+        document.body.style.overflow = 'hidden';
 
         loadArtistAlbums(artist.id);
     }
@@ -353,11 +355,13 @@ $(document).ready(function () {
 
     $('#closeModal').on('click', function () {
         $('#artistModal').removeClass('active');
+        document.body.style.overflow = '';
     });
 
     $('#artistModal').on('click', function (e) {
         if ($(e.target).is('#artistModal')) {
             $('#artistModal').removeClass('active');
+            document.body.style.overflow = '';
         }
     });
 
