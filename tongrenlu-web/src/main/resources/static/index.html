@@ -226,6 +226,8 @@
             .geo-stat__number { font-size: 2.5rem; }
         }
     </style>
+    <!-- 首页动效样式：置于内联样式之后，可覆盖其中的过渡规则 -->
+    <link href="assets/css/home-dynamic.css" rel="stylesheet">
 </head>
 <body class="geo-theme">
     <!-- 导航栏 -->
@@ -249,6 +251,9 @@
         <div class="geo-gallery-bg" id="galleryBg">
             <!-- JavaScript动态生成 -->
         </div>
+
+        <!-- 漂浮几何装饰（JS注入，动效） -->
+        <div class="geo-hero__floaties" aria-hidden="true"></div>
         
         <!-- 渐变遮罩 -->
         <div class="geo-hero__overlay"></div>
@@ -259,10 +264,18 @@
                 <span>东方</span>
                 <span class="accent">同人录</span>
             </h1>
+            <div class="geo-hero__subtitle">TOUHOU DOUJIN MUSIC ARCHIVE</div>
+            <div class="geo-eq" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i>
+            </div>
             <div class="geo-hero__cta">
                 <a href="album.html" class="geo-btn geo-btn--primary">
                     <i class="fas fa-headphones"></i>
                     进入音乐库
+                </a>
+                <a href="artist-showcase.html" class="geo-btn geo-btn--secondary">
+                    <i class="fas fa-compass"></i>
+                    艺术家巡礼
                 </a>
             </div>
             <div class="geo-stats">
@@ -281,6 +294,11 @@
             </div>
         </div>
     </section>
+
+    <!-- 滚动字幕（动效）：Hero 与页脚之间的流动信息带 -->
+    <div class="geo-ticker" aria-hidden="true">
+        <div class="geo-ticker__track"></div>
+    </div>
     
     <!-- 页脚 -->
     <footer class="geo-footer">
@@ -291,7 +309,7 @@
     
     <!-- 版本号 -->
     <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: var(--geo-primary); color: white; padding: 5px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; z-index: 1002; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
-        v2.0 GEOMETRIC
+        v2.1 KINETIC
     </div>
 
     <!-- JavaScript -->
@@ -428,48 +446,70 @@
                 });
             }
             
-            // 启动持续轮换（单线程）
+            // 启动持续轮换（单线程，小波次翻动，更有“呼吸感”）
             function startContinuousRefresh() {
                 function doRefresh() {
                     const $items = $('.geo-gallery-bg__item');
                     if ($items.length === 0) {
-                        setTimeout(doRefresh, 1000);
+                        setTimeout(doRefresh, 600);
                         return;
                     }
-                    
+
                     // 获取未悬浮的格子
                     const $notHovered = $items.not(':hover');
                     if ($notHovered.length === 0) {
                         // 所有格子都被悬浮，等待后再试
-                        setTimeout(doRefresh, 500);
+                        setTimeout(doRefresh, 400);
                         return;
                     }
-                    
-                    // 随机选择一个未悬浮的格子
-                    const randomIndex = Math.floor(Math.random() * $notHovered.length);
-                    const $item = $notHovered.eq(randomIndex);
-                    const $cover = $item.find('.geo-gallery-bg__cover');
-                    
-                    // 淡出
-                    $cover.addClass('fade');
-                    
-                    // 淡出完成后换图
-                    setTimeout(function() {
-                        const album = getUnusedAlbum();
-                        if (album) {
-                            const optimizedUrl = getOptimizedImageUrl(album.coverUrl, 300, 300);
-                            $cover.css('background-image', `url('${optimizedUrl}')`);
-                            // 更新专辑ID
-                            $item.data('album-id', album.id);
+
+                    // 每波随机挑 2 个未悬浮格子，交错翻页，形成流动感
+                    const waveSize = 2;
+                    const pool = $notHovered.toArray();
+                    const chosen = [];
+                    for (let i = 0; i < waveSize && pool.length > 0; i++) {
+                        const idx = Math.floor(Math.random() * pool.length);
+                        chosen.push(pool.splice(idx, 1)[0]);
+                    }
+
+                    chosen.forEach(function (el, i) {
+                        const $item = $(el);
+                        const $cover = $item.find('.geo-gallery-bg__cover');
+
+                        setTimeout(function () {
+                            // 淡出
+                            $cover.addClass('fade');
+
+                            setTimeout(function () {
+                                const album = getUnusedAlbum();
+                                if (album) {
+                                    const optimizedUrl = getOptimizedImageUrl(album.coverUrl, 300, 300);
+                                    $cover.css('background-image', `url('${optimizedUrl}')`);
+                                    // 更新专辑ID
+                                    $item.data('album-id', album.id);
+
+                                    // 偶发“呼吸放大”（ken burns），让画面更有纵深感
+                                    if (Math.random() < 0.4) {
+                                        $cover.addClass('zoom');
+                                    }
+                                }
+                                // 淡入
+                                $cover.removeClass('fade');
+                            }, 480);
+                        }, i * 150);
+                    });
+
+                    // 随机让一部分已放大封面慢慢缩回
+                    $('.geo-gallery-bg__cover.zoom').each(function () {
+                        if (Math.random() < 0.1) {
+                            $(this).removeClass('zoom');
                         }
-                        // 淡入
-                        $cover.removeClass('fade');
-                        
-                        // 淡入完成后（约200ms），等待1秒再进行下一次
-                        setTimeout(doRefresh, 1200);
-                    }, 800);
+                    });
+
+                    // 波次间隔
+                    setTimeout(doRefresh, 1150);
                 }
-                
+
                 // 首次延迟1秒开始
                 setTimeout(doRefresh, 1000);
             }
@@ -531,6 +571,155 @@
                     }
                 }
             });
+        });
+    </script>
+
+    <script>
+        // ============ 首页动效脚本（独立于上方画廊逻辑） ============
+        $(function () {
+            'use strict';
+
+            const reduceMotion = window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // ---------- 画廊首次填充：层叠浮现 ----------
+            let galleryRevealed = false;
+            let galleryProbeCount = 0;
+
+            function revealGallery() {
+                if (galleryRevealed) return;
+                galleryRevealed = true;
+                $('#galleryBg .geo-gallery-bg__item').each(function (index) {
+                    const el = this;
+                    setTimeout(() => el.classList.add('is-in'), 60 * index);
+                });
+            }
+
+            const galleryTimer = setInterval(function () {
+                const $cover = $('#galleryBg .geo-gallery-bg__cover').first();
+                if ($cover.length && ($cover[0].style.backgroundImage || $cover[0].style.background)) {
+                    clearInterval(galleryTimer);
+                    revealGallery();
+                    return;
+                }
+                // 兜底：即使接口失败也显示底图
+                galleryProbeCount++;
+                if (galleryProbeCount > 40) {
+                    clearInterval(galleryTimer);
+                    revealGallery();
+                }
+            }, 150);
+
+            // ---------- 统计数字：滚动增长 + 脉冲 ----------
+            function animateNumber(el, target) {
+                el.dataset.counted = '1';
+                if (reduceMotion) {
+                    el.textContent = target.toLocaleString();
+                    return;
+                }
+                const duration = 1100;
+                let start = null;
+
+                function step(ts) {
+                    if (!start) start = ts;
+                    const p = Math.min(1, (ts - start) / duration);
+                    const eased = 1 - Math.pow(1 - p, 3);
+                    el.textContent = Math.round(target * eased).toLocaleString();
+                    if (p < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        el.textContent = target.toLocaleString();
+                        el.classList.add('is-bumped');
+                        setTimeout(() => el.classList.remove('is-bumped'), 700);
+                    }
+                }
+                requestAnimationFrame(step);
+            }
+
+            ['navAlbumCount', 'totalAlbums', 'totalArtists', 'totalEvents'].forEach(function (id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                new MutationObserver(function () {
+                    if (el.dataset.counted) return;
+                    const raw = (el.textContent || '').replace(/[,，\s]/g, '');
+                    if (!/^\d+$/.test(raw)) return;
+                    animateNumber(el, parseInt(raw, 10));
+                }).observe(el, { childList: true, characterData: true, subtree: true });
+            });
+
+            // ---------- 底部滚动字幕（两组相同内容实现无缝循环） ----------
+            const tickerWords = [
+                '東方Project', '同人音楽', '例大祭', 'COMIC MARKET',
+                '紅楼夢', '音楽アーカイブ', 'MUSIC FOR THE GENKYOU'
+            ];
+
+            function buildTickerGroup() {
+                const group = document.createElement('div');
+                group.className = 'geo-ticker__group';
+                tickerWords.forEach(function (word) {
+                    const span = document.createElement('span');
+                    span.className = 'geo-ticker__item';
+                    span.textContent = word;
+                    group.appendChild(span);
+                });
+                return group;
+            }
+
+            const tickerTrack = document.querySelector('.geo-ticker__track');
+            if (tickerTrack) {
+                tickerTrack.appendChild(buildTickerGroup());
+                tickerTrack.appendChild(buildTickerGroup());
+            }
+
+            // ---------- 漂浮几何装饰注入 ----------
+            function injectFloaties() {
+                if (reduceMotion) return;
+                const wrap = document.querySelector('.geo-hero__floaties');
+                if (!wrap) return;
+                const kinds = ['diamond', 'ring', 'plus', 'square'];
+                for (let i = 0; i < 10; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'geo-floaty geo-floaty--' + kinds[i % kinds.length];
+                    span.style.left = (3 + Math.random() * 94).toFixed(1) + '%';
+                    const duration = 14 + Math.random() * 14;
+                    span.style.animationDuration = duration.toFixed(2) + 's';
+                    span.style.animationDelay = (-Math.random() * duration).toFixed(2) + 's';
+                    wrap.appendChild(span);
+                }
+            }
+            injectFloaties();
+
+            // ---------- 鼠标视差（仅桌面精确指针 + 非减少动效时启用） ----------
+            function initParallax() {
+                if (reduceMotion) return;
+                if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
+                const hero = document.querySelector('.geo-hero');
+                const bg = document.getElementById('galleryBg');
+                const content = document.querySelector('.geo-hero__content');
+                if (!hero || !bg || !content) return;
+                let ticking = false;
+
+                function applyParallax(e) {
+                    ticking = false;
+                    const rect = hero.getBoundingClientRect();
+                    const nx = (e.clientX - rect.left) / rect.width - 0.5;
+                    const ny = (e.clientY - rect.top) / rect.height - 0.5;
+                    bg.style.transform = 'translate(' + (nx * -16) + 'px, ' + (ny * -10) + 'px) scale(1.04)';
+                    content.style.transform = 'translate(' + (nx * 9) + 'px, ' + (ny * 7) + 'px)';
+                }
+
+                hero.addEventListener('mousemove', function (e) {
+                    if (!ticking) {
+                        ticking = true;
+                        requestAnimationFrame(function () { applyParallax(e); });
+                    }
+                });
+                hero.addEventListener('mouseleave', function () {
+                    bg.style.transform = '';
+                    content.style.transform = '';
+                });
+            }
+            initParallax();
         });
     </script>
 </body>
