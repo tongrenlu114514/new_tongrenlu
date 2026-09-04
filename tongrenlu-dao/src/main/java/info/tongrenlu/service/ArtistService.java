@@ -7,11 +7,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import info.tongrenlu.domain.ArticleTagBean;
 import info.tongrenlu.domain.ArtistBean;
-import info.tongrenlu.domain.TagBean;
 import info.tongrenlu.mapper.ArticleTagMapper;
 import info.tongrenlu.mapper.ArtistMapper;
 import info.tongrenlu.mapper.TagMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
@@ -65,10 +65,24 @@ public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
         return resultPage;
     }
 
+    /**
+     * 按网易云音乐ID查询艺人。
+     * 兼容历史原因产生的重复数据：存在多条记录时不再抛
+     * {@code TooManyResultsException}，而是告警并返回最早创建(id 最小)的一条。
+     *
+     * @param cloudMusicId 网易云音乐艺人ID
+     * @return 匹配的艺人，不存在时返回 null
+     */
     public ArtistBean getByCloudMusicId(long cloudMusicId) {
         LambdaQueryWrapper<ArtistBean> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ArtistBean::getCloudMusicId, cloudMusicId);
-        return getBaseMapper().selectOne(queryWrapper);
+        queryWrapper.eq(ArtistBean::getCloudMusicId, cloudMusicId)
+                .orderByAsc(ArtistBean::getId);
+        List<ArtistBean> list = getBaseMapper().selectList(queryWrapper);
+        if (list.size() > 1) {
+            log.warn("cloudMusicId = {} 存在 {} 条重复记录(建议清理 m_artist 重复数据)，本次返回 id = {}",
+                    cloudMusicId, list.size(), list.get(0).getId());
+        }
+        return list.isEmpty() ? null : list.get(0);
     }
 
     /**
