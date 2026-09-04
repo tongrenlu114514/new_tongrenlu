@@ -14,13 +14,9 @@
     <link href="assets/css/geometric-theme.css" rel="stylesheet">
     
     <style>
-        /* Hero区域 */
+        /* Hero：全幅动态封面画廊背景 */
         .geo-hero {
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding-top: 80px;
             position: relative;
             overflow: hidden;
         }
@@ -37,7 +33,7 @@
             grid-template-rows: repeat(4, 1fr);
             gap: 4px;
             padding: 4px;
-            opacity: 0.6;
+            opacity: 1;
             z-index: 0;
         }
         
@@ -71,143 +67,6 @@
             opacity: 0;
         }
         
-        /* 渐变遮罩 */
-        .geo-hero__overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(ellipse at center, 
-                rgba(250, 249, 246, 0.98) 0%, 
-                rgba(250, 249, 246, 0.92) 18%,
-                rgba(250, 249, 246, 0.7) 35%,
-                rgba(0, 0, 0, 0.25) 55%,
-                rgba(0, 0, 0, 0.45) 100%);
-            z-index: 1;
-            pointer-events: none;
-        }
-        
-        /* 内容层 */
-        .geo-hero__content {
-            text-align: center;
-            max-width: 900px;
-            padding: 2rem;
-            position: relative;
-            z-index: 2;
-            pointer-events: none;
-        }
-        
-        .geo-hero__content > * {
-            pointer-events: auto;
-        }
-        
-        .geo-hero__content::before {
-            content: '';
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 100px;
-            background: var(--geo-accent);
-            opacity: 0.1;
-            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-        }
-        
-        .geo-hero__title {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 7rem;
-            line-height: 0.95;
-            margin-bottom: 1rem;
-            color: var(--geo-primary);
-            letter-spacing: 5px;
-            position: relative;
-            text-shadow: 4px 4px 0 rgba(233, 69, 96, 0.2);
-        }
-        
-        .geo-hero__title span {
-            display: block;
-        }
-        
-        .geo-hero__title .accent {
-            color: var(--geo-accent);
-        }
-        
-        .geo-hero__subtitle {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.2rem;
-            color: var(--geo-text-light);
-            margin-bottom: 2.5rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-        }
-        
-        .geo-hero__cta {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        /* 按钮 */
-        .geo-btn {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            padding: 1rem 2.5rem;
-            border: 2px solid var(--geo-primary);
-            text-decoration: none;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .geo-btn--primary {
-            background: var(--geo-primary);
-            color: white;
-            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
-        }
-        
-        .geo-btn--primary:hover {
-            background: var(--geo-accent);
-            border-color: var(--geo-accent);
-            transform: translateY(-3px);
-        }
-        
-        /* 统计数字 */
-        .geo-stats {
-            display: flex;
-            justify-content: center;
-            gap: 4rem;
-            margin-top: 4rem;
-            padding-top: 2rem;
-            border-top: 2px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .geo-stat {
-            text-align: center;
-        }
-        
-        .geo-stat__number {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 3rem;
-            color: var(--geo-accent);
-            line-height: 1;
-        }
-        
-        .geo-stat__label {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.8rem;
-            color: var(--geo-text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
         @media (max-width: 1024px) {
             .geo-gallery-bg {
                 grid-template-columns: repeat(4, 1fr);
@@ -220,10 +79,6 @@
                 grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: repeat(4, 1fr);
             }
-            .geo-hero__title { font-size: 4rem; }
-            .geo-hero__subtitle { font-size: 0.9rem; }
-            .geo-stats { gap: 2rem; flex-wrap: wrap; }
-            .geo-stat__number { font-size: 2.5rem; }
         }
     </style>
     <!-- 首页动效样式：置于内联样式之后，可覆盖其中的过渡规则 -->
@@ -232,16 +87,15 @@
 <body class="geo-theme">
     <!-- 导航栏 -->
     <nav class="geo-nav">
-        <a href="index.html" class="geo-logo">TONGRENLU</a>
+        <div class="geo-nav__brand">
+            <a href="index.html" class="geo-logo">TONGRENLU</a>
+            <span class="geo-logo-zh">东方同人录</span>
+        </div>
         <div class="geo-nav__links">
             <a href="index.html" class="geo-nav__link active">首页</a>
-            <a href="album.html" class="geo-nav__link">音乐库</a>
-            <a href="artist-showcase.html" class="geo-nav__link">艺术家</a>
-            <a href="event.html" class="geo-nav__link">展会</a>
-        </div>
-        <div class="geo-nav__stats">
-            <span class="geo-nav__number" id="navAlbumCount">--</span>
-            <span class="geo-nav__label">专辑</span>
+            <a href="album.html" class="geo-nav__link">音乐库<span class="geo-nav__count" id="navAlbumCount">--</span></a>
+            <a href="artist-showcase.html" class="geo-nav__link">艺术家<span class="geo-nav__count" id="navArtistCount">--</span></a>
+            <a href="event.html" class="geo-nav__link">展会<span class="geo-nav__count" id="navEventCount">--</span></a>
         </div>
     </nav>
     
@@ -254,45 +108,6 @@
 
         <!-- 漂浮几何装饰（JS注入，动效） -->
         <div class="geo-hero__floaties" aria-hidden="true"></div>
-        
-        <!-- 渐变遮罩 -->
-        <div class="geo-hero__overlay"></div>
-        
-        <!-- 内容 -->
-        <div class="geo-hero__content">
-            <h1 class="geo-hero__title">
-                <span>东方</span>
-                <span class="accent">同人录</span>
-            </h1>
-            <div class="geo-hero__subtitle">TOUHOU DOUJIN MUSIC ARCHIVE</div>
-            <div class="geo-eq" aria-hidden="true">
-                <i></i><i></i><i></i><i></i><i></i>
-            </div>
-            <div class="geo-hero__cta">
-                <a href="album.html" class="geo-btn geo-btn--primary">
-                    <i class="fas fa-headphones"></i>
-                    进入音乐库
-                </a>
-                <a href="artist-showcase.html" class="geo-btn geo-btn--secondary">
-                    <i class="fas fa-compass"></i>
-                    艺术家巡礼
-                </a>
-            </div>
-            <div class="geo-stats">
-                <div class="geo-stat">
-                    <div class="geo-stat__number" id="totalAlbums">--</div>
-                    <div class="geo-stat__label">专辑</div>
-                </div>
-                <div class="geo-stat">
-                    <div class="geo-stat__number" id="totalArtists">--</div>
-                    <div class="geo-stat__label">艺术家</div>
-                </div>
-                <div class="geo-stat">
-                    <div class="geo-stat__number" id="totalEvents">--</div>
-                    <div class="geo-stat__label">展会</div>
-                </div>
-            </div>
-        </div>
     </section>
 
     <!-- 滚动字幕（动效）：Hero 与页脚之间的流动信息带 -->
@@ -309,7 +124,7 @@
     
     <!-- 版本号 -->
     <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: var(--geo-primary); color: white; padding: 5px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; z-index: 1002; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
-        v2.1 KINETIC
+        v2.2 MOSAIC
     </div>
 
     <!-- JavaScript -->
@@ -544,7 +359,6 @@
                     if (response && response.success && response.data) {
                         const count = response.data.published || response.data.total || 0;
                         $('#navAlbumCount').text(count.toLocaleString());
-                        $('#totalAlbums').text(count.toLocaleString());
                     }
                 }
             });
@@ -555,9 +369,9 @@
                 data: { limit: 1 },
                 success: function(response) {
                     if (response && response.total !== undefined) {
-                        $('#totalArtists').text(response.total.toLocaleString());
+                        $('#navArtistCount').text(response.total.toLocaleString());
                     } else if (response && response.count !== undefined) {
-                        $('#totalArtists').text(response.count.toLocaleString());
+                        $('#navArtistCount').text(response.count.toLocaleString());
                     }
                 }
             });
@@ -567,7 +381,7 @@
                 method: 'GET',
                 success: function(response) {
                     if (response && response.count !== undefined) {
-                        $('#totalEvents').text(response.count.toLocaleString());
+                        $('#navEventCount').text(response.count.toLocaleString());
                     }
                 }
             });
@@ -636,7 +450,7 @@
                 requestAnimationFrame(step);
             }
 
-            ['navAlbumCount', 'totalAlbums', 'totalArtists', 'totalEvents'].forEach(function (id) {
+            ['navAlbumCount', 'navArtistCount', 'navEventCount'].forEach(function (id) {
                 const el = document.getElementById(id);
                 if (!el) return;
                 new MutationObserver(function () {
@@ -696,7 +510,7 @@
                 const hero = document.querySelector('.geo-hero');
                 const bg = document.getElementById('galleryBg');
                 const content = document.querySelector('.geo-hero__content');
-                if (!hero || !bg || !content) return;
+                if (!hero || !bg) return;
                 let ticking = false;
 
                 function applyParallax(e) {
@@ -705,7 +519,9 @@
                     const nx = (e.clientX - rect.left) / rect.width - 0.5;
                     const ny = (e.clientY - rect.top) / rect.height - 0.5;
                     bg.style.transform = 'translate(' + (nx * -16) + 'px, ' + (ny * -10) + 'px) scale(1.04)';
-                    content.style.transform = 'translate(' + (nx * 9) + 'px, ' + (ny * 7) + 'px)';
+                    if (content) {
+                        content.style.transform = 'translate(' + (nx * 9) + 'px, ' + (ny * 7) + 'px)';
+                    }
                 }
 
                 hero.addEventListener('mousemove', function (e) {
@@ -716,7 +532,7 @@
                 });
                 hero.addEventListener('mouseleave', function () {
                     bg.style.transform = '';
-                    content.style.transform = '';
+                    if (content) content.style.transform = '';
                 });
             }
             initParallax();

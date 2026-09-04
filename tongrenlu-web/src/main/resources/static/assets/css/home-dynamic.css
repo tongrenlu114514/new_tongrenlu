@@ -2,8 +2,8 @@
  * 首页「动感」增强层
  * Home Kinetic Layer — 仅在 index.html 引用，叠加于 geometric-theme.css 之上。
  *
- * 提供：内容入场动画、均衡器跳动、标题微浮、几何漂浮装饰、
- *      封面画廊入场、底部滚动字幕(marquee)、按钮流光等持续动效。
+ * 提供：封面画廊入场、漂浮几何装饰、底部滚动字幕、统计数字脉冲、
+ *      以及首页导航中「中文站名 + 链接内嵌统计数字」的样式。
  *
  * 说明：
  *  - 本文件必须位于 index.html 内联样式之后引用，以便同优先级覆盖其部分规则；
@@ -16,139 +16,61 @@
 .geo-hero {
     /* body 边距(8px) + 导航下移(60px) + 字幕带(34px)，让字幕带贴合首屏底部 */
     min-height: calc(100vh - 102px);
-    padding-bottom: 2rem;
 }
 
 /* ============================================
-   1. 内容入场：逐层浮现 (CSS only)
+   1. 顶部导航：中文站名 + 链接内统计数字
    ============================================ */
-.geo-hero__title > span,
-.geo-hero__subtitle,
-.geo-eq,
-.geo-hero__cta,
-.geo-stats {
-    /* 用 backwards 让“from(透明)”在延迟期生效；动画被禁用时元素不会永久隐藏 */
-    animation: geo-rise-in 0.75s cubic-bezier(0.22, 0.68, 0.24, 1) backwards;
+.geo-nav__brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.geo-hero__title > span:nth-child(1) { animation-delay: 0.05s; }
-.geo-hero__title > span:nth-child(2) { animation-delay: 0.20s; }
-.geo-hero__subtitle { animation-delay: 0.35s; }
-.geo-eq { animation-delay: 0.45s; }
-.geo-hero__cta { animation-delay: 0.58s; }
-.geo-stats { animation-delay: 0.80s; }
-
-@keyframes geo-rise-in {
-    from { opacity: 0; transform: translateY(26px); }
-    to   { opacity: 1; transform: translateY(0); }
+.geo-logo-zh {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 4px;
+    color: var(--geo-text-light);
+    line-height: 1;
+    border-left: 2px solid var(--geo-accent);
+    padding-left: 1rem;
 }
 
-/* 标题整体缓慢悬浮 */
-.geo-hero__title {
-    animation: geo-float 7s ease-in-out 1.4s infinite alternate;
-}
-
-@keyframes geo-float {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-8px); }
-}
-
-/* 标题后方菱形装饰缓慢旋转 */
-.geo-hero__content::before {
-    animation: geo-diamond-spin 26s linear infinite;
-}
-
-@keyframes geo-diamond-spin {
-    from { transform: translateX(-50%) rotate(0deg); }
-    to   { transform: translateX(-50%) rotate(360deg); }
-}
-
-/* ============================================
-   2. 均衡器 (EQ) 跳动 — 音乐站动感符号
-   ============================================ */
-.geo-hero__subtitle {
-    margin-bottom: 0.9rem;
-}
-
-.geo-eq {
+.geo-nav__link {
     display: inline-flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 4px;
-    height: 22px;
-    margin: -0.3rem auto 1.7rem;
+    align-items: baseline;
+    gap: 0.35rem;
 }
 
-.geo-eq i {
-    display: block;
-    width: 4px;
-    height: 100%;
-    background: var(--geo-accent);
-    transform-origin: bottom;
-    opacity: 0.85;
-    animation: geo-eq-beat 1.05s ease-in-out infinite alternate;
+.geo-nav__count {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    color: var(--geo-accent);
+    line-height: 1;
 }
 
-.geo-eq i:nth-child(1) { animation-delay: 0.00s; height: 55%; }
-.geo-eq i:nth-child(2) { animation-delay: 0.18s; height: 100%; }
-.geo-eq i:nth-child(3) { animation-delay: 0.09s; height: 75%; }
-.geo-eq i:nth-child(4) { animation-delay: 0.27s; height: 90%; }
-.geo-eq i:nth-child(5) { animation-delay: 0.14s; height: 60%; }
-
-@keyframes geo-eq-beat {
-    from { transform: scaleY(0.3); }
-    to   { transform: scaleY(1); }
-}
-
-/* ============================================
-   3. 按钮动效：流光扫过 + 图标律动
-   ============================================ */
-.geo-btn--primary::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -80%;
-    width: 55%;
-    height: 100%;
-    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-    transform: skewX(-20deg);
-    animation: geo-sheen 3.4s ease-in-out 1.2s infinite;
-}
-
-.geo-btn--primary:hover::after {
-    animation-duration: 0.8s;
-}
-
-@keyframes geo-sheen {
-    0%, 55% { left: -80%; }
-    100%    { left: 135%; }
-}
-
-.geo-btn--primary .fa-headphones {
-    display: inline-block;
-    animation: geo-beat 1.9s ease-in-out infinite;
-}
-
-@keyframes geo-beat {
-    0%, 100% { transform: scale(1); }
-    50%      { transform: scale(1.22); }
-}
-
-/* ============================================
-   4. 统计数字：更新瞬间脉冲
-   ============================================ */
-.geo-stat__number.is-bumped {
+.geo-nav__count.is-bumped {
     animation: geo-bump 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.35);
 }
 
 @keyframes geo-bump {
     0%   { transform: scale(1); }
-    45%  { transform: scale(1.22); }
+    45%  { transform: scale(1.35); }
     100% { transform: scale(1); }
 }
 
+/* 窄屏下隐藏中文站名与统计数字，避免导航拥挤 */
+@media (max-width: 1100px) {
+    .geo-nav__count,
+    .geo-logo-zh {
+        display: none;
+    }
+}
+
 /* ============================================
-   5. 封面画廊：首次填充时的层叠浮现
+   2. 封面画廊：首次填充时的层叠浮现
    ============================================ */
 .geo-gallery-bg__item {
     opacity: 0;
@@ -164,7 +86,7 @@
 }
 
 /* ============================================
-   6. 漂浮几何装饰 (JS 注入 .geo-floaty)
+   3. 漂浮几何装饰 (JS 注入 .geo-floaty)
    ============================================ */
 .geo-hero__floaties {
     position: absolute;
@@ -172,7 +94,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 0;
+    z-index: 1;
     pointer-events: none;
     overflow: hidden;
 }
@@ -242,22 +164,22 @@
 
 @keyframes geo-float-rise-a {
     0%   { transform: translateY(0) rotate(45deg); opacity: 0; }
-    8%   { opacity: 0.8; }
-    50%  { opacity: 0.55; }
-    92%  { opacity: 0.8; }
+    8%   { opacity: 0.55; }
+    50%  { opacity: 0.35; }
+    92%  { opacity: 0.55; }
     100% { transform: translateY(-116vh) rotate(405deg); opacity: 0; }
 }
 
 @keyframes geo-float-rise-b {
     0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
-    8%   { opacity: 0.75; }
-    50%  { opacity: 0.5; }
-    92%  { opacity: 0.75; }
+    8%   { opacity: 0.5; }
+    50%  { opacity: 0.3; }
+    92%  { opacity: 0.5; }
     100% { transform: translateY(-116vh) rotate(360deg); opacity: 0; }
 }
 
 /* ============================================
-   7. 底部滚动字幕 (marquee)
+   4. 底部滚动字幕 (marquee)
    ============================================ */
 .geo-ticker {
     position: relative;
@@ -327,12 +249,11 @@
 }
 
 /* ============================================
-   8. 响应式：小屏收敛动效，避免拥挤
+   5. 响应式：小屏收敛动效，避免拥挤
    ============================================ */
 @media (max-width: 768px) {
     .geo-hero {
         min-height: 100vh;
-        padding-bottom: 1.5rem;
     }
 
     .geo-ticker {
@@ -342,36 +263,12 @@
     .geo-hero__floaties {
         display: none;
     }
-
-    .geo-eq {
-        height: 16px;
-        margin-bottom: 1.2rem;
-    }
 }
 
 /* ============================================
-   9. 无障碍：尊重“减少动态效果”偏好
+   6. 无障碍：尊重“减少动态效果”偏好
    ============================================ */
 @media (prefers-reduced-motion: reduce) {
-    .geo-hero__title > span,
-    .geo-hero__subtitle,
-    .geo-eq,
-    .geo-hero__cta,
-    .geo-stats {
-        opacity: 1 !important;
-        animation: none !important;
-    }
-
-    .geo-hero__title,
-    .geo-hero__content::before,
-    .geo-eq i,
-    .geo-btn--primary::after,
-    .geo-btn--primary .fa-headphones,
-    .geo-ticker,
-    .geo-floaty {
-        animation: none !important;
-    }
-
     .geo-gallery-bg__item,
     .geo-gallery-bg__item.is-in {
         opacity: 1;
@@ -380,6 +277,12 @@
 
     .geo-hero__floaties {
         display: none;
+    }
+
+    .geo-floaty,
+    .geo-ticker,
+    .geo-nav__count {
+        animation: none !important;
     }
 
     .geo-ticker__track {
