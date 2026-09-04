@@ -52,6 +52,9 @@ public class ArticleBean {
     @TableField(value = "thb_wiki_url", jdbcType = JdbcType.VARCHAR)
     private String thbWikiUrl;
 
+    @TableField(value = "thb_wiki_status", jdbcType = JdbcType.VARCHAR)
+    private String thbWikiStatus;
+
     @TableField(value = "upd_date", jdbcType = JdbcType.TIMESTAMP)
     private Date updDate;
 

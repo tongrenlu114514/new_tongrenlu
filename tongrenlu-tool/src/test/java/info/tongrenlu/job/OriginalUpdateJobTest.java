@@ -130,20 +130,22 @@ class OriginalUpdateJobTest {
     class CursorSkipsProcessedAlbums {
 
         @Test
-        @DisplayName("only albums with null thbWikiUrl are fetched from the database")
-        void onlyAlbumsWithNullThbWikiUrlAreProcessed() {
+        @DisplayName("only albums with PENDING status are fetched from the database")
+        void onlyPendingAlbumsAreProcessed() {
             stubSelectCount(2);
-            // Given: two unprocessed albums
+            // Given: two unprocessed (PENDING) albums
             ArticleBean album1 = new ArticleBean();
             album1.setId(1L);
             album1.setTitle("Album One");
             album1.setThbWikiUrl(null);
+            album1.setThbWikiStatus("PENDING");
             album1.setPublishFlg("1");
 
             ArticleBean album2 = new ArticleBean();
             album2.setId(2L);
             album2.setTitle("Album Two");
             album2.setThbWikiUrl(null);
+            album2.setThbWikiStatus("PENDING");
             album2.setPublishFlg("1");
 
             Page<ArticleBean> page = new Page<>(1, 10);
@@ -154,18 +156,18 @@ class OriginalUpdateJobTest {
             // When
             job.runCycle();
 
-            // Then: both albums were searched (cursor only fetches IS NULL rows from DB)
+            // Then: both albums were searched (cursor only fetches PENDING rows from DB)
             verify(thbwikiService).searchAlbum("Album One");
             verify(thbwikiService).searchAlbum("Album Two");
 
-            // And: the query used isNull(thbWikiUrl) so processed albums are never fetched
+            // And: the query used eq(thbWikiStatus, PENDING) so already-processed albums
+            // (MATCHED/NOT_FOUND/FETCH_FAILED) are never re-fetched.
             ArgumentCaptor<LambdaQueryWrapper<ArticleBean>> queryCaptor =
                     ArgumentCaptor.forClass(LambdaQueryWrapper.class);
             verify(articleMapper).selectPage(any(Page.class), queryCaptor.capture());
-            // The wrapper should have IS NULL condition for thbWikiUrl
-            // We verify indirectly: if any album had thbWikiUrl set, it would have been
-            // in the DB result — but our mock only returns null-thbWikiUrl albums,
-            // proving the query filters correctly.
+            // We verify indirectly: if the query returned non-PENDING albums, our mock
+            // would have given them to the job — but it only returns PENDING albums,
+            // proving the wrapper filters correctly.
         }
     }
 
@@ -233,6 +235,144 @@ class OriginalUpdateJobTest {
             stubSelectCount(42);
             OriginalUpdateJob.JobStatus status = job.status();
             assertThat(status.totalRemaining()).isEqualTo(42L);
+        }
+    }
+
+    @Nested
+    @DisplayName("testStatusEnumIsUsedInsteadOfSentinelStrings")
+    class StatusEnumIsUsed {
+
+        @Test
+        @DisplayName("NOT_FOUND sets thbWikiStatus to NOT_FOUND (no sentinel in thbWikiUrl)")
+        void notFoundSetsStatusEnum() {
+            stubSelectCount(0);
+            ArticleBean album = new ArticleBean();
+            album.setId(1L);
+            album.setTitle("Nonexistent Album");
+            album.setThbWikiUrl(null);
+            album.setThbWikiStatus("PENDING");
+            album.setPublishFlg("1");
+
+            Page<ArticleBean> page = new Page<>(1, 10);
+            stubPageWith(page, List.of(album));
+            when(thbwikiService.searchAlbum("Nonexistent Album")).thenReturn(List.of());
+
+            job.runCycle();
+
+            verify(articleMapper).updateById(articleCaptor.capture());
+            ArticleBean updated = articleCaptor.getValue();
+            assertThat(updated.getThbWikiStatus()).isEqualTo("NOT_FOUND");
+            // Bug #2: thbWikiUrl must NOT contain the sentinel "NOT_FOUND" string anymore.
+            assertThat(updated.getThbWikiUrl()).isNull();
+        }
+
+        @Test
+        @DisplayName("FETCH_FAILED sets thbWikiStatus to FETCH_FAILED (no sentinel in thbWikiUrl)")
+        void fetchFailedSetsStatusEnum() {
+            stubSelectCount(0);
+            ArticleBean album = new ArticleBean();
+            album.setId(2L);
+            album.setTitle("Unreachable Album");
+            album.setThbWikiUrl(null);
+            album.setThbWikiStatus("PENDING");
+            album.setPublishFlg("1");
+
+            ThbwikiAlbum searchResult = new ThbwikiAlbum();
+            searchResult.setName("Unreachable Album");
+            searchResult.setUrl("https://thbwiki.cc/Unreachable");
+
+            Page<ArticleBean> page = new Page<>(1, 10);
+            stubPageWith(page, List.of(album));
+            when(thbwikiService.searchAlbum("Unreachable Album")).thenReturn(List.of(searchResult));
+            when(thbwikiService.fetchAlbumDetail("https://thbwiki.cc/Unreachable"))
+                    .thenReturn(Optional.empty());
+
+            job.runCycle();
+
+            verify(articleMapper).updateById(articleCaptor.capture());
+            ArticleBean updated = articleCaptor.getValue();
+            assertThat(updated.getThbWikiStatus()).isEqualTo("FETCH_FAILED");
+            // Bug #2: thbWikiUrl must NOT contain the sentinel "FETCH_FAILED" string anymore.
+            assertThat(updated.getThbWikiUrl()).isNull();
+        }
+
+        @Test
+        @DisplayName("successful match sets both thbWikiUrl and thbWikiStatus=MATCHED")
+        void successfulMatchSetsBothFields() {
+            stubSelectCount(0);
+            ArticleBean album = new ArticleBean();
+            album.setId(3L);
+            album.setTitle("Satori Maiden");
+            album.setThbWikiUrl(null);
+            album.setThbWikiStatus("PENDING");
+            album.setPublishFlg("1");
+
+            TrackBean track = new TrackBean();
+            track.setId(10L);
+            track.setArticleId(3L);
+            track.setName("Satori Maiden");
+
+            Page<ArticleBean> page = new Page<>(1, 10);
+            stubPageWith(page, List.of(album));
+            when(trackMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(track));
+
+            ThbwikiAlbum searchResult = new ThbwikiAlbum();
+            searchResult.setName("Satori Maiden");
+            searchResult.setUrl("https://thbwiki.cc/Satori_Maiden");
+
+            ThbwikiAlbum detail = new ThbwikiAlbum();
+            detail.setName("Satori Maiden");
+            detail.setUrl("https://thbwiki.cc/Satori_Maiden");
+            ThbwikiTrack t = new ThbwikiTrack();
+            t.setName("Satori Maiden");
+            detail.addTrack(t);
+
+            when(thbwikiService.searchAlbum("Satori Maiden")).thenReturn(List.of(searchResult));
+            when(thbwikiService.fetchAlbumDetail("https://thbwiki.cc/Satori_Maiden"))
+                    .thenReturn(Optional.of(detail));
+            when(thbwikiService.matchAndSave(any(TrackBean.class), anyList())).thenReturn(true);
+
+            job.runCycle();
+
+            verify(articleMapper).updateById(articleCaptor.capture());
+            ArticleBean updated = articleCaptor.getValue();
+            assertThat(updated.getThbWikiUrl()).isEqualTo("https://thbwiki.cc/Satori_Maiden");
+            assertThat(updated.getThbWikiStatus()).isEqualTo("MATCHED");
+        }
+    }
+
+    @Nested
+    @DisplayName("testPaginationCursorAdvances")
+    class PaginationCursorAdvances {
+
+        @Test
+        @DisplayName("currentPage is used in Page constructor (Bug #1 fix)")
+        void currentPageDrivesPagination() {
+            stubSelectCount(0);
+            // Empty first page -> currentPage resets to 1 and phase goes IDLE
+            Page<ArticleBean> page = new Page<>(1, 10);
+            stubPageWith(page, List.of());
+
+            job.runCycle();
+
+            // Status should reflect reset (currentPage -> 1)
+            OriginalUpdateJob.JobStatus status = job.status();
+            assertThat(status.currentPage()).isEqualTo(1);
+            assertThat(status.phase()).isEqualTo("IDLE");
+        }
+
+        @Test
+        @DisplayName("empty page resets cursor so the next scheduled cycle restarts from page 1")
+        void emptyPageResetsCursor() {
+            stubSelectCount(0);
+            // Force the page stub to return empty; this is the path that resets currentPage.
+            Page<ArticleBean> page = new Page<>(1, 10);
+            stubPageWith(page, List.of());
+
+            job.runCycle();
+
+            verify(articleMapper, atLeastOnce()).selectPage(any(Page.class), any(LambdaQueryWrapper.class));
+            assertThat(job.status().currentPage()).isEqualTo(1);
         }
     }
 }

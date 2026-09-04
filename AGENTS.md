@@ -150,6 +150,25 @@ java -jar tongrenlu-web/target/tongrenlu-web.jar
 - **上下文路径**: `/tongrenlu`
 - **数据库**: MySQL (localhost:3306/tongrenlu)
 
+## 本地工具链
+
+项目根目录的 `.tooling/` 目录（不进入版本库）包含：
+
+| 路径 | 内容 |
+|---|---|
+| `.tooling/jdk21` | Eclipse Temurin 21.0.12.1 LTS（与 `pom.xml` 的 `java.version=21` 对齐） |
+| `.tooling/maven` | Apache Maven 3.9.9 |
+| `.tooling/maven-repo` | 本地 Maven 仓库缓存（指向 `~/.m2/repository` 默认位置的替代，因容器内 `/home/wangjue` 只读） |
+| `.tooling/env.sh` | 一次性 `source` 脚本，导出 `JAVA_HOME`、`MAVEN_HOME`、`MAVEN_OPTS`、`PATH` |
+
+使用：
+```bash
+source .tooling/env.sh     # 启用 JDK 21 + Maven
+mvn -pl tongrenlu-tool -am -Dtest=OriginalUpdateJobTest test
+```
+
+注意：由于 Maven 默认仓库路径 `/home/wangjue/.m2/repository` 在沙箱中只读，必须通过 `env.sh` 设置 `MAVEN_OPTS=-Dmaven.repo.local=...` 或在每条命令加 `-Dmaven.repo.local=.tooling/maven-repo`。
+
 ### 环境变量
 - `DB_HOST`: 数据库主机地址 (默认: localhost)
 - `DB_PASSWORD`: 数据库密码 (必需)

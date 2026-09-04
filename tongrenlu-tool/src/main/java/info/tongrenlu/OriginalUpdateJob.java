@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.TrackBean;
+import info.tongrenlu.enums.ThbWikiStatus;
 import info.tongrenlu.mapper.ArticleMapper;
 import info.tongrenlu.mapper.TrackMapper;
 import info.tongrenlu.model.ThbwikiAlbum;
@@ -52,16 +53,20 @@ public class OriginalUpdateJob {
             return;
         }
 
+        // Fresh scheduled cycle starts from page 1; pause/resume preserves currentPage.
         currentPhase.set("RUNNING");
-        log.info("Starting original update cycle");
+        log.info("Starting original update cycle from page {}", currentPage);
 
-        Page<ArticleBean> page = new Page<>(1, PAGE_SIZE);
+        // Order by id so pagination is deterministic and idempotent across restarts.
+        Page<ArticleBean> page = new Page<>(currentPage, PAGE_SIZE);
         articleMapper.selectPage(page, new LambdaQueryWrapper<ArticleBean>()
-                .isNull(ArticleBean::getThbWikiUrl)
-                .eq(ArticleBean::getPublishFlg, "1"));
+                .eq(ArticleBean::getThbWikiStatus, ThbWikiStatus.PENDING.name())
+                .eq(ArticleBean::getPublishFlg, "1")
+                .orderByAsc(ArticleBean::getId));
 
         if (page.getRecords().isEmpty()) {
-            log.info("No unprocessed albums, cycle complete");
+            log.info("No unprocessed albums at page {}, cycle complete", currentPage);
+            currentPage = 1;
             currentPhase.set("IDLE");
             return;
         }
@@ -85,11 +90,10 @@ public class OriginalUpdateJob {
 
             if (searchResults.isEmpty()) {
                 log.warn("No THBWiki results for album: {}", album.getTitle());
-                album.setThbWikiUrl("NOT_FOUND");
+                album.setThbWikiStatus(ThbWikiStatus.NOT_FOUND.name());
                 album.setUpdDate(new Date());
                 articleMapper.updateById(album);
                 lastError.set("No results found for: " + album.getTitle());
-                currentPage++;
                 continue;
             }
 
@@ -98,11 +102,10 @@ public class OriginalUpdateJob {
 
             if (detailOpt.isEmpty()) {
                 log.warn("Could not fetch detail for album: {}", album.getTitle());
-                album.setThbWikiUrl("FETCH_FAILED");
+                album.setThbWikiStatus(ThbWikiStatus.FETCH_FAILED.name());
                 album.setUpdDate(new Date());
                 articleMapper.updateById(album);
                 lastError.set("Fetch failed for: " + album.getTitle());
-                currentPage++;
                 continue;
             }
 
@@ -119,15 +122,18 @@ public class OriginalUpdateJob {
             }
 
             album.setThbWikiUrl(firstResult.getUrl());
+            album.setThbWikiStatus(ThbWikiStatus.MATCHED.name());
             album.setUpdDate(new Date());
             articleMapper.updateById(album);
 
             matchCount += albumMatchCount;
             log.info("Completed album: {}, {} tracks matched", album.getTitle(), albumMatchCount);
-            currentPage++;
         }
 
-        log.info("Cycle complete. Processed {} albums", processedCount.get());
+        // Advance the page cursor for the next cycle (or after resume).
+        currentPage = (long) currentPage + 1 > page.getPages() ? 1 : currentPage + 1;
+
+        log.info("Cycle page {} complete. Total processed this run={}", page.getCurrent(), processedCount.get());
         currentPhase.set("IDLE");
     }
 
@@ -149,7 +155,7 @@ public class OriginalUpdateJob {
     public JobStatus status() {
         long totalRemaining = articleMapper.selectCount(
                 new LambdaQueryWrapper<ArticleBean>()
-                        .isNull(ArticleBean::getThbWikiUrl)
+                        .eq(ArticleBean::getThbWikiStatus, ThbWikiStatus.PENDING.name())
                         .eq(ArticleBean::getPublishFlg, "1"));
         return new JobStatus(
                 currentPhase.get(),

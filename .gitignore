@@ -70,3 +70,6 @@ vendor/
 coverage/
 .cache/
 tmp/
+
+# Local tooling installed outside system packages (JDK, Maven, repo cache)
+.tooling/
