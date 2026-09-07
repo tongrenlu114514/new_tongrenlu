@@ -2,6 +2,7 @@ package info.tongrenlu.service;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.cache.ThbwikiCacheService;
 import info.tongrenlu.domain.TrackBean;
@@ -25,6 +26,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,6 +42,7 @@ public class ThbwikiService {
     private final ThbwikiCacheService cacheService;
     private final ObjectMapper objectMapper;
     private final Clock clock = Clock.systemUTC();
+    private final TrackMapper trackMapper;
 
     /** Functional interface for HTTP execution — enables test mocking. */
     private ThbwikiHttpClient httpClient = url -> HttpRequest.get(url)
@@ -114,54 +117,25 @@ public class ThbwikiService {
     }
 
     /**
-     * 解析 MediaWiki OpenSearch API 返回的 JSON 数组
+     * 解析 THBWiki OpenSearch API 返回的 JSON 数组
      *
-     * 响应格式: ["AlbumName", "url1", "url2", ...]
-     * 第一项是搜索词，后续是匹配的 URL 列表
+     * 响应格式: [{"text":"专辑名","link":"https://..."}, ...]
      */
     private List<ThbwikiAlbum> parseOpenSearchResponse(String json) {
-        List<ThbwikiAlbum> results = new ArrayList<>();
-
         try {
-            List<?> items = objectMapper.readValue(json, List.class);
-            if (items.size() < 2) {
-                return results;
-            }
-
-            // items[0] = 搜索词, items[1] = URL 数组
-            Object urls = items.get(1);
-            if (urls instanceof List<?> urlList) {
-                for (Object url : urlList) {
-                    if (url instanceof String urlStr) {
-                        ThbwikiAlbum album = new ThbwikiAlbum();
-                        // 从 URL 提取专辑名作为显示名称
-                        album.setName(extractTitleFromUrl(urlStr));
-                        album.setUrl(urlStr);
-                        results.add(album);
-                    }
+            List<ThbwikiAlbum> results = objectMapper.readValue(json, new TypeReference<>() {});
+            // Normalize all URLs to HTTPS
+            for (ThbwikiAlbum album : results) {
+                if (album.getUrl() != null) {
+                    album.setUrl(album.getUrl().replaceFirst("^http://", "https://"));
                 }
             }
-
             log.info("Found {} results from THBWiki", results.size());
-
+            return results;
         } catch (Exception e) {
             log.error("Error parsing OpenSearch response: {}", json, e);
+            return List.of();
         }
-
-        return results;
-    }
-
-    /**
-     * 从 THBWiki URL 提取专辑标题
-     * 例如: https://thbwiki.cc/Satori_Maiden -> Satori Maiden
-     */
-    private String extractTitleFromUrl(String url) {
-        if (url == null) {
-            return "";
-        }
-        // 移除基础 URL 和下划线
-        String title = url.substring(url.lastIndexOf('/') + 1);
-        return title.replace('_', ' ');
     }
 
     /**
@@ -234,7 +208,6 @@ public class ThbwikiService {
     private static final double MIN_CONFIDENCE_THRESHOLD = 0.85;
     private static final LevenshteinDistance LEVENSHTEIN = new LevenshteinDistance(Integer.MAX_VALUE);
 
-    private TrackMapper trackMapper;
 
     /**
      * 获取缓存的专辑
@@ -373,67 +346,182 @@ public class ThbwikiService {
     }
 
     /**
-     * 解析曲目列表
+     * 解析曲目列表。
+     *
+     * 真实 THBWiki 页面结构（.wikitable.musicTable）:
+     *   轨道行: cell[0]=编号(如"01"), cell[1]=曲名(id=轨道名), cell[2]=时长
+     *   元数据行: cell[0]=空, cell[1]=标签(编曲/演唱/原曲), cell[2]=值
+     *   原曲 cell[2] 含多个 .ogmusic>a (各原曲歌曲) 和一个 .source>a (原作游戏)
+     *
+     * 每个轨道行的后续元数据行（直到下一轨道行）属于该轨道。
      */
     List<ThbwikiTrack> parseTracks(Document doc) {
         List<ThbwikiTrack> tracks = new ArrayList<>();
 
-        // Try multiple CSS selector strategies (fallback pattern)
-        Elements rows = doc.select("#musicTable tr");
-        if (rows.isEmpty()) {
-            rows = doc.select(".wikitable.musicTable tr");
-        }
+        // Select the music table — #musicTable never exists on real pages,
+        // fall back to the class selector (real pages have class="wikitable musicTable")
+        Elements rows = doc.select(".wikitable.musicTable tr");
         if (rows.isEmpty()) {
             rows = doc.select(".wikitable tr");
         }
 
+        ThbwikiTrack currentTrack = null;
+        String[] pendingOriginalSource = { null };
+        String[] pendingOriginalUrl = { null };
+        List<String> pendingOriginalNames = new ArrayList<>();
+
         for (Element row : rows) {
-            ThbwikiTrack track = parseTrackRow(row);
-            if (track != null) {
-                tracks.add(track);
+            Elements cells = row.select("td");
+            if (cells.isEmpty()) {
+                continue;
             }
+
+            String firstCellText = cells.get(0).text().trim();
+
+            if (isTrackRow(firstCellText, cells)) {
+                // Save previous track's original info before starting new one
+                if (currentTrack != null && !pendingOriginalNames.isEmpty()) {
+                    assignOriginalInfo(currentTrack, pendingOriginalNames, pendingOriginalSource[0], pendingOriginalUrl[0]);
+                }
+
+                // Start a new track
+                currentTrack = new ThbwikiTrack();
+                // Extract track name from the second cell's id attribute (real THBWiki structure)
+                String trackName = extractTrackNameFromRow(cells);
+                currentTrack.setName(TextNormalizer.normalize(trackName));
+                tracks.add(currentTrack);
+
+                // Reset pending original info
+                pendingOriginalSource[0] = null;
+                pendingOriginalUrl[0] = null;
+                pendingOriginalNames.clear();
+
+            } else if (currentTrack != null && cells.size() >= 2) {
+                // Metadata row belonging to current track
+                String label = cells.get(1).text().trim();
+                if ("原曲".equals(label) && cells.size() >= 3) {
+                    // Parse original source from the value cell
+                    Element valueCell = cells.get(2);
+                    parseOriginalSourceFromCell(valueCell,
+                            (name, url, source) -> {
+                                if (name != null && !name.isBlank()) {
+                                    pendingOriginalNames.add(name);
+                                }
+                                if (url != null && url.contains("/")) {
+                                    pendingOriginalUrl[0] = url;
+                                }
+                                if (source != null && !source.isBlank()) {
+                                    pendingOriginalSource[0] = source;
+                                }
+                            });
+                }
+            }
+        }
+
+        // Attach original info to the last track
+        if (currentTrack != null && !pendingOriginalNames.isEmpty()) {
+            assignOriginalInfo(currentTrack, pendingOriginalNames, pendingOriginalSource[0], pendingOriginalUrl[0]);
         }
 
         return tracks;
     }
 
     /**
-     * 解析单行曲目数据
+     * 将原曲信息赋值给轨道对象。
+     * 每个 ogmusic 条目单独与 game source 拼接，多行显示。
+     * 例如: "少女さとり　～ 3rd eye ／ 东方地灵殿　～ Subterranean Animism."
+     *       "ハルトマンの妖怪少女 ／ 东方地灵殿　～ Subterranean Animism."
      */
-    ThbwikiTrack parseTrackRow(Element row) {
-        Elements cells = row.select("td");
-        if (cells.isEmpty()) {
-            return null;
+    private void assignOriginalInfo(ThbwikiTrack track, List<String> originalNames,
+            String originalSource, String originalUrl) {
+        if (originalNames.isEmpty()) {
+            return;
         }
-
-        ThbwikiTrack track = new ThbwikiTrack();
-        // Track name from first cell
-        track.setName(TextNormalizer.normalize(cells.get(0).text()));
-
-        // Original source from second cell (index 1)
-        if (cells.size() > 1) {
-            Element ogmusic = cells.get(1).selectFirst(".ogmusic");
-            if (ogmusic != null) {
-                Element source = ogmusic.selectFirst(".source");
-                if (source != null) {
-                    track.setOriginalSource(TextNormalizer.normalize(source.text()));
-                    String href = source.attr("href");
-                    if (!href.startsWith("http")) {
-                        href = THBWIKI_BASE_URL + href;
-                    }
-                    track.setOriginalUrl(href);
-                    // Original name: ogmusic text minus source text
-                    String originalName = ogmusic.text().replace(source.text(), "").trim();
-                    track.setOriginalName(TextNormalizer.normalize(originalName));
-                }
+        // Build: each ogmusic name paired with the game source, newline-separated
+        List<String> lines = new ArrayList<>();
+        for (String name : originalNames) {
+            if (name != null && !name.isBlank() && originalSource != null && !originalSource.isBlank()) {
+                lines.add(name + " ／ " + originalSource);
+            } else if (name != null && !name.isBlank()) {
+                lines.add(name);
             }
         }
-
-        return track;
+        if (!lines.isEmpty()) {
+            track.setOriginalName(String.join("\n", lines));
+        }
+        track.setOriginalSource(originalSource);
+        track.setOriginalUrl(originalUrl);
     }
 
-    public void setTrackMapper(TrackMapper trackMapper) {
-        this.trackMapper = trackMapper;
+    /**
+     * 判断一行是否为轨道行。
+     * 轨道行的特征：cell[0] 是纯数字（如 "01"），cell[1] 有 id 属性（轨道名）
+     * 元数据行的特征：cell[0] 为空，cell[1] 是纯文本标签（编曲/演唱/原曲等）
+     */
+    private boolean isTrackRow(String firstCellText, Elements cells) {
+        if (!firstCellText.isEmpty() && firstCellText.matches("\\d+")) {
+            // Numeric first cell — definitely a track row
+            return cells.size() >= 2;
+        }
+        // Fallback: check if cell[1] has an id attribute (track name cell)
+        if (cells.size() >= 2) {
+            String id = cells.get(1).attr("id");
+            if (!id.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 从轨道行提取曲名。
+     * 真实 THBWiki: cell[1] 的 id 属性 = URL 安全的轨道名（需解码下划线为空格）
+     * Fallback: 直接用 cell[1] 的文本内容
+     */
+    private String extractTrackNameFromRow(Elements cells) {
+        // Primary: get from id attribute of second cell
+        String id = cells.get(1).attr("id");
+        if (!id.isEmpty()) {
+            return id.replace('_', ' ');
+        }
+        // Fallback: text content of second cell
+        return cells.get(1).text();
+    }
+
+    /**
+     * 从元数据行的值单元格解析原曲信息。
+     * 结构: cell 包含多个 .ogmusic>a (各原曲歌曲) 和一个 .source>a (原作游戏)
+     * - .ogmusic>a: href → 原曲歌曲页面 URL, text → 原曲歌曲名
+     * - .source>a: href → 原作游戏页面 URL, text → 原作游戏名
+     */
+    private void parseOriginalSourceFromCell(Element cell, OriginalSourceCallback callback) {
+        // Collect all .ogmusic>a links (individual song pages)
+        Elements ogmusicLinks = cell.select(".ogmusic > a");
+        for (Element link : ogmusicLinks) {
+            String href = link.attr("href");
+            String text = link.text();
+            if (!href.startsWith("http")) {
+                href = THBWIKI_BASE_URL + href;
+            }
+            callback.onOriginalSource(TextNormalizer.normalize(text), href, null);
+        }
+
+        // The .source>a sibling provides the game URL
+        // It is a sibling of .ogmusic divs, NOT inside .ogmusic
+        Element sourceLink = cell.selectFirst(".source > a");
+        if (sourceLink != null) {
+            String href = sourceLink.attr("href");
+            String text = sourceLink.text();
+            if (!href.startsWith("http")) {
+                href = THBWIKI_BASE_URL + href;
+            }
+            callback.onOriginalSource(null, href, TextNormalizer.normalize(text));
+        }
+    }
+
+    @FunctionalInterface
+    interface OriginalSourceCallback {
+        void onOriginalSource(String originalName, String originalUrl, String originalSource);
     }
 
     /**
@@ -561,18 +649,17 @@ public class ThbwikiService {
 
     /**
      * Build a formatted original info string from a THBWiki track.
-     * Format: "原曲出处 - 原曲名称" or just "原曲出处" if name is missing.
+     * Returns the pre-formatted originalName (which already contains all ogmusic entries
+     * in "name ／ source" format), or falls back to originalSource if originalName is empty.
      */
     private String buildOriginalInfo(ThbwikiTrack thbwikiTrack) {
-        String source = thbwikiTrack.getOriginalSource();
         String name = thbwikiTrack.getOriginalName();
+        String source = thbwikiTrack.getOriginalSource();
 
-        if (source != null && name != null && !name.isBlank()) {
-            return source + " - " + name;
+        if (name != null && !name.isBlank()) {
+            return name;
         } else if (source != null && !source.isBlank()) {
             return source;
-        } else if (name != null && !name.isBlank()) {
-            return name;
         }
         return "";
     }

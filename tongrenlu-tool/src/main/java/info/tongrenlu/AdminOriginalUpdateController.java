@@ -1,8 +1,12 @@
 package info.tongrenlu;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import info.tongrenlu.domain.ArticleBean;
+import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.enums.ThbWikiStatus;
 import info.tongrenlu.mapper.ArticleMapper;
+import info.tongrenlu.mapper.TrackMapper;
 import info.tongrenlu.model.ThbwikiAlbum;
 import info.tongrenlu.service.ThbwikiService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,7 @@ public class AdminOriginalUpdateController {
     private final OriginalUpdateJob job;
     private final ThbwikiService thbwikiService;
     private final ArticleMapper articleMapper;
+    private final TrackMapper trackMapper;
 
     @GetMapping("/status")
     public OriginalUpdateJob.JobStatus status() {
@@ -39,9 +44,35 @@ public class AdminOriginalUpdateController {
     }
 
     @PostMapping("/trigger")
-    public Map<String, Boolean> trigger() {
-        job.trigger();
-        return Map.of("triggered", true);
+    public ResponseEntity<Map<String, Object>> trigger(@RequestParam(value = "reset", required = false) Boolean reset) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (Boolean.TRUE.equals(reset)) {
+            // Reset all tracks' original info and all albums' status to PENDING
+            List<TrackBean> tracks = trackMapper.selectList(null);
+            for (TrackBean track : tracks) {
+                track.setOriginal(null);
+                track.setOriginalUrl(null);
+                trackMapper.updateById(track);
+            }
+
+            articleMapper.update(null,
+                    new LambdaUpdateWrapper<ArticleBean>()
+                            .set(ArticleBean::getThbWikiStatus, ThbWikiStatus.PENDING.name())
+                            .set(ArticleBean::getThbWikiUrl, null)
+                            .set(ArticleBean::getUpdDate, new Date()));
+
+            log.info("Reset all tracks' original info and all albums to PENDING. Tracks affected: {}", tracks.size());
+            response.put("success", true);
+            response.put("message", "已重置所有曲目原曲信息和专辑状态");
+            response.put("tracksReset", tracks.size());
+        } else {
+            job.trigger();
+            response.put("success", true);
+            response.put("message", "任务已触发");
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/pause")
