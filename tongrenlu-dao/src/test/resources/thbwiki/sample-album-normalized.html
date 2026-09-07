@@ -9,38 +9,67 @@
         <span class="mw-page-title-main">Album０１　Remix</span>
     </h1>
 
-    <table id="musicTable" class="wikitable musicTable">
-        <thead>
-            <tr>
-                <th>曲名</th>
-                <th>原曲</th>
-                <th>备注</th>
-            </tr>
-        </thead>
+    <!-- Real THBWiki multi-row structure.
+         Tests TextNormalizer.normalize() is applied at all extraction points.
+         Track names are read from cell[1].id attribute. -->
+    <table class="wikitable musicTable" border="1">
         <tbody>
-            <!-- Track 0: circled digit in name; originalSource has ideographic space → normalize collapses it -->
+            <!-- Track 0: circled digit in id; ideographic space → normalize collapses it.
+                 id="①_Satori_Maiden" → "① Satori Maiden" after underscore→space + normalize. -->
             <tr>
-                <td>①　Satori Maiden</td>
-                <td class="ogmusic">
-                    <a class="source" href="/少女さとり_-_original">少女さとり　Original</a>
-                </td>
-                <td></td>
+                <td id="1" class="infoRD"><b>01</b></td>
+                <td id="①_Satori_Maiden" colspan="2" class="title">①　Satori Maiden</td>
+                <td class="time">03:00</td>
             </tr>
-            <!-- Track 1: leading/trailing/internal spaces collapsed -->
             <tr>
-                <td>　　SATORI　　MAIDEN　　</td>
-                <td class="ogmusic">
-                    <a class="source" href="/さとり_-_maiden">さとり - maiden</a>
+                <td class="left"></td>
+                <td class="label">原曲</td>
+                <td class="text" colspan="2">
+                    <div class="ogmusic">
+                        <a href="/少女さとり_-_original" class="mw-redirect" title="少女さとり Original">少女さとり　Original</a>
+                    </div>
+                    <div class="source">
+                        <a href="/sample_game" class="mw-redirect" title="Sample Game">Sample Game</a>
+                    </div>
                 </td>
-                <td></td>
             </tr>
-            <!-- Track 2: originalName from text BEFORE source in ogmusic; ideographic space normalized -->
+
+            <!-- Track 1: all-caps, leading/trailing/internal spaces in id; normalize collapses them.
+                 id="SATORI_MAIDEN" → "SATORI MAIDEN" after underscore→space + normalize (uppercase stays). -->
             <tr>
-                <td>Album Remix</td>
-                <td class="ogmusic">
-                    Album　Remix<a class="source" href="/album_original">Album　Original</a>
+                <td id="2" class="infoRD"><b>02</b></td>
+                <td id="SATORI_MAIDEN" colspan="2" class="title">　　SATORI　　MAIDEN　　</td>
+                <td class="time">04:00</td>
+            </tr>
+            <tr>
+                <td class="left"></td>
+                <td class="label">原曲</td>
+                <td class="text" colspan="2">
+                    <div class="source">
+                        <a href="/sample_game" class="mw-redirect" title="Sample Game">Sample Game</a>
+                    </div>
                 </td>
-                <td></td>
+            </tr>
+
+            <!-- Track 2: ideographic space and newline in id → normalize collapses both.
+                 id="Album_Remix" → "Album Remix" after underscore→space + normalize.
+                 Also tests that originalSource normalization handles ideographic space. -->
+            <tr>
+                <td id="3" class="infoRD"><b>03</b></td>
+                <td id="Album_Remix" colspan="2" class="title">Album Remix</td>
+                <td class="time">05:00</td>
+            </tr>
+            <tr>
+                <td class="left"></td>
+                <td class="label">原曲</td>
+                <td class="text" colspan="2">
+                    <div class="ogmusic">
+                        <a href="/album_original" class="mw-redirect" title="Album Original">Album　Original</a>
+                    </div>
+                    <div class="source">
+                        <a href="/sample_game" class="mw-redirect" title="Sample Game">Sample Game</a>
+                    </div>
+                </td>
             </tr>
         </tbody>
     </table>

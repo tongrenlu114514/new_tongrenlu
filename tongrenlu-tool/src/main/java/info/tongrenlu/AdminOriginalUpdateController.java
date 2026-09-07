@@ -1,6 +1,5 @@
 package info.tongrenlu;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.TrackBean;

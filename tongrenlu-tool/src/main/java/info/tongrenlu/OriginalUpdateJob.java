@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,7 +43,7 @@ public class OriginalUpdateJob {
 
     private static final int PAGE_SIZE = 10;
 
-    @Scheduled(cron = "${app.original-update.cron:0 0 3 * * ?}")
+    @Scheduled(fixedDelay = 120, initialDelay = 60, timeUnit = TimeUnit.SECONDS)
     public void runScheduledCycle() {
         runCycle();
     }

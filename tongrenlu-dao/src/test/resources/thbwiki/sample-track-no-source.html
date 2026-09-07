@@ -9,27 +9,44 @@
         <span class="mw-page-title-main">Album Without Sources</span>
     </h1>
 
-    <table id="musicTable" class="wikitable musicTable">
-        <thead>
-            <tr>
-                <th>曲名</th>
-                <th>原曲</th>
-            </tr>
-        </thead>
+    <!-- Real THBWiki multi-row structure.
+         Edge cases: track with no following original row, track with empty metadata. -->
+    <table class="wikitable musicTable" border="1">
         <tbody>
+            <!-- Track 1: has original row with source -->
             <tr>
-                <td>Track With Source</td>
-                <td class="ogmusic">
-                    <a class="source" href="/sample">Sample Source</a>
+                <td id="1" class="infoRD"><b>01</b></td>
+                <td id="Track_With_Source" colspan="2" class="title">Track With Source</td>
+                <td class="time">03:00</td>
+            </tr>
+            <tr>
+                <td class="left"></td>
+                <td class="label">原曲</td>
+                <td class="text" colspan="2">
+                    <div class="ogmusic">
+                        <a href="/Sample_Source" class="mw-redirect" title="Sample Source">Sample Source</a>
+                    </div>
+                    <div class="source">
+                        <a href="/Sample_Game" class="mw-redirect" title="Sample Game">Sample Game</a>
+                    </div>
                 </td>
             </tr>
+            <!-- Track 2: no following original row (edge case) -->
             <tr>
-                <td>Track Without Source</td>
-                <td></td>
+                <td id="2" class="infoRD"><b>02</b></td>
+                <td id="Track_No_Row" colspan="2" class="title">Track Without Original Row</td>
+                <td class="time">04:00</td>
+            </tr>
+            <!-- Track 3: metadata row exists but empty value (edge case) -->
+            <tr>
+                <td id="3" class="infoRD"><b>03</b></td>
+                <td id="Track_Empty" colspan="2" class="title">Track Empty Metadata</td>
+                <td class="time">05:00</td>
             </tr>
             <tr>
-                <td>Track Without Ogmusic Class</td>
-                <td>Some other content</td>
+                <td class="left"></td>
+                <td class="label">编曲</td>
+                <td class="text" colspan="2"></td>
             </tr>
         </tbody>
     </table>
