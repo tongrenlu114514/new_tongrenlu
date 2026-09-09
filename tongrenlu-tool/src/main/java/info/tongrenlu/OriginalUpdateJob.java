@@ -41,7 +41,7 @@ public class OriginalUpdateJob {
     /** Cursor page for resume after pause. */
     private volatile int currentPage = 1;
 
-    private static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 100;
 
     @Scheduled(fixedDelay = 120, initialDelay = 60, timeUnit = TimeUnit.SECONDS)
     public void runScheduledCycle() {
@@ -71,8 +71,6 @@ public class OriginalUpdateJob {
             currentPhase.set("IDLE");
             return;
         }
-
-        int matchCount = 0;
 
         for (ArticleBean album : page.getRecords()) {
             if (paused.get()) {
@@ -127,7 +125,6 @@ public class OriginalUpdateJob {
             album.setUpdDate(new Date());
             articleMapper.updateById(album);
 
-            matchCount += albumMatchCount;
             log.info("Completed album: {}, {} tracks matched", album.getTitle(), albumMatchCount);
         }
 
