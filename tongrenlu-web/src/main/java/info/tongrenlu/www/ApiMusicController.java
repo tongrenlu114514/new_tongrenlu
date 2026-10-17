@@ -135,6 +135,21 @@ public class ApiMusicController {
         return ResponseEntity.ok(tags);
     }
 
+    @GetMapping("track-search")
+    public ResponseEntity<Map<String, Object>> searchTracks(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "30") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        List<Map<String, Object>> tracks = this.musicService.searchTracks(keyword, limit, offset);
+        long total = this.musicService.countSearchTracks(keyword);
+        Map<String, Object> result = new HashMap<>();
+        result.put("items", tracks);
+        result.put("total", total);
+        result.put("hasMore", offset + tracks.size() < total);
+        result.put("nextOffset", offset + tracks.size());
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/artists")
     public ResponseEntity<Map<String, Object>> getArtists(
             @RequestParam(required = false) String keyword,

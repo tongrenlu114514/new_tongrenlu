@@ -719,4 +719,27 @@ public class HomeMusicService {
     public List<Map<String, Object>> getPopularTags(int limit) {
         return articleTagMapper.getPopularTags(limit);
     }
+
+    /**
+     * 搜索单曲
+     * 根据关键字搜索曲目，支持按曲目名称、原曲名、云音乐名搜索
+     *
+     * @param keyword  搜索关键字
+     * @param limit    每页数量
+     * @param offset   偏移量
+     * @return 搜索结果列表
+     */
+    public List<Map<String, Object>> searchTracks(String keyword, int limit, int offset) {
+        return trackMapper.searchTracks(keyword, limit, offset);
+    }
+
+    /**
+     * 统计搜索单曲的总数
+     *
+     * @param keyword 搜索关键字
+     * @return 匹配的曲目总数
+     */
+    public long countSearchTracks(String keyword) {
+        return trackMapper.countSearchTracks(keyword);
+    }
 }
