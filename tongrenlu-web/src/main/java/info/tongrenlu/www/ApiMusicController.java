@@ -4,6 +4,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import info.tongrenlu.config.FoliaConfig;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.AlbumDetailBean;
 import info.tongrenlu.domain.TrackBean;
@@ -32,6 +33,7 @@ public class ApiMusicController {
 
     private final HomeMusicService musicService;
     private final ArtistService artistService;
+    private final FoliaConfig foliaConfig;
 
     @GetMapping("search")
     public Page<ArticleBean> search(
@@ -156,6 +158,13 @@ public class ApiMusicController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "30") int limit) {
         Map<String, Object> result = this.artistService.getArtistsWithAlbumCountPaged(keyword, page, limit);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/folia-album-url")
+    public ResponseEntity<Map<String, Object>> getFoliaAlbumUrl(@RequestParam Long albumId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("url", foliaConfig.albumUrl(albumId));
         return ResponseEntity.ok(result);
     }
 

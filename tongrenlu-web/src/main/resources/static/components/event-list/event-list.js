@@ -527,8 +527,8 @@
         elements.modalBody.querySelectorAll('.event-album-item').forEach(item => {
             item.addEventListener('click', () => {
                 const albumId = item.dataset.id;
-                // 跳转到播放器
-                window.location.href = `player.html?album=${albumId}`;
+                // 跳转到 Folia 播放器
+                openFoliaPlayer(albumId, { newTab: false });
             });
         });
     }

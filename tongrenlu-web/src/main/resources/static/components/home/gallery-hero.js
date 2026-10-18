@@ -125,7 +125,7 @@
             this.$grid.on('click', '.home-gallery-item', function() {
                 const albumId = $(this).data('album-id');
                 if (albumId) {
-                    window.open('player.html?album=' + albumId, '_blank');
+                    openFoliaPlayer(albumId);
                 }
             });
         },

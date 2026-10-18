@@ -337,10 +337,10 @@ function renderAlbums() {
         
         item.append(cover, title);
         
-        // 点击跳转到播放器页面
+        // 点击跳转到 Folia 播放器
         item.on('click', function() {
             closeArtistModal();
-            window.location.href = 'player.html?album=' + album.id;
+            openFoliaPlayer(album.id, { newTab: false });
         });
         
         list.append(item);

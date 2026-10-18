@@ -260,8 +260,7 @@ async function updateAlbumModal(albumId) {
             playAllBtn.off('click').on('click', function() {
                 const albumId = $('.album-art').attr('data-album-id');
                 if (albumId) {
-                    const playerUrl = `player.html?album=${albumId}`;
-                    window.open(playerUrl, '_blank');
+                    openFoliaPlayer(albumId);
                 }
             });
         }
@@ -283,8 +282,7 @@ async function updateAlbumModal(albumId) {
                     const albumId = albumArt.attr('data-album-id');
 
                     if (albumId) {
-                        const playerUrl = `player.html?album=${albumId}`;
-                        window.open(playerUrl, '_blank');
+                        openFoliaPlayer(albumId);
                     }
                 }
             } else {
@@ -542,8 +540,7 @@ function renderSearchResults(data) {
         if (card.length > 0) {
             const albumId = card.data('album-id');
             if (albumId) {
-                const playerUrl = `player.html?album=${albumId}`;
-                window.open(playerUrl, '_blank');
+                openFoliaPlayer(albumId);
             }
         }
     });

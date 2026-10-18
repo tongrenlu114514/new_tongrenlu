@@ -130,6 +130,7 @@
     <!-- JavaScript -->
     <script src="webjars/jquery/jquery.min.js"></script>
     <script src="components/shared/image-loader.js"></script>
+    <script src="components/shared/folia-player.js"></script>
     <script>
         // 获取优化后的图片URL
         function getOptimizedImageUrl(url, width, height) {
@@ -164,8 +165,8 @@
                 $gallery.on('click', '.geo-gallery-bg__item', function() {
                     const albumId = $(this).data('album-id');
                     if (albumId) {
-                        // 跳转到播放器页面
-                        window.open(`player.html?album=${albumId}`, '_blank');
+                        // 跳转到 Folia 播放器
+                        openFoliaPlayer(albumId);
                     }
                 });
             }

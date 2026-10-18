@@ -32,7 +32,7 @@
             // "开始探索"按钮
             $('#start-explore-btn').on('click', function(e) {
                 e.preventDefault();
-                window.open('player.html', '_blank');
+                openFoliaPlayer();
             });
 
             // 专辑卡片点击 - 打开专辑详情
@@ -44,8 +44,8 @@
 
                 const albumId = $(this).data('album-id');
                 if (albumId) {
-                    // 跳转到播放器页面播放该专辑
-                    window.open('player.html?album=' + albumId, '_blank');
+                    // 跳转到 Folia 播放器播放该专辑
+                    openFoliaPlayer(albumId);
                 }
             });
 
@@ -58,7 +58,7 @@
                 const albumId = $card.data('album-id');
 
                 if (albumId) {
-                    window.open('player.html?album=' + albumId, '_blank');
+                    openFoliaPlayer(albumId);
                 }
             });
 
