@@ -12,6 +12,6 @@ public class FoliaConfig {
     private String baseUrl;
 
     public String albumUrl(Long albumId) {
-        return baseUrl + "#collection/online/tongrenlu/album/" + albumId;
+        return baseUrl + "?album=" + albumId;
     }
 }
