@@ -1,543 +1,316 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="no-js">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>东方同人录 - 几何未来主义</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/geometric-theme.css" rel="stylesheet">
-    
-    <style>
-        /* Hero：全幅动态封面画廊背景 */
-        .geo-hero {
-            min-height: 100vh;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* 画廊背景 */
-        .geo-gallery-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-template-rows: repeat(4, 1fr);
-            gap: 4px;
-            padding: 4px;
-            opacity: 1;
-            z-index: 0;
-        }
-        
-        .geo-gallery-bg__item {
-            position: relative;
-            overflow: hidden;
-            background: var(--geo-bg-alt);
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        
-        .geo-gallery-bg__item:hover {
-            transform: scale(1.05);
-            z-index: 1;
-        }
-        
-        .geo-gallery-bg__cover {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background-size: cover;
-            background-position: center;
-            transition: transform 8s ease, opacity 0.8s ease;
-        }
-        
-        .geo-gallery-bg__cover.zoom {
-            transform: scale(1.15);
-        }
-        
-        .geo-gallery-bg__cover.fade {
-            opacity: 0;
-        }
-        
-        @media (max-width: 1024px) {
-            .geo-gallery-bg {
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(5, 1fr);
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .geo-gallery-bg {
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(4, 1fr);
-            }
-        }
-    </style>
-    <!-- 首页动效样式：置于内联样式之后，可覆盖其中的过渡规则 -->
-    <link href="assets/css/home-dynamic.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>东方同人录 · 東方同人音楽档案</title>
+<meta name="description" content="东方同人录 TONGRENLU：收录东方 Project 同人音乐专辑、创作者与展会的可检索声音档案。">
+<meta name="theme-color" content="#0b0b10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b10'/%3E%3Cpath d='M16 6l10 10-10 10L6 16z' fill='none' stroke='%23e94560' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%23f4f3ef'/%3E%3C/svg%3E">
+<meta property="og:title" content="东方同人录 · 東方同人音楽档案">
+<meta property="og:description" content="把散落在各处的东方同人音乐专辑、创作者与展会，整理成可以检索的声音档案。">
+<meta property="og:type" content="website">
+
+<script>document.documentElement.classList.replace('no-js','js');</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+SC:wght@400;700;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="assets/css/home-archive.css" rel="stylesheet">
 </head>
-<body class="geo-theme">
-    <!-- 导航栏 -->
-    <nav class="geo-nav">
-        <div class="geo-nav__brand">
-            <a href="index.html" class="geo-logo">TONGRENLU</a>
-            <span class="geo-logo-zh">东方同人录</span>
-        </div>
-        <div class="geo-nav__links">
-            <a href="index.html" class="geo-nav__link active">首页</a>
-            <a href="album.html" class="geo-nav__link">音乐库<span class="geo-nav__count" id="navAlbumCount">--</span></a>
-            <a href="artist-showcase.html" class="geo-nav__link">艺术家<span class="geo-nav__count" id="navArtistCount">--</span></a>
-            <a href="event.html" class="geo-nav__link">展会<span class="geo-nav__count" id="navEventCount">--</span></a>
-        </div>
+
+<body class="archive">
+<a class="skip" href="#main">跳到主要内容</a>
+
+<div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+
+<!-- ══ nav ══════════════════════════════════════════════════════════════ -->
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a class="brand" href="index.html" aria-label="东方同人录 首页">
+      <span class="brand__mark">TONGRENLU</span>
+      <span class="brand__cn">东方同人录</span>
+    </a>
+
+    <nav class="nav__links" aria-label="主导航">
+      <a class="nav__link is-current" href="index.html"><em>01</em>首页</a>
+      <a class="nav__link" href="album.html"><em>02</em>音乐库</a>
+      <a class="nav__link" href="artist-showcase.html"><em>03</em>艺术家</a>
+      <a class="nav__link" href="event.html"><em>04</em>展会</a>
     </nav>
-    
-    <!-- Hero区域 -->
-    <section class="geo-hero">
-        <!-- 画廊背景 -->
-        <div class="geo-gallery-bg" id="galleryBg">
-            <!-- JavaScript动态生成 -->
+
+    <div class="nav__side">
+      <span class="nav__stat"><b id="navAlbums"></b>ALBUMS</span>
+      <button class="nav__shuffle" id="shuffleBtn" type="button">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+          <path d="M21 2v6h-6M3 22v-6h6"/>
+          <path d="M21 8a9 9 0 0 0-15.5-3.4L3 7M3 16a9 9 0 0 0 15.5 3.4L21 17"/>
+        </svg>
+        随机播放
+      </button>
+      <button class="burger" id="burger" type="button" aria-expanded="false" aria-controls="menu" aria-label="打开菜单">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- mobile menu -->
+<div class="menu" id="menu" aria-hidden="true">
+  <nav class="menu__list" aria-label="移动导航">
+    <a class="menu__item" href="index.html"><em>01</em>首页<i>HOME</i></a>
+    <a class="menu__item" href="album.html"><em>02</em>音乐库<i id="menuAlbums"></i></a>
+    <a class="menu__item" href="artist-showcase.html"><em>03</em>艺术家<i id="menuArtists"></i></a>
+    <a class="menu__item" href="event.html"><em>04</em>展会<i id="menuEvents"></i></a>
+  </nav>
+  <div class="menu__foot">
+    <span>TONGRENLU ARCHIVE</span>
+    <span>只为学习交流</span>
+  </div>
+</div>
+
+<main id="main">
+
+  <!-- ══ hero ═══════════════════════════════════════════════════════════ -->
+  <section class="hero" id="top">
+    <div class="wall" id="wall" aria-hidden="true"></div>
+    <div class="hero__scrim" aria-hidden="true"></div>
+
+    <div class="hero__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+    <span class="hero__spine" aria-hidden="true">東方同人音楽アーカイブ: TONGRENLU</span>
+
+    <div class="wrap hero__inner">
+      <h1 class="hero__title">
+        <span class="ln"><span style="--d:120ms">幻想乡的</span></span>
+        <span class="ln"><span style="--d:240ms">每一张唱片</span></span>
+        <span class="ln ln--ghost"><span style="--d:360ms">都在这里</span></span>
+      </h1>
+
+      <p class="hero__lede">
+        把散落在各处的东方 Project 同人音乐专辑、创作者与展会，
+        整理成可以检索的声音档案。按年代、社团与标签，重新遇见那些只存在于展台一角的作品。
+      </p>
+
+      <div class="hero__actions">
+        <a class="btn btn--light" href="album.html">进入音乐库</a>
+        <button class="btn btn--ghost btn--onDark" id="heroRandom" type="button">随机听一张</button>
+      </div>
+
+      <dl class="hero__stats">
+        <div class="stat">
+          <dt class="stat__label">已收录专辑</dt>
+          <dd class="stat__num" id="statAlbums"></dd>
+        </div>
+        <div class="stat">
+          <dt class="stat__label">创作者</dt>
+          <dd class="stat__num" id="statArtists"></dd>
+        </div>
+        <div class="stat">
+          <dt class="stat__label">发行展会</dt>
+          <dd class="stat__num" id="statEvents"></dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="wrap hero__foot">
+      <span class="scrollcue"><span class="scrollcue__line"></span>SCROLL</span>
+      <span class="hero__hint"><i></i>点击封面，直接开始播放</span>
+    </div>
+  </section>
+
+  <!-- ══ 01 latest ══════════════════════════════════════════════════════ -->
+  <section class="section" id="latest" aria-labelledby="latestTitle">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-head__no">01</span>
+        <span class="sec-head__label">Latest Additions</span>
+        <span class="sec-head__rule"></span>
+        <a class="lnk" href="album.html">浏览全部专辑</a>
+      </div>
+
+      <div class="sec-actions">
+        <div>
+          <h2 class="sec-title" id="latestTitle" data-reveal>最近收录</h2>
+          <p class="sec-lede" data-reveal style="--d:120ms">
+            档案每天在生长。这里是最新入库的一批唱片，按发行日期排序，从最近的一场展会往前翻。
+          </p>
+        </div>
+      </div>
+
+      <div class="rail" id="rail" tabindex="0" role="region" aria-label="最近收录专辑，可横向滚动">
+        <div class="rail__track" id="latestTrack">
+          <div class="sleeve"><div class="sleeve__art sk"></div><div class="sleeve__meta"><div class="sleeve__title sk" style="height:14px;width:80%"></div><div class="sleeve__artist sk" style="height:10px;width:50%"></div></div></div>
+          <div class="sleeve"><div class="sleeve__art sk"></div><div class="sleeve__meta"><div class="sleeve__title sk" style="height:14px;width:70%"></div><div class="sleeve__artist sk" style="height:10px;width:45%"></div></div></div>
+          <div class="sleeve"><div class="sleeve__art sk"></div><div class="sleeve__meta"><div class="sleeve__title sk" style="height:14px;width:85%"></div><div class="sleeve__artist sk" style="height:10px;width:40%"></div></div></div>
+          <div class="sleeve"><div class="sleeve__art sk"></div><div class="sleeve__meta"><div class="sleeve__title sk" style="height:14px;width:75%"></div><div class="sleeve__artist sk" style="height:10px;width:55%"></div></div></div>
+          <div class="sleeve"><div class="sleeve__art sk"></div><div class="sleeve__meta"><div class="sleeve__title sk" style="height:14px;width:65%"></div><div class="sleeve__artist sk" style="height:10px;width:50%"></div></div></div>
+          <div class="sleeve"><div class="sleeve__art sk"></div><div class="sleeve__meta"><div class="sleeve__title sk" style="height:14px;width:80%"></div><div class="sleeve__artist sk" style="height:10px;width:42%"></div></div></div>
+        </div>
+      </div>
+
+      <div class="rail__foot">
+        <div class="rail__progress" aria-hidden="true"><i id="railProgress"></i></div>
+        <div class="rail__nav">
+          <button class="rail__btn" id="railPrev" type="button" aria-label="向前浏览">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="rail__btn" id="railNext" type="button" aria-label="向后浏览">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 02 numbers ═════════════════════════════════════════════════════ -->
+  <section class="section section--ink" id="archive" aria-labelledby="archiveTitle">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-head__no">02</span>
+        <span class="sec-head__label">The Archive in Numbers</span>
+        <span class="sec-head__rule"></span>
+        <span class="sec-head__label" id="updatedAt"></span>
+      </div>
+
+      <div class="archive-intro">
+        <h2 class="sec-title sec-title--lg" id="archiveTitle" data-reveal>不是列表，<br>是一部可以听的编年史。</h2>
+        <div class="archive-intro__side">
+          <p class="sec-lede" data-reveal style="--d:120ms">
+            专辑、曲目、原曲出处与社团署名被串在一起。你可以从一张唱片出发，顺着展会与创作者，
+            走到它的邻居与前辈那里去。
+          </p>
+          <a class="lnk" href="album.html" data-reveal style="--d:220ms">开始检索</a>
+        </div>
+      </div>
+
+      <div class="numbers">
+        <div class="ncell" data-reveal style="--d:80ms">
+          <div class="ncell__num num" data-count-target="albums"></div>
+          <div class="ncell__label">Albums 已收录专辑</div>
+          <p class="ncell__note">每一张都经过元数据校对，附带曲目与展会信息。</p>
+        </div>
+        <div class="ncell" data-reveal style="--d:160ms">
+          <div class="ncell__num num" data-count-target="artists"></div>
+          <div class="ncell__label">Creators 创作者</div>
+          <p class="ncell__note">从个人社团到固定编制，按署名归档。</p>
+        </div>
+        <div class="ncell" data-reveal style="--d:240ms">
+          <div class="ncell__num num" data-count-target="events"></div>
+          <div class="ncell__label">Events 展会</div>
+          <p class="ncell__note">以发行事件为坐标，还原作品的时间线。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 03 artists ═════════════════════════════════════════════════════ -->
+  <section class="section" id="creators" aria-labelledby="creatorsTitle">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-head__no">03</span>
+        <span class="sec-head__label">Creators Index</span>
+        <span class="sec-head__rule"></span>
+        <a class="lnk" href="artist-showcase.html">浏览全部创作者</a>
+      </div>
+
+      <div class="artists">
+        <div class="artists__aside">
+          <h2 class="sec-title" id="creatorsTitle" data-reveal>声音的署名</h2>
+          <p class="sec-lede" data-reveal style="--d:120ms">
+            社团、主唱、编曲，在展会的喧嚣里往往只留下一行小字。这里把名字还给作品。
+          </p>
+          <span class="artists__total" data-reveal style="--d:200ms">共 <b id="artistTotal"></b> 位创作者，按专辑数排序</span>
         </div>
 
-        <!-- 漂浮几何装饰（JS注入，动效） -->
-        <div class="geo-hero__floaties" aria-hidden="true"></div>
-    </section>
-
-    <!-- 滚动字幕（动效）：Hero 与页脚之间的流动信息带 -->
-    <div class="geo-ticker" aria-hidden="true">
-        <div class="geo-ticker__track"></div>
+        <ul class="index" id="artistIndex" aria-label="创作者索引"></ul>
+      </div>
     </div>
-    
-    <!-- 页脚 -->
-    <footer class="geo-footer">
-        <div class="geo-footer__logo">TONGRENLU</div>
-        <p class="geo-footer__text">&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
-        <p class="geo-footer__text">本网站仅为学习交流使用，不涉及任何商业用途</p>
-    </footer>
-    
-    <!-- 版本号 -->
-    <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: var(--geo-primary); color: white; padding: 5px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; z-index: 1002; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
-        v2.2 MOSAIC
+  </section>
+
+  <!-- ══ 04 events ══════════════════════════════════════════════════════ -->
+  <section class="section" id="events" aria-labelledby="eventsTitle">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-head__no">04</span>
+        <span class="sec-head__label">Events Timeline</span>
+        <span class="sec-head__rule"></span>
+        <a class="lnk" href="event.html">浏览全部展会</a>
+      </div>
+
+      <div class="events">
+        <div class="events__aside">
+          <h2 class="sec-title" id="eventsTitle" data-reveal>以展台为坐标</h2>
+          <p class="sec-lede" data-reveal style="--d:120ms">
+            例大祭、Comic Market、紅楼夢……每一次摊位的开张，都是一批新唱片诞生的日子。
+          </p>
+        </div>
+
+        <ol class="events__list" id="eventList" aria-label="发行展会，按专辑数排序"></ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ roam ═══════════════════════════════════════════════════════════ -->
+  <section class="roam" aria-labelledby="roamTitle">
+    <div class="roam__strips" aria-hidden="true">
+      <div class="strip strip--a"><div class="strip__track" id="stripA"></div></div>
+      <div class="strip strip--b"><div class="strip__track" id="stripB"></div></div>
+    </div>
+    <div class="roam__scrim" aria-hidden="true"></div>
+
+    <div class="roam__card" data-reveal>
+      <h2 class="roam__title" id="roamTitle">不知道从哪张开始？</h2>
+      <p class="roam__lede">把选择交给档案本身。随机挑一张唱片，从陌生开始，往往会遇见最好的那几首。</p>
+      <button class="btn btn--light" id="randomBtn" type="button">随机听一张</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══ footer ═══════════════════════════════════════════════════════════ -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__top">
+      <p class="kicker kicker--plain">The archive continues, 永不完结的索引</p>
+      <a class="lnk" href="#top">回到顶部</a>
     </div>
 
-    <!-- JavaScript -->
-    <script src="webjars/jquery/jquery.min.js"></script>
-    <script src="components/shared/image-loader.js"></script>
-    <script src="components/shared/folia-player.js"></script>
-    <script>
-        // 获取优化后的图片URL
-        function getOptimizedImageUrl(url, width, height) {
-            if (!url) return url;
-            if (url.includes('music.126.net') || url.includes('127.net')) {
-                const baseUrl = url.split('?')[0];
-                return `${baseUrl}?param=${width}y${height}`;
-            }
-            return url;
-        }
-        
-        $(function() {
-            // 画廊配置
-            const gridCols = window.innerWidth <= 768 ? 12 : 
-                            window.innerWidth <= 1024 ? 20 : 24;
-            let albumData = []; // 保存专辑数据（包含id和封面URL）
-            let currentIndex = 0;
-            
-            // 初始化画廊网格
-            function initGalleryGrid() {
-                const $gallery = $('#galleryBg');
-                $gallery.empty();
-                
-                for (let i = 0; i < gridCols; i++) {
-                    const $item = $('<div class="geo-gallery-bg__item" data-album-id=""></div>');
-                    const $cover = $('<div class="geo-gallery-bg__cover"></div>');
-                    $item.append($cover);
-                    $gallery.append($item);
-                }
-                
-                // 绑定点击事件
-                $gallery.on('click', '.geo-gallery-bg__item', function() {
-                    const albumId = $(this).data('album-id');
-                    if (albumId) {
-                        // 跳转到 Folia 播放器
-                        openFoliaPlayer(albumId);
-                    }
-                });
-            }
-            
-            // 加载随机专辑封面（首次加载）
-            function loadRandomCovers() {
-                $.ajax({
-                    url: 'api/music/random-albums',
-                    method: 'GET',
-                    data: { count: 50 },
-                    success: function(response) {
-                        if (response && response.length > 0) {
-                            // 保存专辑数据（id和封面URL）
-                            albumData = response
-                                .filter(album => album.cloudMusicPicUrl)
-                                .map(album => ({
-                                    id: album.id,
-                                    coverUrl: album.cloudMusicPicUrl
-                                }));
-                            
-                            // 打乱顺序
-                            albumData.sort(() => Math.random() - 0.5);
-                            
-                            // 填充画廊
-                            fillGallery();
-                        }
-                    },
-                    error: function() {
-                        console.error('Failed to load album covers');
-                    }
-                });
-            }
-            
-            // 已使用的封面索引，避免重复
-            let usedCoverIndices = new Set();
-            let isLoadingNewCovers = false;
-            
-            // 获取未使用的专辑数据
-            function getUnusedAlbum() {
-                if (albumData.length === 0) return null;
-                
-                // 如果所有封面都用过了，调用API获取新数据
-                if (usedCoverIndices.size >= albumData.length) {
-                    if (!isLoadingNewCovers) {
-                        loadNewCovers();
-                    }
-                    // 返回随机一个
-                    return albumData[Math.floor(Math.random() * albumData.length)];
-                }
-                
-                // 找一个未使用的索引
-                let index;
-                let attempts = 0;
-                do {
-                    index = Math.floor(Math.random() * albumData.length);
-                    attempts++;
-                } while (usedCoverIndices.has(index) && attempts < 100);
-                
-                usedCoverIndices.add(index);
-                return albumData[index];
-            }
-            
-            // 加载新封面数据
-            function loadNewCovers() {
-                if (isLoadingNewCovers) return;
-                isLoadingNewCovers = true;
-                
-                $.ajax({
-                    url: 'api/music/random-albums',
-                    method: 'GET',
-                    data: { count: 50 },
-                    success: function(response) {
-                        if (response && response.length > 0) {
-                            // 更新专辑数据
-                            albumData = response
-                                .filter(album => album.cloudMusicPicUrl)
-                                .map(album => ({
-                                    id: album.id,
-                                    coverUrl: album.cloudMusicPicUrl
-                                }));
-                            
-                            // 打乱顺序
-                            albumData.sort(() => Math.random() - 0.5);
-                            
-                            // 重置已使用索引
-                            usedCoverIndices.clear();
-                        }
-                        isLoadingNewCovers = false;
-                    },
-                    error: function() {
-                        isLoadingNewCovers = false;
-                    }
-                });
-            }
-            
-            // 启动持续轮换（单线程，小波次翻动，更有“呼吸感”）
-            function startContinuousRefresh() {
-                function doRefresh() {
-                    const $items = $('.geo-gallery-bg__item');
-                    if ($items.length === 0) {
-                        setTimeout(doRefresh, 600);
-                        return;
-                    }
+    <div class="foot__wordmark" aria-hidden="true">TONGRENLU</div>
 
-                    // 获取未悬浮的格子
-                    const $notHovered = $items.not(':hover');
-                    if ($notHovered.length === 0) {
-                        // 所有格子都被悬浮，等待后再试
-                        setTimeout(doRefresh, 400);
-                        return;
-                    }
+    <div class="foot__cols">
+      <div class="fcol">
+        <h3>Navigate</h3>
+        <a href="album.html">音乐库</a>
+        <a href="artist-showcase.html">创作者</a>
+        <a href="event.html">展会</a>
+      </div>
+      <div class="fcol">
+        <h3>Archive</h3>
+        <span>专辑 <b id="footAlbums"></b></span>
+        <span>创作者 <b id="footArtists"></b></span>
+        <span>展会 <b id="footEvents"></b></span>
+      </div>
+      <div class="fcol">
+        <h3>Data</h3>
+        <p>专辑元数据、封面与曲目信息来自公开来源，仅用于学习与交流。</p>
+      </div>
+      <div class="fcol">
+        <h3>Notice</h3>
+        <p>本站所有内容版权归原作者所有，不涉及任何商业用途。</p>
+      </div>
+    </div>
 
-                    // 每波随机挑 2 个未悬浮格子，交错翻页，形成流动感
-                    const waveSize = 2;
-                    const pool = $notHovered.toArray();
-                    const chosen = [];
-                    for (let i = 0; i < waveSize && pool.length > 0; i++) {
-                        const idx = Math.floor(Math.random() * pool.length);
-                        chosen.push(pool.splice(idx, 1)[0]);
-                    }
+    <div class="foot__bar">
+      <span>© 2025 东方同人录 TONGRENLU</span>
+      <span>v3.0 / INDEX</span>
+    </div>
+  </div>
+</footer>
 
-                    chosen.forEach(function (el, i) {
-                        const $item = $(el);
-                        const $cover = $item.find('.geo-gallery-bg__cover');
+<div class="peek" id="peek" aria-hidden="true"><span class="peek__img" id="peekImg"></span></div>
 
-                        setTimeout(function () {
-                            // 淡出
-                            $cover.addClass('fade');
-
-                            setTimeout(function () {
-                                const album = getUnusedAlbum();
-                                if (album) {
-                                    const optimizedUrl = getOptimizedImageUrl(album.coverUrl, 300, 300);
-                                    $cover.css('background-image', `url('${optimizedUrl}')`);
-                                    // 更新专辑ID
-                                    $item.data('album-id', album.id);
-
-                                    // 偶发“呼吸放大”（ken burns），让画面更有纵深感
-                                    if (Math.random() < 0.4) {
-                                        $cover.addClass('zoom');
-                                    }
-                                }
-                                // 淡入
-                                $cover.removeClass('fade');
-                            }, 480);
-                        }, i * 150);
-                    });
-
-                    // 随机让一部分已放大封面慢慢缩回
-                    $('.geo-gallery-bg__cover.zoom').each(function () {
-                        if (Math.random() < 0.1) {
-                            $(this).removeClass('zoom');
-                        }
-                    });
-
-                    // 波次间隔
-                    setTimeout(doRefresh, 1150);
-                }
-
-                // 首次延迟1秒开始
-                setTimeout(doRefresh, 1000);
-            }
-            
-            // 填充画廊
-            function fillGallery() {
-                const $items = $('.geo-gallery-bg__item');
-                $items.each(function(index) {
-                    const album = albumData[index % albumData.length];
-                    if (album) {
-                        const optimizedUrl = getOptimizedImageUrl(album.coverUrl, 300, 300);
-                        $(this).find('.geo-gallery-bg__cover').css('background-image', `url('${optimizedUrl}')`);
-                        $(this).data('album-id', album.id);
-                    }
-                });
-            }
-            
-            // 初始化
-            initGalleryGrid();
-            
-            // 首次加载
-            loadRandomCovers();
-            
-            // 3秒后开始持续轮换
-            setTimeout(startContinuousRefresh, 3000);
-            
-            // 加载统计数据
-            $.ajax({
-                url: 'api/music/album-stats',
-                method: 'GET',
-                success: function(response) {
-                    if (response && response.success && response.data) {
-                        const count = response.data.published || response.data.total || 0;
-                        $('#navAlbumCount').text(count.toLocaleString());
-                    }
-                }
-            });
-            
-            $.ajax({
-                url: 'api/music/artists',
-                method: 'GET',
-                data: { limit: 1 },
-                success: function(response) {
-                    if (response && response.total !== undefined) {
-                        $('#navArtistCount').text(response.total.toLocaleString());
-                    } else if (response && response.count !== undefined) {
-                        $('#navArtistCount').text(response.count.toLocaleString());
-                    }
-                }
-            });
-            
-            $.ajax({
-                url: 'api/events/count',
-                method: 'GET',
-                success: function(response) {
-                    if (response && response.count !== undefined) {
-                        $('#navEventCount').text(response.count.toLocaleString());
-                    }
-                }
-            });
-        });
-    </script>
-
-    <script>
-        // ============ 首页动效脚本（独立于上方画廊逻辑） ============
-        $(function () {
-            'use strict';
-
-            const reduceMotion = window.matchMedia &&
-                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-            // ---------- 画廊首次填充：层叠浮现 ----------
-            let galleryRevealed = false;
-            let galleryProbeCount = 0;
-
-            function revealGallery() {
-                if (galleryRevealed) return;
-                galleryRevealed = true;
-                $('#galleryBg .geo-gallery-bg__item').each(function (index) {
-                    const el = this;
-                    setTimeout(() => el.classList.add('is-in'), 60 * index);
-                });
-            }
-
-            const galleryTimer = setInterval(function () {
-                const $cover = $('#galleryBg .geo-gallery-bg__cover').first();
-                if ($cover.length && ($cover[0].style.backgroundImage || $cover[0].style.background)) {
-                    clearInterval(galleryTimer);
-                    revealGallery();
-                    return;
-                }
-                // 兜底：即使接口失败也显示底图
-                galleryProbeCount++;
-                if (galleryProbeCount > 40) {
-                    clearInterval(galleryTimer);
-                    revealGallery();
-                }
-            }, 150);
-
-            // ---------- 统计数字：滚动增长 + 脉冲 ----------
-            function animateNumber(el, target) {
-                el.dataset.counted = '1';
-                if (reduceMotion) {
-                    el.textContent = target.toLocaleString();
-                    return;
-                }
-                const duration = 1100;
-                let start = null;
-
-                function step(ts) {
-                    if (!start) start = ts;
-                    const p = Math.min(1, (ts - start) / duration);
-                    const eased = 1 - Math.pow(1 - p, 3);
-                    el.textContent = Math.round(target * eased).toLocaleString();
-                    if (p < 1) {
-                        requestAnimationFrame(step);
-                    } else {
-                        el.textContent = target.toLocaleString();
-                        el.classList.add('is-bumped');
-                        setTimeout(() => el.classList.remove('is-bumped'), 700);
-                    }
-                }
-                requestAnimationFrame(step);
-            }
-
-            ['navAlbumCount', 'navArtistCount', 'navEventCount'].forEach(function (id) {
-                const el = document.getElementById(id);
-                if (!el) return;
-                new MutationObserver(function () {
-                    if (el.dataset.counted) return;
-                    const raw = (el.textContent || '').replace(/[,，\s]/g, '');
-                    if (!/^\d+$/.test(raw)) return;
-                    animateNumber(el, parseInt(raw, 10));
-                }).observe(el, { childList: true, characterData: true, subtree: true });
-            });
-
-            // ---------- 底部滚动字幕（两组相同内容实现无缝循环） ----------
-            const tickerWords = [
-                '東方Project', '同人音楽', '例大祭', 'COMIC MARKET',
-                '紅楼夢', '音楽アーカイブ', 'MUSIC FOR THE GENKYOU'
-            ];
-
-            function buildTickerGroup() {
-                const group = document.createElement('div');
-                group.className = 'geo-ticker__group';
-                tickerWords.forEach(function (word) {
-                    const span = document.createElement('span');
-                    span.className = 'geo-ticker__item';
-                    span.textContent = word;
-                    group.appendChild(span);
-                });
-                return group;
-            }
-
-            const tickerTrack = document.querySelector('.geo-ticker__track');
-            if (tickerTrack) {
-                tickerTrack.appendChild(buildTickerGroup());
-                tickerTrack.appendChild(buildTickerGroup());
-            }
-
-            // ---------- 漂浮几何装饰注入 ----------
-            function injectFloaties() {
-                if (reduceMotion) return;
-                const wrap = document.querySelector('.geo-hero__floaties');
-                if (!wrap) return;
-                const kinds = ['diamond', 'ring', 'plus', 'square'];
-                for (let i = 0; i < 10; i++) {
-                    const span = document.createElement('span');
-                    span.className = 'geo-floaty geo-floaty--' + kinds[i % kinds.length];
-                    span.style.left = (3 + Math.random() * 94).toFixed(1) + '%';
-                    const duration = 14 + Math.random() * 14;
-                    span.style.animationDuration = duration.toFixed(2) + 's';
-                    span.style.animationDelay = (-Math.random() * duration).toFixed(2) + 's';
-                    wrap.appendChild(span);
-                }
-            }
-            injectFloaties();
-
-            // ---------- 鼠标视差（仅桌面精确指针 + 非减少动效时启用） ----------
-            function initParallax() {
-                if (reduceMotion) return;
-                if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
-                const hero = document.querySelector('.geo-hero');
-                const bg = document.getElementById('galleryBg');
-                const content = document.querySelector('.geo-hero__content');
-                if (!hero || !bg) return;
-                let ticking = false;
-
-                function applyParallax(e) {
-                    ticking = false;
-                    const rect = hero.getBoundingClientRect();
-                    const nx = (e.clientX - rect.left) / rect.width - 0.5;
-                    const ny = (e.clientY - rect.top) / rect.height - 0.5;
-                    bg.style.transform = 'translate(' + (nx * -16) + 'px, ' + (ny * -10) + 'px) scale(1.04)';
-                    if (content) {
-                        content.style.transform = 'translate(' + (nx * 9) + 'px, ' + (ny * 7) + 'px)';
-                    }
-                }
-
-                hero.addEventListener('mousemove', function (e) {
-                    if (!ticking) {
-                        ticking = true;
-                        requestAnimationFrame(function () { applyParallax(e); });
-                    }
-                });
-                hero.addEventListener('mouseleave', function () {
-                    bg.style.transform = '';
-                    if (content) content.style.transform = '';
-                });
-            }
-            initParallax();
-        });
-    </script>
+<script src="components/shared/folia-player.js"></script>
+<script src="assets/js/home-archive.js"></script>
 </body>
 </html>
