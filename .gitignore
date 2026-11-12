@@ -73,3 +73,9 @@ tmp/
 
 # Local tooling installed outside system packages (JDK, Maven, repo cache)
 .tooling/
+
+# 本机启动脚本与运行时产物（含口令，不入库）
+start.sh
+start-tool.sh
+*.pid
+backups/
