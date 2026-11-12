@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -42,6 +43,22 @@ public class HomeMusicService {
     private final TagMapper tagMapper;
     private final ArticleTagMapper articleTagMapper;
     private final ArtistService artistService;
+
+    /**
+     * 网易云接口基址。默认指向本机自建的 NeteaseCloudMusicApi（0.0.0.0:3000），
+     * 可用环境变量 CLOUD_MUSIC_API_BASE 覆盖；不再依赖第三方镜像站。
+     */
+    @Value("${app.cloud-music-api.base:http://127.0.0.1:3000}")
+    private String cloudMusicApiBase;
+
+    /** 拼接网易云接口地址：基址末尾的斜杠会被去掉，避免出现双斜杠。 */
+    private String cloudMusicApi(String path) {
+        String base = StringUtils.defaultIfBlank(cloudMusicApiBase, "http://127.0.0.1:3000").trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + path;
+    }
 
     public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize, String orderBy, String tag) {
         LambdaQueryWrapper<ArticleBean> queryWrapper = new LambdaQueryWrapper<>();
@@ -301,7 +318,7 @@ public class HomeMusicService {
     }
 
     public CloudMusicAlbum getCloudMusicAlbumById(Long id) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/album")
+        String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/album"))
                 .queryParam("id", id)
                 .build()
                 .toString();
@@ -407,7 +424,7 @@ public class HomeMusicService {
     }
 
     public CloudMusicSearchAlbumResponse searchCloudMusicAlbum(String[] keywords, int limit, int offset) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
+        String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/cloudsearch"))
                 .queryParam("keywords", Arrays.stream(keywords).map(keyword -> URLEncoder.encode(keyword, StandardCharsets.UTF_8)).toArray())
                 .queryParam("limit", limit)
                 .queryParam("offset", offset)
@@ -426,7 +443,7 @@ public class HomeMusicService {
     }
 
     public CloudMusicSearchArtistResponse searchCloudMusicArtist(String[] keywords, int limit, int offset) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/cloudsearch")
+        String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/cloudsearch"))
                 .queryParam("keywords", Arrays.stream(keywords).map(keyword -> URLEncoder.encode(keyword, StandardCharsets.UTF_8)).toArray())
                 .queryParam("limit", limit)
                 .queryParam("offset", offset)
@@ -497,7 +514,7 @@ public class HomeMusicService {
     }
 
     public String getDescription(long id) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/artist/desc")
+        String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/artist/desc"))
                 .queryParam("id", id)
                 .build()
                 .toString();
@@ -535,7 +552,7 @@ public class HomeMusicService {
     }
 
     public CloudMusicArtistDetail getArtistDetail(long id) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/artist/detail")
+        String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/artist/detail"))
                 .queryParam("id", id)
                 .build()
                 .toString();
@@ -638,7 +655,7 @@ public class HomeMusicService {
      * @return 歌单曲目响应
      */
     public CloudMusicPlaylistResponse getCloudMusicPlaylistTracks(Long playlistId, int limit, int offset) {
-        String url = UriComponentsBuilder.fromUriString("https://apis.netstart.cn/music/playlist/track/all")
+        String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/playlist/track/all"))
                 .queryParam("id", playlistId)
                 .queryParam("limit", limit)
                 .queryParam("offset", offset)

@@ -15,6 +15,8 @@ import info.tongrenlu.service.ArtistService;
 import info.tongrenlu.service.HomeMusicService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -31,11 +33,26 @@ import java.util.Map;
 @Slf4j
 public class AdminArtistController {
 
-    private static final String CLOUD_MUSIC_API = "https://apis.netstart.cn/music";
     private static final int SEARCH_TYPE_ARTIST = 100;
     private final HomeMusicService homeMusicService;
     private final ArticleService articleService;
     private final ArtistService artistService;
+
+    /**
+     * 网易云接口基址。默认指向本机自建的 NeteaseCloudMusicApi（0.0.0.0:3000），
+     * 可用环境变量 CLOUD_MUSIC_API_BASE 覆盖；不再依赖第三方镜像站。
+     */
+    @Value("${app.cloud-music-api.base:http://127.0.0.1:3000}")
+    private String cloudMusicApiBase;
+
+    /** 拼接网易云接口地址：基址末尾的斜杠会被去掉，避免出现双斜杠。 */
+    private String cloudMusicApi(String path) {
+        String base = StringUtils.defaultIfBlank(cloudMusicApiBase, "http://127.0.0.1:3000").trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + path;
+    }
 
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchArtists(
@@ -48,7 +65,7 @@ public class AdminArtistController {
         try {
             int offset = (page - 1) * limit;
 
-            String url = UriComponentsBuilder.fromUriString(CLOUD_MUSIC_API + "/cloudsearch")
+            String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/cloudsearch"))
                     .queryParam("keywords", URLEncoder.encode(keyword, StandardCharsets.UTF_8))
                     .queryParam("limit", limit)
                     .queryParam("offset", offset)
@@ -152,7 +169,7 @@ public class AdminArtistController {
             long limit = request.getLimit() != null ? request.getLimit() : 30;
             long offset = request.getOffset() != null ? request.getOffset() : 0;
 
-            String url = UriComponentsBuilder.fromUriString(CLOUD_MUSIC_API + "/artist/album")
+            String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/artist/album"))
                     .queryParam("id", artistBean.getCloudMusicId())
                     .queryParam("limit", limit)
                     .queryParam("offset", offset)
