@@ -34,20 +34,25 @@ TONGRLU_BATCH_PROGRESS_DIR=/var/lib/tongrenlu/progress/batch
 2. **两个进度目录变量必须显式设置，且父目录必须存在、进程可写。** 写进度失败只会记一条 error 日志、不会让请求失败 —— 断点续传会静默失效，等于这次修复白做。
 3. **启用认证时口令不能为空、也不能仍是默认值 `tongrenlu`**，否则应用**启动直接失败**（这是有意的 fail-fast）。验证要看**新进程**的启动日志（会出现 `IllegalStateException` 堆栈），别只看 curl 通不通：systemd 的 `EnvironmentFile` 路径写错、或重启的是另一个实例时，会出现「新实例起不来、旧实例还在扛」的假象。
 4. **两个端点的 `done` 文案语义不同，脚本不要混用**：导入流是「进度文件已清除，导入流程结束」，补导是「补导结束：成功 X / 跳过 Y / 失败 Z，失败清单仍有 N 条，进度文件未清除」—— 补导不清进度文件，也不改写续传位置。
-5. **上传前对要部署的那个 jar 跑一遍预检**：`git rev-parse HEAD` 只保证源码对，不保证重启的那个 jar 是对的 —— `target/` 里可能躺着几个月前的旧包，而且代码没变化时 `mvn -o package` **不会**刷新 fat jar（repackage 打了日志，产物时间戳仍是上一次构建的）。两条路：有 `python3` 就跑 `tongrenlu-tool/scripts/jar_preflight.py <jar路径>`；没有 `python3` 就用 `unzip` 三连（见下节）。**① `mvn -o package` 会同时产出 `tongrenlu-tool.jar`（fat，可执行）与 `tongrenlu-tool.jar.original`（薄包，不可执行），只上传前者**；`ls -la target/ | grep -i jar` 才看得到 `.original`，`ls *.jar` 看不到它。**② dao 的类在嵌套的 `BOOT-INF/lib/tongrenlu-dao-*.jar` 里，`unzip -l` 查不到不代表缺失。**
+5. **上传前对要部署的那个 jar 跑一遍预检**：`git rev-parse HEAD` 只保证源码对，不保证重启的那个 jar 是对的 —— `target/` 里可能躺着几个月前的旧包，而且代码没变化时 `mvn -o package` **不会**刷新 fat jar（repackage 打了日志，产物时间戳仍是上一次构建的）。两条路：有 `python3` 就跑 `python3 tongrenlu-tool/scripts/jar_preflight.py`（**不带参数即用默认路径** `tongrenlu-tool/target/tongrenlu-tool.jar`）；没有 `python3` 就用 `unzip` 三连（见下节）。**① `mvn -o package` 会同时产出 `tongrenlu-tool.jar`（fat，可执行）与 `tongrenlu-tool.jar.original`（薄包，不可执行），只上传前者**；`ls -la target/ | grep -i jar` 才看得到 `.original`，`ls *.jar` 看不到它。**② dao 的类在嵌套的 `BOOT-INF/lib/tongrenlu-dao-*.jar` 里，`unzip -l` 查不到不代表缺失。**
 6. **要拿到新产物，必须 `clean package`**：实测在代码未变时重跑 `mvn -o package`，日志照打 `Replacing main artifact ... with repackaged archive`，但产物的 mtime 与 jar 内条目时间戳都停在上一次构建，SHA-256 也一模一样 —— 也就是**包根本没被重写**。只有 `clean package` 会真正刷新（实测 SHA-256 从 `9c87a6ed…` 变为 `7e880801…`，条目时间戳全部更新）。⚠️ 用 `-pl <模块>` 单模块跑 `clean package` 会因缺 `-am` 而 BUILD FAILURE，且 `clean` 已经把产物删掉了 —— 请在全仓库根目录跑 `mvn -o clean package`。另外打包时要确认没有别的 Maven 构建在跑（两个构建并发写同一个 `target/` 会互相干扰）。
 
-## 部署前 jar 预检（tongrenlu-tool/scripts/jar_preflight.py）
+## 部署前自检：jar 预检（tongrenlu-tool/scripts/jar_preflight.py）
 
-有 `python3` 时（在仓库根目录执行）：
+有 `python3` 时（在仓库根目录执行；**不带参数就用默认路径** `tongrenlu-tool/target/tongrenlu-tool.jar`）：
 
 ```bash
-# 本地构建后：检查要传上去的那个 jar
+# 本地构建后：检查要传上去的那个 jar（不带参数即默认路径）
+python3 tongrenlu-tool/scripts/jar_preflight.py
+
+# 或显式指定
 python3 tongrenlu-tool/scripts/jar_preflight.py tongrenlu-tool/target/tongrenlu-tool.jar
 
 # 上传到服务器后：再跑一次，确认传输没损坏、没拿错包
-python3 tongrenlu-tool/scripts/jar_preflight.py /opt/tongrenlu/tongrenlu-tool.jar --expect-sha256 <本地产物的SHA-256>
+python3 tongrenlu-tool/scripts/jar_preflight.py /opt/tongrenlu/tongrenlu-tool.jar --expect-sha256 <脚本打印的SHA-256>
 ```
+
+> SHA-256 用脚本自己打印的那个值，**不要在部署文档里写死** —— 每次重新构建产物都会变。
 
 没有 `python3` 时用 `unzip` 三连，同样能判出是不是 fat jar、是不是新代码：
 
@@ -66,11 +71,37 @@ unzip -l tongrenlu-tool.jar | grep -E "PlaylistProgressStore|PlaylistRetryJob|Pl
 | MANIFEST 有 `Main-Class` / `Start-Class` | 是薄包（`x.jar.original`），`java -jar` 直接起不来 |
 | 打包进去的 `app.basic-auth.password` 默认值为空 | 仍是明文弱口令默认值 `tongrenlu`，旧代码被打包进来了 |
 | 8 个 tool 修复相关类在 `BOOT-INF/classes` | 缺类 = 这批修复没打进去 |
-| 3 个 dao 类在嵌套 `BOOT-INF/lib/tongrenlu-dao-*.jar` | 缺类 = dao 侧修复没打进去（注意 dao 类不在 `BOOT-INF/classes`，别误判成缺失） |
+| 嵌套 dao jar 的**数量**与其中 3 个 dao 类 | dao 类不在 `BOOT-INF/classes`，查不到不代表缺失；嵌套包按 `tongrenlu-dao-*.jar` 前缀匹配，不写死版本号 |
 | `BOOT-INF/lib` 依赖数 > 0 | 为 0 = 不是 fat jar |
 | SHA-256 与期望一致 | 传输损坏或拿错了文件（`.original` 与 fat jar 只差文件名后缀） |
+| 已废弃环境变量 `TONGRLU_PLAYLIST_PROGRESS_FILE` / `TONGRENU_*` 是否残留 | **警告级**：这些名字不再识别、留着不生效，但说明配置没清理干净 |
 
-go/no-go 判定：脚本最后输出一行总结 —— `PASS：可执行 fat jar、鉴权默认口令为空、修复相关类齐全、依赖完整。` 或 `FAIL（N 项不通过）` 并逐条列出原因。
+示例输出（fat 包，通过）：
+
+```
+=== 结论 ===
+  能不能用：能部署。
+  依据：可执行 fat jar（Main-Class/Start-Class 齐全）、鉴权默认口令为空、tool 修复类 8 个与 dao 修复类 3 个齐全、BOOT-INF/lib 依赖 88 个。
+```
+
+示例输出（薄包 `.jar.original`，不通过，退出码 1）：
+
+```
+=== 结论 ===
+  能不能用：不能，缺 11 项
+  缺什么：
+    - MANIFEST 缺少 Main-Class/Start-Class —— 这是薄包（如 tongrenlu-tool.jar.original），不可执行，不要上传
+    - 缺少类 PlaylistRetryJob
+    ...
+    - BOOT-INF/lib 为空 —— 这不是 fat jar
+  ★ 不要部署这个包
+  ▶ 怎么修：
+    1) 源码要对：git rev-parse HEAD 必须等于 f4569f3 或其后继提交 ...
+    2) 重新构建，并且独占 target/（别与别的 Maven 构建并发写同一个 target） ...
+    3) 只上传 fat 包 tongrenlu-tool/target/tongrenlu-tool.jar，不要传 tongrenlu-tool.jar.original ...
+```
+
+go/no-go 判定：脚本最后输出**「能不能用 + 缺什么 + 缺的话该怎么重新 build」**三段。
 退出码：`0` = PASS（可部署）；`1` = FAIL（**不要部署**）；`2` = 用法错误。可直接当部署脚本的闸门。
 
 > 本 jar 不含提交号（没有 build-info / git.properties），所以「包是不是新的」只能靠上面的内容检查判断，**不能靠文件时间戳**。
