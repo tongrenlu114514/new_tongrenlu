@@ -13,8 +13,27 @@
 | `TOOL_AUTH_ENABLED` | 是否启用 Basic 认证 | `true` |
 | `TOOL_AUTH_USERNAME` | 认证账号 | `admin` |
 | `TOOL_AUTH_PASSWORD` | 认证口令（必填，不能是默认值） | 空 |
-| `TONGRLU_PLAYLIST_PROGRESS_DIR` | 歌单导入进度目录（必须可写，父目录需存在） | 运行目录下的 `data/playlist_progress` |
-| `TONGRLU_BATCH_PROGRESS_DIR` | 批处理进度目录 | `data` |
+| `TONGRLU_PLAYLIST_PROGRESS_DIR` | 歌单导入进度目录（**生产必设**，父目录需存在且进程可写） | 运行目录下的 `data/playlist_progress` |
+| `TONGRLU_BATCH_PROGRESS_DIR` | 批处理进度目录（**生产必设**，父目录需存在且进程可写） | `data` |
+
+生产推荐取值（父目录建一次即可，两级子目录不必预先创建）：
+
+```bash
+sudo mkdir -p /var/lib/tongrenlu/progress
+sudo chown -R <tool服务用户> /var/lib/tongrenlu/progress
+```
+
+```
+TONGRLU_PLAYLIST_PROGRESS_DIR=/var/lib/tongrenlu/progress/playlist
+TONGRLU_BATCH_PROGRESS_DIR=/var/lib/tongrenlu/progress/batch
+```
+
+## 部署注意
+
+1. **必须从 `f4569f3` 或其后继提交构建。** `origin/master`（`5197e7a`）仍是旧代码：断点续传写死了旧仓库绝对路径、Hutool 调用点没有超时、Basic Auth 带明文弱口令默认值且没有 fail-fast。在服务器上 clone/pull 之后直接构建，会把这些旧代码原样带进生产。要么先 push 再拉，要么 `git fetch && git checkout f4569f3`，要么直接用已构建好的 jar。部署前用 `git rev-parse HEAD` 确认拿到的确实是新提交。
+2. **两个进度目录变量必须显式设置，且父目录必须存在、进程可写。** 写进度失败只会记一条 error 日志、不会让请求失败 —— 断点续传会静默失效，等于这次修复白做。
+3. **启用认证时口令不能为空、也不能仍是默认值 `tongrenlu`**，否则应用**启动直接失败**（这是有意的 fail-fast）。验证要看**新进程**的启动日志（会出现 `IllegalStateException` 堆栈），别只看 curl 通不通：systemd 的 `EnvironmentFile` 路径写错、或重启的是另一个实例时，会出现「新实例起不来、旧实例还在扛」的假象。
+4. **两个端点的 `done` 文案语义不同，脚本不要混用**：导入流是「进度文件已清除，导入流程结束」，补导是「补导结束：成功 X / 跳过 Y / 失败 Z，失败清单仍有 N 条，进度文件未清除」—— 补导不清进度文件，也不改写续传位置。
 
 ## 导入歌单专辑（SSE）
 
@@ -79,11 +98,16 @@ curl -u admin:'<口令>' -N -X POST "http://127.0.0.1:8080/playlist/retry-failed
 
 | 配置 | 说明 | 默认 |
 | --- | --- | --- |
-| `app.playlist-import.progress-dir` | 进度目录 | 运行目录下的 `data/playlist_progress` |
+| `app.playlist-import.progress-dir` | 进度目录；对应环境变量 `TONGRLU_PLAYLIST_PROGRESS_DIR`、系统属性 `-Dtongrenlu.playlist.progress-dir` | 运行目录下的 `data/playlist_progress` |
 | `app.playlist-import.retry-budget` | 入库类失败的自动重试预算 N | `3` |
 | `app.playlist-import.permanent-ttl-days` | permanent 条目保留天数 | `30` |
 | `app.playlist-import.retry-scan-interval-ms` | 自动补导扫描周期 | `1800000`（30 分钟） |
 | `app.playlist-import.retry-scan-initial-delay-ms` | 扫描首次延迟 | `600000`（10 分钟） |
+| `app.batch-import.progress-dir` | 批处理（`/album/import`、`/artist/import`）的进度目录，`album_progress.txt` / `progress.txt` / `artist_progress.txt` 都放这里；对应环境变量 `TONGRLU_BATCH_PROGRESS_DIR`、系统属性 `-Dtongrenlu.batch.progress-dir` | 运行目录下的 `data` |
+| `app.batch-import.album-source` | 批处理的专辑源文件（`/album/import` 用）；仓库里的同名文件不移动、不删除 | `classpath:data/ls.txt` |
+
+> 旧变量 `TONGRLU_PLAYLIST_PROGRESS_FILE`（旧的单文件变量）与拼错的 `TONGRENU_BATCH_PROGRESS_DIR` **不再识别**；
+> 保留在环境里也不会生效。
 
 ## 自动补导扫描
 
