@@ -44,6 +44,11 @@ public class SecurityConfig {
 
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
+    /**
+     * application.properties 中的默认密码，仅用于「仍在使用默认密码」的告警判断。
+     */
+    private static final String DEFAULT_PASSWORD = "tongrenlu";
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    BasicAuthProperties properties,
@@ -85,10 +90,18 @@ public class SecurityConfig {
                 : properties.getUsername().trim();
         String rawPassword = properties.getPassword() == null ? "" : properties.getPassword();
 
-        if (properties.isEnabled() && rawPassword.isBlank()) {
-            throw new IllegalStateException(
-                    "Basic 认证已启用但未配置密码：请设置环境变量 TOOL_AUTH_PASSWORD，"
-                            + "或配置 app.basic-auth.password（也可临时设置 TOOL_AUTH_ENABLED=false 关闭认证）");
+        if (properties.isEnabled()) {
+            if (rawPassword.isBlank()) {
+                throw new IllegalStateException(
+                        "Basic 认证已启用但未配置密码：请设置环境变量 TOOL_AUTH_PASSWORD，"
+                                + "或配置 app.basic-auth.password（也可临时设置 app.basic-auth.enabled=false 关闭认证）");
+            }
+            if (DEFAULT_PASSWORD.equals(rawPassword)) {
+                throw new IllegalStateException(
+                        "Basic 认证仍在使用默认弱口令 " + DEFAULT_PASSWORD + "："
+                                + "请通过环境变量 TOOL_AUTH_PASSWORD 注入强口令，"
+                                + "或临时设置 app.basic-auth.enabled=false 关闭认证后本地调试");
+            }
         }
 
         UserDetails user = User.withUsername(username)

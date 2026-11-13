@@ -1,6 +1,7 @@
 package info.tongrenlu.www;
 
-import cn.hutool.http.HttpRequest;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,7 @@ import info.tongrenlu.model.CloudMusicSongDownloadData;
 import info.tongrenlu.model.CloudMusicSongDownloadResponse;
 import info.tongrenlu.service.ArtistService;
 import info.tongrenlu.service.HomeMusicService;
+import info.tongrenlu.support.CloudMusicHttpClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +36,11 @@ public class ApiMusicController {
     private final HomeMusicService musicService;
     private final ArtistService artistService;
     private final FoliaConfig foliaConfig;
+
+    /**
+     * 网易云外网调用 HTTP 客户端：统一设置连接/读取超时，避免上游卡住时请求线程无限期挂起。
+     */
+    private final CloudMusicHttpClient cloudMusicHttpClient = new CloudMusicHttpClient();
 
     @GetMapping("search")
     public Page<ArticleBean> search(
@@ -181,7 +188,7 @@ public class ApiMusicController {
                 .queryParam("peak", 1)
                 .build()
                 .toString();
-        try(HttpResponse response = HttpRequest.get(url).execute()) {
+        try(HttpResponse response = cloudMusicHttpClient.get(url).execute()) {
             String location = response.header("Location");
             if (StringUtils.isBlank(location)) {
                 return null;
@@ -193,6 +200,12 @@ public class ApiMusicController {
             cloudMusicSongDownloadResponse.setData(data);
             cloudMusicSongDownloadResponse.setCode(200);
             return cloudMusicSongDownloadResponse;
+        } catch (IORuntimeException | HttpException e) {
+            // 超时或网络异常：降级为“无下载地址”，由调用方走既有的 404 分支，不让请求线程挂死
+            log.error("网易云歌曲下载地址获取失败或超时: url={}, connectTimeout={}ms, readTimeout={}ms, error={}",
+                    url, cloudMusicHttpClient.getConnectTimeoutMs(), cloudMusicHttpClient.getReadTimeoutMs(),
+                    e.getMessage(), e);
+            return null;
         }
     }
 }

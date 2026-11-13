@@ -1,6 +1,7 @@
 package info.tongrenlu.service;
 
-import cn.hutool.http.HttpRequest;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,6 +13,7 @@ import info.tongrenlu.mapper.ArticleTagMapper;
 import info.tongrenlu.mapper.TagMapper;
 import info.tongrenlu.mapper.TrackMapper;
 import info.tongrenlu.model.*;
+import info.tongrenlu.support.CloudMusicHttpClient;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,11 @@ public class HomeMusicService {
     private final ArtistService artistService;
 
     /**
+     * 云音乐接口 HTTP 客户端：统一设置连接/读取超时，避免上游卡住时无限期挂起。
+     */
+    private final CloudMusicHttpClient cloudMusicHttpClient = new CloudMusicHttpClient();
+
+    /**
      * 网易云接口基址。默认指向本机自建的 NeteaseCloudMusicApi（0.0.0.0:3000），
      * 可用环境变量 CLOUD_MUSIC_API_BASE 覆盖；不再依赖第三方镜像站。
      */
@@ -58,6 +65,23 @@ public class HomeMusicService {
             base = base.substring(0, base.length() - 1);
         }
         return base + path;
+    }
+
+    /**
+     * 请求云音乐接口并返回响应体。
+     *
+     * <p>连接/读取超时由 {@link CloudMusicHttpClient} 统一控制（默认连接 10s、读取 60s）；
+     * 超时或网络异常时记录 error 日志并返回 null，避免调用线程无限期挂起。
+     */
+    private String fetchCloudMusicBody(String url) {
+        try (HttpResponse response = cloudMusicHttpClient.get(url).execute()) {
+            return response.body();
+        } catch (IORuntimeException | HttpException e) {
+            log.error("云音乐接口请求失败或超时: url={}, connectTimeout={}ms, readTimeout={}ms, error={}",
+                    url, cloudMusicHttpClient.getConnectTimeoutMs(), cloudMusicHttpClient.getReadTimeoutMs(),
+                    e.getMessage(), e);
+        }
+        return null;
     }
 
     public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize, String orderBy, String tag) {
@@ -324,8 +348,11 @@ public class HomeMusicService {
                 .toString();
 
         CloudMusicAlbumDetailResponse musicDetailResponse;
-        try (HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
+        String json = fetchCloudMusicBody(url);
+        if (json == null) {
+            return null;
+        }
+        try {
             musicDetailResponse = new ObjectMapper().readValue(json, CloudMusicAlbumDetailResponse.class);
             if (musicDetailResponse == null) {
                 return null;
@@ -339,7 +366,7 @@ public class HomeMusicService {
             album.setSongs(musicDetailResponse.getSongs());
             return album;
         } catch (IOException e) {
-            log.error("get {} error", url, e);
+            log.error("解析云音乐专辑响应失败: url={}, error={}", url, e.getMessage(), e);
         }
         return null;
     }
@@ -433,11 +460,14 @@ public class HomeMusicService {
                 .toString();
         log.info("Searching cloud music: {}", url);
 
-        try (HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
+        String json = fetchCloudMusicBody(url);
+        if (json == null) {
+            return null;
+        }
+        try {
             return new ObjectMapper().readValue(json, CloudMusicSearchAlbumResponse.class);
         } catch (IOException e) {
-            log.error("get {} error", url, e);
+            log.error("解析云音乐专辑搜索结果失败: url={}, error={}", url, e.getMessage(), e);
         }
         return null;
     }
@@ -452,11 +482,14 @@ public class HomeMusicService {
                 .toString();
         log.info("Searching cloud music: {}", url);
 
-        try (HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
+        String json = fetchCloudMusicBody(url);
+        if (json == null) {
+            return null;
+        }
+        try {
             return new ObjectMapper().readValue(json, CloudMusicSearchArtistResponse.class);
         } catch (IOException e) {
-            log.error("get {} error", url, e);
+            log.error("解析云音乐歌手搜索结果失败: url={}, error={}", url, e.getMessage(), e);
         }
         return null;
     }
@@ -520,8 +553,11 @@ public class HomeMusicService {
                 .toString();
         log.info("Artist desc: {}", url);
 
-        try (HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
+        String json = fetchCloudMusicBody(url);
+        if (json == null) {
+            return null;
+        }
+        try {
             CloudMusicArtistDescResponse artistDetailResponse = new ObjectMapper().readValue(json, CloudMusicArtistDescResponse.class);
             if (artistDetailResponse == null) {
                 return null;
@@ -546,7 +582,7 @@ public class HomeMusicService {
                     });
             return markDownBuilder.toString();
         } catch (IOException e) {
-            log.error("get {} error", url, e);
+            log.error("解析云音乐歌手简介失败: url={}, error={}", url, e.getMessage(), e);
         }
         return null;
     }
@@ -558,8 +594,11 @@ public class HomeMusicService {
                 .toString();
         log.info("Artist detail: {}", url);
 
-        try (HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
+        String json = fetchCloudMusicBody(url);
+        if (json == null) {
+            return null;
+        }
+        try {
             CloudMusicArtistDetailResponse artistDetailResponse = new ObjectMapper().readValue(json, CloudMusicArtistDetailResponse.class);
             if (artistDetailResponse == null) {
                 return null;
@@ -575,7 +614,7 @@ public class HomeMusicService {
             }
             return data.getArtist();
         } catch (IOException e) {
-            log.error("get {} error", url, e);
+            log.error("解析云音乐歌手详情失败: url={}, error={}", url, e.getMessage(), e);
         }
         return null;
     }
@@ -663,8 +702,11 @@ public class HomeMusicService {
                 .toString();
         log.info("Fetching playlist tracks: {}", url);
 
-        try (HttpResponse response = HttpRequest.get(url).execute()) {
-            String json = response.body();
+        String json = fetchCloudMusicBody(url);
+        if (json == null) {
+            return null;
+        }
+        try {
             CloudMusicPlaylistResponse playlistResponse = new ObjectMapper().readValue(json, CloudMusicPlaylistResponse.class);
             if (playlistResponse == null) {
                 return null;
@@ -676,7 +718,7 @@ public class HomeMusicService {
             }
             return playlistResponse;
         } catch (IOException e) {
-            log.error("Error fetching playlist tracks: {}", url, e);
+            log.error("解析云音乐歌单曲目失败: url={}, error={}", url, e.getMessage(), e);
         }
         return null;
     }

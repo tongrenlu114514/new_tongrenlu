@@ -3,9 +3,9 @@ package info.tongrenlu;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.service.ArticleService;
 import info.tongrenlu.service.HomeMusicService;
+import info.tongrenlu.support.PlaylistProgressStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,9 +15,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,11 +31,7 @@ public class PlaylistImportJob {
 
     private final HomeMusicService homeMusicService;
     private final ArticleService articleService;
-
-    /**
-     * 进度文件路径
-     */
-    private static final String PROGRESS_FILE = "E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\playlist_progress.txt";
+    private final PlaylistProgressStore progressStore;
 
     /**
      * 流式导入歌单专辑
@@ -62,8 +55,8 @@ public class PlaylistImportJob {
                 );
             }
 
-            // 读取进度（支持断点续传）
-            int startIndex = readProgress();
+            // 读取进度（支持断点续传；进度文件里的歌单ID与当前歌单不一致时视为无进度，从头开始）
+            int startIndex = resolveStartIndex(progressStore.readIndex(playlistId), albumIds.size(), playlistId);
             List<Long> remainingAlbums = albumIds.subList(startIndex, albumIds.size());
             int totalSize = albumIds.size();
 
@@ -88,7 +81,7 @@ public class PlaylistImportJob {
                         return new IndexAlbumId(currentIndex, albumId);
                     })
                     // 使用 concatMap 保持顺序处理，确保事件按顺序发送
-                    .concatMap(indexed -> processAlbum(indexed, totalSize, successCount, skipCount, failCount)
+                    .concatMap(indexed -> processAlbum(indexed, playlistId, totalSize, successCount, skipCount, failCount)
                             // 添加延迟，避免触发限流（使用非阻塞延迟）
                             .delayElements(Duration.ofMillis(500))
                     )
@@ -96,7 +89,7 @@ public class PlaylistImportJob {
 
             // 完成事件流
             Flux<ServerSentEvent<String>> endEvents = Flux.defer(() -> {
-                clearProgress();
+                progressStore.clear(playlistId);
                 return Flux.just(
                         event("complete", "========================================"),
                         event("complete", "导入完成！"),
@@ -123,10 +116,24 @@ public class PlaylistImportJob {
     }
 
     /**
+     * 越界保护：序号为负或 >= 当前歌单专辑数都视为无效进度，归零从头开始，绝不让 subList 抛异常。
+     */
+    private int resolveStartIndex(int progressIndex, int totalAlbums, Long playlistId) {
+        if (progressIndex < 0 || progressIndex >= totalAlbums) {
+            if (progressIndex != 0) {
+                log.warn("进度序号 {} 越界（当前歌单共 {} 个专辑），归零从头导入: playlistId={}",
+                        progressIndex, totalAlbums, playlistId);
+            }
+            return 0;
+        }
+        return progressIndex;
+    }
+
+    /**
      * 处理单个专辑
      * 返回该专辑处理过程中产生的所有事件
      */
-    private Flux<ServerSentEvent<String>> processAlbum(IndexAlbumId indexed, int totalSize,
+    private Flux<ServerSentEvent<String>> processAlbum(IndexAlbumId indexed, Long playlistId, int totalSize,
                                                         AtomicInteger successCount,
                                                         AtomicInteger skipCount,
                                                         AtomicInteger failCount) {
@@ -138,7 +145,7 @@ public class PlaylistImportJob {
                     ArticleBean existing = articleService.getByCloudMusicId(albumId);
                     if (existing != null) {
                         skipCount.incrementAndGet();
-                        saveProgress(currentIndex);
+                        progressStore.saveIndex(playlistId, currentIndex);
                         return List.of(
                                 event("skip", String.format("[%d/%d] 专辑已存在，跳过: albumId=%d, title=%s",
                                         currentIndex, totalSize, albumId, existing.getTitle()))
@@ -148,7 +155,7 @@ public class PlaylistImportJob {
                     // 保存专辑
                     homeMusicService.saveCloudMusicAlbum(albumId);
                     successCount.incrementAndGet();
-                    saveProgress(currentIndex);
+                    progressStore.saveIndex(playlistId, currentIndex);
 
                     return List.of(
                             event("success", String.format("[%d/%d] 专辑导入成功: albumId=%d",
@@ -160,7 +167,7 @@ public class PlaylistImportJob {
                     log.error("[{}/{}] 专辑导入失败: albumId={}, error={}",
                             indexed.index(), totalSize, indexed.albumId(), e.getMessage(), e);
                     failCount.incrementAndGet();
-                    saveProgress(indexed.index());
+                    progressStore.saveIndex(playlistId, indexed.index());
                     return Mono.just(List.of(
                             event("error", String.format("[%d/%d] 专辑导入失败: albumId=%d, error=%s",
                                     indexed.index(), totalSize, indexed.albumId(), e.getMessage()))
@@ -177,50 +184,6 @@ public class PlaylistImportJob {
                 .event(eventType)
                 .data(data)
                 .build();
-    }
-
-    /**
-     * 读取进度
-     */
-    private int readProgress() {
-        try {
-            File file = new File(PROGRESS_FILE);
-            if (file.exists()) {
-                String progress = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-                return Integer.parseInt(progress.trim());
-            }
-        } catch (Exception e) {
-            log.warn("读取进度文件失败: {}", e.getMessage());
-        }
-        return 0;
-    }
-
-    /**
-     * 保存进度
-     */
-    private void saveProgress(int index) {
-        try {
-            FileUtils.writeStringToFile(new File(PROGRESS_FILE),
-                    String.valueOf(index),
-                    StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.warn("保存进度文件失败: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * 清除进度文件
-     */
-    private void clearProgress() {
-        try {
-            File file = new File(PROGRESS_FILE);
-            if (file.exists()) {
-                FileUtils.forceDelete(file);
-                log.info("进度文件已清除");
-            }
-        } catch (IOException e) {
-            log.warn("清除进度文件失败: {}", e.getMessage());
-        }
     }
 
     /**

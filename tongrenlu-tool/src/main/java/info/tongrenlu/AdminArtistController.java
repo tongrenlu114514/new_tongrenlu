@@ -1,6 +1,7 @@
 package info.tongrenlu;
 
-import cn.hutool.http.HttpRequest;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,7 @@ import info.tongrenlu.model.CloudMusicSearchArtistResponse;
 import info.tongrenlu.service.ArticleService;
 import info.tongrenlu.service.ArtistService;
 import info.tongrenlu.service.HomeMusicService;
+import info.tongrenlu.support.CloudMusicHttpClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +39,11 @@ public class AdminArtistController {
     private final HomeMusicService homeMusicService;
     private final ArticleService articleService;
     private final ArtistService artistService;
+
+    /**
+     * 云音乐接口 HTTP 客户端：统一设置连接/读取超时，避免上游卡住时无限期挂起。
+     */
+    private final CloudMusicHttpClient cloudMusicHttpClient = new CloudMusicHttpClient();
 
     /**
      * 网易云接口基址。默认指向本机自建的 NeteaseCloudMusicApi（0.0.0.0:3000），
@@ -75,7 +82,7 @@ public class AdminArtistController {
 
             log.info("Searching artists: {}", url);
 
-            try (HttpResponse httpResponse = HttpRequest.get(url).execute()) {
+            try (HttpResponse httpResponse = cloudMusicHttpClient.get(url).execute()) {
                 String json = httpResponse.body();
                 CloudMusicSearchArtistResponse searchResponse = new ObjectMapper()
                         .readValue(json, CloudMusicSearchArtistResponse.class);
@@ -103,6 +110,13 @@ public class AdminArtistController {
                 response.put("success", true);
                 response.put("data", pageData);
                 return ResponseEntity.ok(response);
+            } catch (IORuntimeException | HttpException e) {
+                log.error("云音乐接口请求失败或超时: url={}, connectTimeout={}ms, readTimeout={}ms, error={}",
+                        url, cloudMusicHttpClient.getConnectTimeoutMs(), cloudMusicHttpClient.getReadTimeoutMs(),
+                        e.getMessage(), e);
+                response.put("success", false);
+                response.put("message", "云音乐接口请求超时或失败: " + e.getMessage());
+                return ResponseEntity.internalServerError().body(response);
             }
 
         } catch (Exception e) {
@@ -178,7 +192,7 @@ public class AdminArtistController {
 
             log.info("Getting artist albums: {}", url);
 
-            try (HttpResponse httpResponse = HttpRequest.get(url).execute()) {
+            try (HttpResponse httpResponse = cloudMusicHttpClient.get(url).execute()) {
                 String json = httpResponse.body();
                 CloudMusicArtistAlbumResponse albumResponse = new ObjectMapper()
                         .readValue(json, CloudMusicArtistAlbumResponse.class);
@@ -207,6 +221,13 @@ public class AdminArtistController {
                 response.put("success", true);
                 response.put("data", result);
                 return ResponseEntity.ok(response);
+            } catch (IORuntimeException | HttpException e) {
+                log.error("云音乐接口请求失败或超时: url={}, connectTimeout={}ms, readTimeout={}ms, error={}",
+                        url, cloudMusicHttpClient.getConnectTimeoutMs(), cloudMusicHttpClient.getReadTimeoutMs(),
+                        e.getMessage(), e);
+                response.put("success", false);
+                response.put("message", "云音乐接口请求超时或失败: " + e.getMessage());
+                return ResponseEntity.internalServerError().body(response);
             }
 
         } catch (Exception e) {
