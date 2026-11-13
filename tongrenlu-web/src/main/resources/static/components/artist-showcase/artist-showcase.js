@@ -154,7 +154,19 @@ function createCard(artist) {
     
     info.append(name);
     card.append(cover, info);
-    
+
+    // Wiki 条目快捷入口
+    const wikiLink = $('<a>', {
+        class: 'artist-card__wiki',
+        href: 'artist-wiki.html?name=' + encodeURIComponent(artist.name),
+        title: '查看 ' + artist.name + ' 的 Wiki 条目',
+        html: '<i class="fas fa-book-open"></i>',
+        click: function(e) {
+            e.stopPropagation();
+        }
+    });
+    card.append(wikiLink);
+
     // 点击打开弹窗
     card.on('click', function() {
         openArtistModal(artist.name);

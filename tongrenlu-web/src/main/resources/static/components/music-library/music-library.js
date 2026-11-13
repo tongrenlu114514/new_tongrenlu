@@ -458,7 +458,7 @@ function searchMusic(keyword, page = 1, orderBy = currentOrderBy, tag = currentT
     const params = new URLSearchParams();
     params.append('keyword', keyword);
     params.append('pageNumber', page.toString());
-    params.append('pageSize', '15');
+    params.append('pageSize', '18');
     params.append('orderBy', orderBy);
     if (tag) {
         params.append('tag', tag);

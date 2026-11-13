@@ -196,6 +196,33 @@
             padding: 1rem;
             border-top: 2px solid var(--geo-border);
         }
+
+        /* 卡片右上角 Wiki 入口 */
+        .artist-card__wiki {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: var(--geo-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            text-decoration: none;
+            z-index: 6;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .artist-card:hover .artist-card__wiki {
+            opacity: 1;
+        }
+
+        .artist-card__wiki:hover {
+            background: var(--geo-accent);
+        }
         
         .geo-artist-card__name,
         .artist-card__name {
@@ -474,7 +501,7 @@
         <div class="geo-nav__links">
             <a href="index.html" class="geo-nav__link">首页</a>
             <a href="album.html" class="geo-nav__link">音乐库</a>
-            <a href="artist-showcase.html" class="geo-nav__link active">艺术家</a>
+            <a href="artist-wiki.html" class="geo-nav__link">艺术家</a>
             <a href="event.html" class="geo-nav__link">展会</a>
         </div>
         <div class="geo-nav__stats">

@@ -4,201 +4,421 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>音乐库 - 东方同人录</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="assets/css/geometric-theme.css" rel="stylesheet">
-    
+
     <style>
-        /* 音乐库页面特定样式 */
+        /* ================================================================
+           音乐库 — Award Tier Design System（与 artist-wiki 同一语言）
+           令牌 → 基础 → 头部 → 筛选工具条 → 网格卡片 → 骨架 → 分页 → 模态框 → 动效 → 响应式
+           ================================================================ */
+        :root {
+            /* 色彩令牌（:root 全局作用域：模态框等页面外元素也需要） */
+            --wiki-ink: #1a1a2e;
+            --wiki-ink-soft: #23233d;
+            --wiki-accent: #e94560;
+            --wiki-blue: #0f3460;
+            --wiki-paper: #ffffff;
+            --wiki-paper-2: #f6f7fb;
+            --wiki-line: #e5e7ef;
+            --wiki-muted: #8a90a6;
+            /* 空白令牌 */
+            --ws-xs: 0.5rem;
+            --ws-s: 1rem;
+            --ws-m: 1.5rem;
+            --ws-l: 2.5rem;
+            --ws-xl: 4rem;
+            --ws-2xl: clamp(4rem, 9vw, 7.5rem);
+            /* 动效令牌 */
+            --wiki-ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --wiki-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
         .geo-music-page {
             padding-top: 80px;
             min-height: 100vh;
+            background:
+                linear-gradient(180deg, var(--wiki-paper-2) 0%, var(--wiki-paper) 40%);
         }
-        
-        .geo-music-header {
-            background: var(--geo-primary);
-            padding: 3rem 2rem;
-            text-align: center;
-            position: relative;
+
+        /* 选区 / 滚动条 / 焦点 */
+        .geo-music-page ::selection {
+            background: var(--wiki-accent);
+            color: #fff;
         }
-        
-        .geo-music-header::before {
-            content: '';
-            position: absolute;
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--wiki-paper-2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--wiki-ink);
+            border: 2px solid var(--wiki-paper-2);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--wiki-accent);
+        }
+
+        .geo-music-page a:focus-visible,
+        .geo-music-page button:focus-visible,
+        .geo-music-page input:focus-visible,
+        .geo-music-page select:focus-visible,
+        .geo-music-page .music-card:focus-visible,
+        .geo-music-page .tag:focus-visible {
+            outline: 2px solid var(--wiki-accent);
+            outline-offset: 3px;
+        }
+
+        /* ===== 阅读进度条 ===== */
+        .wiki-progress {
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            background: 
-                linear-gradient(45deg, transparent 49%, rgba(233, 69, 96, 0.1) 49%, rgba(233, 69, 96, 0.1) 51%, transparent 51%);
-            background-size: 40px 40px;
+            height: 3px;
+            z-index: 1200;
+            background: transparent;
+            pointer-events: none;
         }
-        
-        .geo-music-title {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 3.5rem;
-            color: white;
-            letter-spacing: 5px;
+
+        .wiki-progress__bar {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--wiki-blue), var(--wiki-accent));
+            transition: width 0.1s linear;
+        }
+
+        /* ================= 动效原语 ================= */
+        @keyframes wiki-rise {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes wiki-card-in {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes wiki-line-grow {
+            from { transform: scaleX(0); }
+            to   { transform: scaleX(1); }
+        }
+        @keyframes wiki-glow-drift {
+            0%   { transform: translate(-10%, -6%) rotate(-4deg); }
+            50%  { transform: translate(6%, 4%) rotate(3deg); }
+            100% { transform: translate(-10%, -6%) rotate(-4deg); }
+        }
+
+        [data-rv].rv-armed {
+            opacity: 0;
+            transform: translateY(26px);
+            transition:
+                opacity 0.8s var(--wiki-ease) var(--rv-delay, 0s),
+                transform 0.8s var(--wiki-ease) var(--rv-delay, 0s);
+        }
+        [data-rv].rv-armed.is-visible {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* ===== 头部 ===== */
+        .geo-music-header {
             position: relative;
-            margin-bottom: 1.5rem;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse 60% 90% at 85% 10%, rgba(233, 69, 96, 0.22), transparent 60%),
+                radial-gradient(ellipse 50% 80% at 10% 90%, rgba(15, 52, 96, 0.5), transparent 65%),
+                linear-gradient(160deg, var(--wiki-ink) 0%, var(--wiki-ink-soft) 55%, #2a2a4a 100%);
+            padding: var(--ws-2xl) 2rem var(--ws-xl);
+            text-align: center;
         }
-        
-        /* 搜索框样式 */
+
+        .geo-music-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+            background-size: 56px 56px;
+            -webkit-mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
+            mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
+        }
+
+        .geo-music-header::after {
+            content: '';
+            position: absolute;
+            inset: -20%;
+            background:
+                radial-gradient(circle 300px at 80% 30%, rgba(233, 69, 96, 0.14), transparent 70%);
+            animation: wiki-glow-drift 14s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .geo-music-header__watermark {
+            position: absolute;
+            top: 46%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+            font-size: clamp(10rem, 34vw, 30rem);
+            letter-spacing: 0.08em;
+            line-height: 1;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.07);
+            user-select: none;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .geo-music-header__inner {
+            position: relative;
+            z-index: 2;
+        }
+
+        .geo-music-header__eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: var(--ws-m);
+            animation: wiki-rise 0.9s var(--wiki-ease) 0.05s both;
+        }
+
+        .geo-music-header__eyebrow::before,
+        .geo-music-header__eyebrow::after {
+            content: '';
+            width: 2.5rem;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .geo-music-title {
+            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+            font-size: clamp(3.2rem, 9vw, 6.5rem);
+            line-height: 0.95;
+            letter-spacing: 0.04em;
+            color: #fff;
+            margin: 0 0 var(--ws-m);
+            animation: wiki-rise 0.9s var(--wiki-ease) 0.15s both;
+        }
+
+        .geo-music-title .accent {
+            color: var(--wiki-accent);
+        }
+
+        .geo-music-subtitle {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 300;
+            font-size: clamp(0.9rem, 1.4vw, 1.05rem);
+            letter-spacing: 0.14em;
+            color: rgba(255, 255, 255, 0.65);
+            margin: 0 auto var(--ws-xl);
+            max-width: 34em;
+            animation: wiki-rise 0.9s var(--wiki-ease) 0.25s both;
+        }
+
+        /* ===== 搜索 ===== */
         .geo-search {
-            max-width: 700px;
+            max-width: 640px;
             margin: 0 auto;
             position: relative;
+            animation: wiki-rise 0.9s var(--wiki-ease) 0.35s both;
         }
-        
+
         .geo-search__input {
             width: 100%;
-            padding: 1.2rem 1.5rem;
-            padding-right: 60px;
-            font-family: 'Space Grotesk', sans-serif;
+            padding: 1.1rem 4.2rem 1.1rem 1.4rem;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
             font-size: 1rem;
-            border: none;
-            background: white;
-            color: var(--geo-text);
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.94);
+            color: var(--wiki-ink);
             clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            transition: background 0.4s var(--wiki-ease), box-shadow 0.4s var(--wiki-ease);
         }
-        
+
+        .geo-search__input:focus {
+            outline: none;
+            background: #fff;
+            box-shadow: 0 0 0 2px var(--wiki-accent) inset;
+        }
+
+        .geo-search__input::placeholder {
+            color: var(--wiki-muted);
+        }
+
         .geo-search__btn {
             position: absolute;
-            right: 5px;
-            top: 5px;
-            bottom: 5px;
-            width: 50px;
-            background: var(--geo-accent);
+            right: 6px;
+            top: 6px;
+            bottom: 6px;
+            width: 52px;
+            background: var(--wiki-accent);
             border: none;
             color: white;
             cursor: pointer;
             clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-            transition: all 0.3s ease;
+            transition: background 0.3s ease, transform 0.3s var(--wiki-ease-snap);
         }
-        
+
         .geo-search__btn:hover {
-            background: var(--geo-primary);
+            background: var(--wiki-blue);
+            transform: scale(1.04);
         }
-        
+
+        .geo-search__btn:active {
+            transform: scale(0.96);
+        }
+
         /* 搜索建议 */
         .geo-suggestions {
             display: none;
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             left: 0;
             right: 0;
-            background: white;
-            border: 2px solid var(--geo-border);
-            border-top: none;
-            max-height: 300px;
+            background: var(--wiki-paper);
+            border: 1.5px solid var(--wiki-line);
+            box-shadow: 8px 8px 0 rgba(26, 26, 46, 0.12);
+            max-height: 320px;
             overflow-y: auto;
             z-index: 100;
+            text-align: left;
         }
-        
+
         .geo-suggestions.active {
             display: block;
+            animation: wiki-rise 0.35s var(--wiki-ease) both;
         }
-        
+
         .geo-suggestions__item,
         .suggestion-item {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 0.8rem 1rem;
+            gap: var(--ws-s);
+            padding: 0.75rem var(--ws-s);
             cursor: pointer;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid var(--geo-border);
+            border-bottom: 1px solid var(--wiki-line);
+            transition: background 0.25s ease;
         }
-        
+
+        .geo-suggestions__item:last-child,
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
         .geo-suggestions__item:hover,
         .suggestion-item:hover,
         .suggestion-item.highlighted {
-            background: var(--geo-bg-alt);
+            background: var(--wiki-paper-2);
         }
-        
+
         .geo-suggestions__icon,
         .suggestion-icon {
             width: 40px;
             height: 40px;
-            background: var(--geo-accent);
+            background: var(--wiki-ink);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
+            font-size: 0.8rem;
             clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
             flex-shrink: 0;
+            transition: background 0.3s ease;
         }
-        
+
+        .suggestion-item:hover .suggestion-icon {
+            background: var(--wiki-accent);
+        }
+
         .geo-suggestions__info,
         .suggestion-content {
             flex: 1;
             min-width: 0;
         }
-        
+
         .geo-suggestions__title,
         .suggestion-title {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
             font-size: 0.9rem;
-            color: var(--geo-text);
+            font-weight: 500;
+            color: var(--wiki-ink);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .geo-suggestions__artist,
         .suggestion-artist {
             font-family: 'Outfit', sans-serif;
             font-size: 0.75rem;
-            color: var(--geo-text-muted);
+            color: var(--wiki-muted);
+            margin-top: 0.15rem;
         }
-        
+
         .suggestions-header {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem var(--ws-s);
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.7rem;
-            color: var(--geo-text-muted);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--wiki-muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            background: var(--geo-bg-alt);
-            border-bottom: 1px solid var(--geo-border);
+            letter-spacing: 0.2em;
+            background: var(--wiki-paper-2);
+            border-bottom: 1px solid var(--wiki-line);
         }
-        
+
         .history-item {
             position: relative;
         }
-        
+
         .history-delete {
             position: absolute;
-            right: 1rem;
+            right: var(--ws-s);
+            top: 50%;
+            transform: translateY(-50%);
             background: none;
             border: none;
-            color: var(--geo-text-muted);
+            color: var(--wiki-muted);
             cursor: pointer;
             padding: 0.3rem;
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: opacity 0.25s ease, color 0.25s ease, transform 0.25s var(--wiki-ease-snap);
         }
-        
+
         .history-item:hover .history-delete {
             opacity: 1;
         }
-        
+
         .history-delete:hover {
-            color: var(--geo-accent);
+            color: var(--wiki-accent);
+            transform: translateY(-50%) rotate(90deg);
         }
-        
-        /* 筛选区域 */
+
+        /* ===== 筛选工具条 ===== */
         .geo-filter-section {
-            background: var(--geo-bg-alt);
-            padding: 1.5rem 2rem;
-            border-bottom: 3px solid var(--geo-border);
+            position: relative;
+            background: var(--wiki-paper);
+            border-bottom: 1.5px solid var(--wiki-line);
+            padding: var(--ws-m) 2rem;
+            z-index: 50;
         }
-        
+
         .geo-filter-inner {
             max-width: 1400px;
             margin: 0 auto;
@@ -206,376 +426,727 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: var(--ws-s);
         }
-        
+
         .geo-tags,
         #filterTags {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
         }
-        
+
         .geo-tag,
         .tag {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
             font-size: 0.8rem;
-            padding: 0.6rem 1.2rem;
-            border: 2px solid var(--geo-border);
-            background: var(--geo-bg);
-            color: var(--geo-text-light);
+            font-weight: 500;
+            padding: 0.5rem 1.1rem;
+            border: 1.5px solid var(--wiki-line);
+            background: var(--wiki-paper-2);
+            color: var(--wiki-muted);
             cursor: pointer;
-            transition: all 0.3s ease;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            transition:
+                color 0.3s var(--wiki-ease),
+                border-color 0.3s var(--wiki-ease),
+                background 0.3s var(--wiki-ease),
+                transform 0.3s var(--wiki-ease),
+                box-shadow 0.3s var(--wiki-ease);
         }
-        
+
         .geo-tag:hover,
         .tag:hover {
-            border-color: var(--geo-accent);
-            color: var(--geo-accent);
+            border-color: var(--wiki-accent);
+            color: var(--wiki-accent);
+            transform: translateY(-2px);
         }
-        
+
         .geo-tag.active,
         .tag.active {
-            background: var(--geo-accent);
-            border-color: var(--geo-accent);
+            background: var(--wiki-accent);
+            border-color: var(--wiki-accent);
             color: white;
+            transform: none;
+            box-shadow: 3px 3px 0 rgba(26, 26, 46, 0.85);
         }
-        
+
         .geo-sort {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 0.7rem;
         }
-        
+
         .geo-sort__label {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.8rem;
-            color: var(--geo-text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
+            color: var(--wiki-muted);
         }
-        
+
         .geo-sort__select {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
             font-size: 0.85rem;
-            padding: 0.6rem 1rem;
-            border: 2px solid var(--geo-border);
-            background: var(--geo-bg);
-            color: var(--geo-text);
+            padding: 0.55rem 1rem;
+            border: 1.5px solid var(--wiki-line);
+            background: var(--wiki-paper);
+            color: var(--wiki-ink);
             cursor: pointer;
+            transition: border-color 0.3s ease, box-shadow 0.3s var(--wiki-ease);
         }
-        
-        /* 音乐网格 - 保持与JS组件兼容的类名 */
+
+        .geo-sort__select:hover {
+            border-color: var(--wiki-accent);
+        }
+
+        /* ===== 音乐网格 ===== */
         .music-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 1.5rem;
-            padding: 2rem;
-            max-width: 1400px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: clamp(1rem, 2.2vw, 1.75rem);
+            padding: var(--ws-l) 2rem var(--ws-xl);
+            max-width: 1500px;
             margin: 0 auto;
         }
-        
-        /* 音乐卡片几何风格 */
+
+        /* 音乐卡片 */
         .music-card {
             position: relative;
-            background: var(--geo-bg);
-            border: 2px solid var(--geo-border);
+            background: var(--wiki-paper);
+            border: 1.5px solid var(--wiki-line);
             overflow: hidden;
-            transition: all 0.4s ease;
             cursor: pointer;
+            transition:
+                transform 0.45s var(--wiki-ease),
+                border-color 0.45s var(--wiki-ease),
+                box-shadow 0.45s var(--wiki-ease);
+            animation: wiki-card-in 0.7s var(--wiki-ease) both;
+            animation-delay: min(calc(var(--i, 0) * 45ms), 0.6s);
         }
-        
+
         .music-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 20px;
-            height: 20px;
-            background: var(--geo-accent);
+            width: 26px;
+            height: 26px;
+            background: var(--wiki-accent);
             clip-path: polygon(0 0, 100% 0, 0 100%);
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transform: scale(0.4);
+            transition: opacity 0.35s ease, transform 0.45s var(--wiki-ease-snap);
             z-index: 5;
         }
-        
+
+        .music-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--wiki-ink);
+            box-shadow: 10px 10px 0 var(--wiki-accent);
+        }
+
         .music-card:hover::before {
             opacity: 1;
+            transform: scale(1);
         }
-        
-        .music-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--geo-primary);
-            box-shadow: 8px 8px 0 var(--geo-accent);
-        }
-        
+
         .music-card .album-cover {
             width: 100%;
             aspect-ratio: 1;
-            background: linear-gradient(135deg, var(--geo-bg-alt), #e8e8ed);
+            background: linear-gradient(135deg, var(--wiki-paper-2), #eceef5);
             position: relative;
             overflow: hidden;
         }
-        
+
+        .music-card .album-cover::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(26, 26, 46, 0.35), transparent 45%);
+            opacity: 0;
+            transition: opacity 0.5s var(--wiki-ease);
+            pointer-events: none;
+        }
+
+        .music-card:hover .album-cover::after {
+            opacity: 1;
+        }
+
+        .music-card .album-cover img {
+            transition: transform 0.7s var(--wiki-ease), filter 0.7s var(--wiki-ease);
+        }
+
+        .music-card:hover .album-cover img {
+            transform: scale(1.07);
+            filter: saturate(1.08);
+        }
+
         .music-card .fallback-content {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 2.5rem;
-            color: var(--geo-text-muted);
+            color: var(--wiki-muted);
             opacity: 0.3;
         }
-        
+
         .music-card .card-content {
-            padding: 1rem;
-            border-top: 2px solid var(--geo-border);
+            padding: 1rem 1.1rem 1.1rem;
+            border-top: 1.5px solid var(--wiki-line);
+            position: relative;
+            background: var(--wiki-paper);
         }
-        
+
         .music-card .card-title {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
-            color: var(--geo-primary);
+            color: var(--wiki-ink);
             margin-bottom: 0.3rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            transition: color 0.3s ease;
         }
-        
+
+        .music-card:hover .card-title {
+            color: var(--wiki-accent);
+        }
+
         .music-card .card-stats {
             font-family: 'Outfit', sans-serif;
-            font-size: 0.75rem;
-            color: var(--geo-text-light);
+            font-size: 0.73rem;
+            letter-spacing: 0.05em;
+            color: var(--wiki-muted);
         }
-        
+
         .music-card .card-stats i {
-            color: var(--geo-accent);
+            color: var(--wiki-accent);
         }
-        
+
         .music-card .play-button {
             position: absolute;
             bottom: 70px;
             right: 10px;
-            width: 38px;
-            height: 38px;
-            background: var(--geo-accent);
+            width: 40px;
+            height: 40px;
+            background: var(--wiki-accent);
             border: none;
             color: white;
             font-size: 0.8rem;
             cursor: pointer;
             opacity: 0;
-            transform: scale(0.8);
-            transition: all 0.3s ease;
+            transform: scale(0.6);
+            transition:
+                opacity 0.35s ease,
+                transform 0.4s var(--wiki-ease-snap),
+                background 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 6;
+            box-shadow: 3px 3px 0 rgba(26, 26, 46, 0.85);
         }
-        
+
         .music-card:hover .play-button {
             opacity: 1;
             transform: scale(1);
         }
-        
+
         .music-card .play-button:hover {
-            background: var(--geo-primary);
+            background: var(--wiki-blue);
+            transform: scale(1.1);
         }
-        
+
         .music-card .album-description-overlay {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(transparent, rgba(26, 26, 46, 0.9));
-            padding: 2rem 1rem 1rem;
+            background: linear-gradient(transparent, rgba(26, 26, 46, 0.92));
+            padding: 2.2rem 1rem 1rem;
             transform: translateY(100%);
-            transition: transform 0.3s ease;
+            transition: transform 0.45s var(--wiki-ease);
+            z-index: 4;
+            pointer-events: none;
         }
-        
+
         .music-card:hover .album-description-overlay {
             transform: translateY(0);
         }
-        
+
         .music-card .album-description-text {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
             font-size: 0.75rem;
-            color: rgba(255,255,255,0.8);
-            line-height: 1.5;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.6;
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        
-        /* 骨架屏样式 */
+
+        /* ===== 骨架屏 ===== */
         .skeleton-card {
             pointer-events: none;
         }
-        
+
         .skeleton-card .skeleton-cover {
             width: 100%;
             aspect-ratio: 1;
-            background: linear-gradient(90deg, var(--geo-bg-alt) 25%, #f0f0f0 50%, var(--geo-bg-alt) 75%);
+            background: linear-gradient(90deg, var(--wiki-paper-2) 25%, #eceef5 50%, var(--wiki-paper-2) 75%);
             background-size: 200% 100%;
             animation: skeleton-loading 1.5s infinite;
         }
-        
+
         .skeleton-card .card-content {
-            padding: 1rem;
+            padding: 1rem 1.1rem;
+            background: var(--wiki-paper);
         }
-        
+
         .skeleton-card .skeleton-title {
             height: 14px;
-            background: var(--geo-bg-alt);
+            background: var(--wiki-paper-2);
             margin-bottom: 0.5rem;
-            border-radius: 2px;
         }
-        
+
         .skeleton-card .skeleton-stats {
             height: 10px;
             width: 50%;
-            background: var(--geo-bg-alt);
-            border-radius: 2px;
+            background: var(--wiki-paper-2);
         }
-        
+
         @keyframes skeleton-loading {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
-        
+
         .no-results, .error {
             grid-column: 1/-1;
             text-align: center;
-            padding: 3rem;
-            font-family: 'Space Grotesk', sans-serif;
-            color: var(--geo-text-muted);
+            padding: var(--ws-xl);
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            letter-spacing: 0.1em;
+            color: var(--wiki-muted);
         }
-        
-        /* 模态框内元素样式 */
-        .album-art {
-            width: 150px;
-            height: 150px;
-            background: var(--geo-accent);
+
+        /* ===== 分页 ===== */
+        .geo-music-page .geo-pagination {
             display: flex;
             align-items: center;
             justify-content: center;
-            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
-            overflow: hidden;
+            flex-wrap: wrap;
+            gap: var(--ws-s) var(--ws-m);
+            padding: 0 2rem var(--ws-xl);
         }
-        
+
+        .geo-music-page .geo-pagination__info {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            color: var(--wiki-muted);
+        }
+
+        .geo-music-page .geo-pagination__controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .geo-music-page .page-btn {
+            font-family: 'Space Grotesk', sans-serif;
+            min-width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid var(--wiki-line);
+            background: var(--wiki-paper);
+            color: var(--wiki-ink);
+            cursor: pointer;
+            padding: 0 0.5rem;
+            transition:
+                border-color 0.3s var(--wiki-ease),
+                color 0.3s var(--wiki-ease),
+                background 0.3s var(--wiki-ease),
+                transform 0.15s ease;
+        }
+
+        .geo-music-page .page-btn:hover:not(.active) {
+            border-color: var(--wiki-accent);
+            color: var(--wiki-accent);
+            transform: translateY(-2px);
+        }
+
+        .geo-music-page .page-btn:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .geo-music-page .page-btn.active {
+            background: var(--wiki-accent);
+            border-color: var(--wiki-accent);
+            color: white;
+            transform: none;
+        }
+
+        .geo-music-page .page-ellipsis {
+            padding: 0 0.4rem;
+            color: var(--wiki-muted);
+        }
+
+        .geo-pagination__jump {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            font-size: 0.85rem;
+            color: var(--wiki-muted);
+        }
+
+        .geo-pagination__jump-input {
+            width: 56px;
+            padding: 0.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            border: 1.5px solid var(--wiki-line);
+            background: var(--wiki-paper);
+            color: var(--wiki-ink);
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .geo-pagination__jump-input:focus {
+            outline: none;
+            border-color: var(--wiki-accent);
+        }
+
+        .geo-pagination__jump-btn {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            padding: 0.5rem 1rem;
+            border: 1.5px solid var(--wiki-accent);
+            background: var(--wiki-accent);
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s ease, border-color 0.3s ease, transform 0.15s ease;
+        }
+
+        .geo-pagination__jump-btn:hover {
+            background: var(--wiki-blue);
+            border-color: var(--wiki-blue);
+        }
+
+        .geo-pagination__jump-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ===== 模态框（专辑详情）— Award 重设计 ===== */
+        .geo-modal {
+            background: rgba(26, 26, 46, 0.78);
+            -webkit-backdrop-filter: blur(8px) saturate(0.8);
+            backdrop-filter: blur(8px) saturate(0.8);
+        }
+
+        .geo-modal.active {
+            animation: modal-fade 0.35s var(--wiki-ease) both;
+        }
+
+        .geo-modal__content {
+            background: var(--wiki-paper);
+            max-width: 840px;
+            width: 100%;
+            max-height: 88vh;
+            overflow-y: auto;
+            border: 1.5px solid var(--wiki-line);
+            box-shadow: 14px 14px 0 var(--wiki-ink);
+            position: relative;
+        }
+
+        .geo-modal.active .geo-modal__content {
+            animation: modal-in 0.55s var(--wiki-ease-snap) both;
+        }
+
+        .geo-modal__close {
+            top: 0.9rem;
+            right: 0.9rem;
+            width: 38px;
+            height: 38px;
+            background: var(--wiki-accent);
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            transition:
+                background 0.3s ease,
+                transform 0.35s var(--wiki-ease-snap);
+        }
+
+        .geo-modal__close:hover {
+            background: var(--wiki-blue);
+            transform: rotate(90deg) scale(1.06);
+        }
+
+        /* 头部：墨色渐变带 */
+        .geo-modal__header {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            gap: var(--ws-m);
+            padding: clamp(1.5rem, 3vw, 2.2rem);
+            background:
+                radial-gradient(ellipse 70% 120% at 90% 0%, rgba(233, 69, 96, 0.25), transparent 60%),
+                linear-gradient(160deg, var(--wiki-ink) 0%, var(--wiki-ink-soft) 60%, #2a2a4a 100%);
+            color: white;
+        }
+
+        .geo-modal__header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+            background-size: 48px 48px;
+            -webkit-mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
+            mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .geo-modal__header::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--wiki-accent), var(--wiki-blue));
+            transform-origin: left;
+            animation: wiki-line-grow 0.9s var(--wiki-ease) 0.25s both;
+        }
+
+        .geo-modal__cover,
+        .album-art {
+            clip-path: none;
+            width: clamp(120px, 18vw, 160px);
+            aspect-ratio: 1;
+            height: auto;
+            background: var(--wiki-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 3px solid #fff;
+            box-shadow: 7px 7px 0 rgba(233, 69, 96, 0.6);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
         .album-art img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
         .album-art .fallback-content {
             font-size: 3rem;
             color: white;
             opacity: 0.5;
         }
-        
+
+        .geo-modal__info {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .geo-modal__eyebrow {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.66rem;
+            font-weight: 600;
+            letter-spacing: 0.32em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .geo-modal__eyebrow::before {
+            content: '';
+            width: 1.6rem;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         .album-title {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.8rem;
-            letter-spacing: 2px;
-            color: white;
-            margin-bottom: 0.5rem;
+            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+            font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+            letter-spacing: 0.04em;
+            line-height: 1;
+            color: #fff;
+            margin-bottom: 0.55rem;
+            word-break: break-word;
         }
-        
+
         .album-artist {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
             font-size: 1rem;
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 1rem;
+            color: rgba(255,255,255,0.78);
+            margin-bottom: var(--ws-s);
         }
-        
+
         .album-meta {
             display: flex;
-            gap: 1rem;
+            gap: 0.6rem;
             flex-wrap: wrap;
-            margin-bottom: 1rem;
+            margin-bottom: var(--ws-s);
         }
-        
+
         .meta-item {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.6);
-            display: flex;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.85);
+            display: inline-flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.4rem;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 0.3rem 0.7rem;
+            clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
         }
-        
+
+        .meta-item i {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.6);
+        }
+
         .album-actions {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.6rem;
             align-items: center;
         }
-        
+
+        .album-actions .play-all-btn {
+            transition: background 0.3s ease, transform 0.3s var(--wiki-ease), box-shadow 0.3s var(--wiki-ease);
+        }
+
+        .album-actions .play-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 0 rgba(233, 69, 96, 0.5);
+        }
+
+        .album-actions .play-all-btn:active {
+            transform: translateY(0) scale(0.96);
+        }
+
         .report-error-btn {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             background: transparent;
-            border: 2px solid rgba(255,255,255,0.3);
-            color: rgba(255,255,255,0.6);
+            border: 1.5px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.65);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: border-color 0.3s ease, color 0.3s ease, transform 0.3s var(--wiki-ease);
         }
-        
+
         .report-error-btn:hover {
-            border-color: var(--geo-accent);
-            color: var(--geo-accent);
+            border-color: var(--wiki-accent);
+            color: var(--wiki-accent);
+            transform: translateY(-2px);
         }
-        
+
+        /* 主体 */
+        .geo-modal__body {
+            padding: clamp(1.25rem, 2.5vw, 2rem);
+        }
+
         .album-description {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
             font-size: 0.9rem;
-            color: var(--geo-text-light);
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 2px solid var(--geo-border);
+            font-weight: 300;
+            color: #3a3d52;
+            line-height: 1.9;
+            background: var(--wiki-paper-2);
+            border-left: 3px solid var(--wiki-accent);
+            padding: 1rem 1.25rem;
+            margin-bottom: var(--ws-m);
         }
-        
+
         .track-list h3 {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.2rem;
-            color: var(--geo-primary);
-            letter-spacing: 2px;
-            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.7rem;
+            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 0.1em;
+            color: var(--wiki-ink);
+            margin-bottom: var(--ws-s);
+            padding-bottom: 0.7rem;
+            border-bottom: 1.5px solid var(--wiki-line);
+            position: relative;
         }
-        
+
+        .track-list h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -1.5px;
+            width: 3rem;
+            height: 3px;
+            background: var(--wiki-accent);
+        }
+
+        .track-list h3 i {
+            color: var(--wiki-accent);
+            font-size: 1rem;
+        }
+
         .tracks {
             list-style: none;
-            max-height: 300px;
+            max-height: 320px;
             overflow-y: auto;
+            padding-right: 0.35rem;
         }
-        
+
+        .tracks::-webkit-scrollbar {
+            width: 6px;
+        }
+        .tracks::-webkit-scrollbar-track {
+            background: var(--wiki-paper-2);
+        }
+        .tracks::-webkit-scrollbar-thumb {
+            background: var(--wiki-line);
+            border: none;
+        }
+        .tracks::-webkit-scrollbar-thumb:hover {
+            background: var(--wiki-accent);
+        }
+
         .track {
             display: flex;
             align-items: center;
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--geo-border);
-            transition: all 0.3s ease;
+            padding: 0.7rem 0.75rem;
+            border-bottom: 1px solid var(--wiki-line);
             cursor: pointer;
+            transition: background 0.25s ease, box-shadow 0.25s ease;
         }
-        
+
         .track:hover {
-            background: var(--geo-bg-alt);
+            background: var(--wiki-paper-2);
+            box-shadow: inset 3px 0 0 var(--wiki-accent);
         }
-        
+
         .track-play-btn {
-            width: 28px;
-            height: 28px;
-            background: var(--geo-accent);
+            width: 30px;
+            height: 30px;
+            background: var(--wiki-accent);
             border: none;
             color: white;
             cursor: pointer;
@@ -583,18 +1154,27 @@
             align-items: center;
             justify-content: center;
             font-size: 0.7rem;
-            margin-right: 0.5rem;
-            transition: all 0.3s ease;
+            margin-right: 0.6rem;
+            flex-shrink: 0;
+            transition: background 0.3s ease, transform 0.3s var(--wiki-ease-snap);
         }
-        
+
         .track-play-btn:hover {
-            background: var(--geo-primary);
+            background: var(--wiki-blue);
+            transform: scale(1.12);
         }
-        
+
         .track-number {
-            font-family: 'Bebas Neue', sans-serif;
-            width: 30px;
-            color: var(--geo-text-muted);
+            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+            width: 32px;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            color: var(--wiki-muted);
+            flex-shrink: 0;
+        }
+
+        .track:hover .track-number {
+            color: var(--wiki-accent);
         }
 
         .track-info {
@@ -605,15 +1185,16 @@
         }
 
         .track-title {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
             font-size: 0.9rem;
-            color: var(--geo-text);
+            font-weight: 500;
+            color: var(--wiki-ink);
         }
 
         .track-subtitle {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.75rem;
-            color: var(--geo-text-muted);
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            font-size: 0.74rem;
+            color: var(--wiki-muted);
             margin-top: 2px;
         }
 
@@ -625,13 +1206,15 @@
         }
 
         .thbwiki-link {
-            color: var(--geo-accent);
+            color: var(--wiki-blue);
             font-size: 0.8rem;
-            transition: color 0.3s ease;
+            transition: color 0.3s ease, transform 0.3s var(--wiki-ease);
+            display: inline-flex;
         }
 
         .thbwiki-link:hover {
-            color: var(--geo-primary);
+            color: var(--wiki-accent);
+            transform: translate(2px, -2px);
         }
 
         .confidence-badge {
@@ -653,73 +1236,103 @@
         }
 
         .confidence-low {
-            color: var(--geo-text-muted);
+            color: var(--wiki-muted);
         }
 
         .track-duration {
             font-family: 'Outfit', sans-serif;
             font-size: 0.8rem;
-            color: var(--geo-text-muted);
+            color: var(--wiki-muted);
+            font-variant-numeric: tabular-nums;
         }
-        
-        /* 分页跳转 */
-        .geo-pagination__jump {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+
+        /* 模态框动效原语 */
+        @keyframes modal-fade {
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
-        
-        .geo-pagination__jump-input {
-            width: 50px;
-            padding: 0.5rem;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
-            border: 2px solid var(--geo-border);
-            background: var(--geo-bg);
-            color: var(--geo-text);
-            text-align: center;
+        @keyframes modal-in {
+            from { opacity: 0; transform: translateY(26px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-        
-        .geo-pagination__jump-btn {
-            font-family: 'Space Grotesk', sans-serif;
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--geo-accent);
-            background: var(--geo-accent);
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-        }
-        
-        .geo-pagination__jump-btn:hover {
-            background: var(--geo-primary);
-            border-color: var(--geo-primary);
-        }
-        
-        @media (max-width: 1200px) {
-            .geo-music-grid { grid-template-columns: repeat(4, 1fr); }
-        }
-        
+
+        /* ================= 响应式 ================= */
         @media (max-width: 900px) {
-            .geo-music-grid { grid-template-columns: repeat(3, 1fr); }
-            .geo-music-title { font-size: 2.5rem; }
+            .geo-music-header {
+                padding: var(--ws-xl) 1.5rem var(--ws-l);
+            }
         }
-        
+
         @media (max-width: 600px) {
-            .geo-music-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; padding: 1rem; }
-            .geo-filter-inner { flex-direction: column; align-items: flex-start; }
-            .geo-music-title { font-size: 2rem; }
+            .geo-modal__header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .geo-modal__meta, .album-meta, .album-actions {
+                justify-content: center;
+            }
+            .geo-modal__content {
+                box-shadow: 8px 8px 0 var(--wiki-ink);
+            }
+            .geo-music-page {
+                padding-top: 72px;
+            }
+            .geo-music-header {
+                padding: var(--ws-l) 1.25rem 2.5rem;
+            }
+            .music-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.9rem;
+                padding: var(--ws-m) 1.25rem var(--ws-l);
+            }
+            .geo-filter-section {
+                padding: var(--ws-s) 1.25rem;
+            }
+            .geo-filter-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .geo-music-page .geo-pagination {
+                padding: 0 1.25rem var(--ws-l);
+            }
+        }
+
+        /* ================= 无障碍：减少动效 ================= */
+        @media (prefers-reduced-motion: reduce) {
+            .geo-music-page *,
+            .geo-music-page *::before,
+            .geo-music-page *::after,
+            .geo-modal *,
+            .geo-modal *::before,
+            .geo-modal *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            [data-rv].rv-armed {
+                opacity: 1;
+                transform: none;
+            }
+            .wiki-progress {
+                display: none;
+            }
         }
     </style>
 </head>
 <body class="geo-theme">
+    <!-- 阅读进度条 -->
+    <div class="wiki-progress" aria-hidden="true">
+        <span class="wiki-progress__bar" id="wikiProgressBar"></span>
+    </div>
+
     <!-- 导航栏 -->
     <nav class="geo-nav">
         <a href="index.html" class="geo-logo">TONGRENLU</a>
         <div class="geo-nav__links">
             <a href="index.html" class="geo-nav__link">首页</a>
             <a href="album.html" class="geo-nav__link active">音乐库</a>
-            <a href="artist-showcase.html" class="geo-nav__link">艺术家</a>
+            <a href="artist-wiki.html" class="geo-nav__link">艺术家</a>
             <a href="event.html" class="geo-nav__link">展会</a>
         </div>
         <div class="geo-nav__stats">
@@ -727,29 +1340,34 @@
             <span class="geo-nav__label">专辑</span>
         </div>
     </nav>
-    
+
     <!-- 音乐库页面 -->
     <div class="geo-music-page">
         <!-- 搜索头部 -->
         <div class="geo-music-header">
-            <h1 class="geo-music-title">音乐库</h1>
-            <div class="geo-search">
-                <input type="text" class="geo-search__input" id="searchInput" placeholder="搜索音乐、艺术家、专辑..." autocomplete="off">
-                <button class="geo-search__btn"><i class="fas fa-search"></i></button>
-                <div class="geo-suggestions" id="searchSuggestions">
-                    <div id="suggestionsList"></div>
+            <span class="geo-music-header__watermark" aria-hidden="true">MUSIC</span>
+            <div class="geo-music-header__inner">
+                <div class="geo-music-header__eyebrow">Doujin Music Archive</div>
+                <h1 class="geo-music-title">音乐<span class="accent">库</span></h1>
+                <p class="geo-music-subtitle">东方同人专辑档案 · 支持全文搜索与标签筛选</p>
+                <div class="geo-search">
+                    <input type="text" class="geo-search__input" id="searchInput" placeholder="搜索音乐、艺术家、专辑..." autocomplete="off">
+                    <button class="geo-search__btn" aria-label="搜索"><i class="fas fa-search"></i></button>
+                    <div class="geo-suggestions" id="searchSuggestions">
+                        <div id="suggestionsList"></div>
+                    </div>
                 </div>
             </div>
         </div>
-        
+
         <!-- 筛选区域 -->
-        <div class="geo-filter-section">
+        <div class="geo-filter-section" data-rv>
             <div class="geo-filter-inner">
                 <div class="geo-tags" id="filterTags">
                     <div class="geo-tag active" data-tag="">全部</div>
                 </div>
                 <div class="geo-sort">
-                    <span class="geo-sort__label">排序:</span>
+                    <span class="geo-sort__label">排序</span>
                     <select class="geo-sort__select" id="sortSelect">
                         <option value="publishDate">最新发布</option>
                         <option value="accessCount">最多播放</option>
@@ -758,13 +1376,13 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- 音乐网格 -->
         <div class="music-grid" id="musicGrid">
         </div>
-        
+
         <!-- 分页 -->
-        <div class="geo-pagination">
+        <div class="geo-pagination" data-rv>
             <div class="geo-pagination__info">
                 <span id="paginationInfo">第 1 页 / 共 1 页</span>
             </div>
@@ -778,7 +1396,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- 专辑详情模态框 -->
     <div class="geo-modal" id="albumModal">
         <div class="geo-modal__content">
@@ -788,6 +1406,7 @@
                     <div class="fallback-content">🎵</div>
                 </div>
                 <div class="geo-modal__info">
+                    <div class="geo-modal__eyebrow">Album Detail</div>
                     <h2 class="album-title">专辑标题</h2>
                     <p class="album-artist">艺术家</p>
                     <div class="album-meta">
@@ -814,17 +1433,17 @@
             </div>
         </div>
     </div>
-    
+
     <!-- 页脚 -->
     <footer class="geo-footer">
         <div class="geo-footer__logo">TONGRENLU</div>
         <p class="geo-footer__text">&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
         <p class="geo-footer__text">本网站仅为学习交流使用，不涉及任何商业用途</p>
     </footer>
-    
+
     <!-- 版本号 -->
     <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: var(--geo-primary); color: white; padding: 5px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; z-index: 1002; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
-        v2.0 GEOMETRIC
+        v2.1 GEOMETRIC · LIBRARY EDITION
     </div>
 
     <!-- JavaScript -->
@@ -832,5 +1451,98 @@
     <script src="components/shared/image-loader.js"></script>
     <script src="components/shared/folia-player.js"></script>
     <script src="components/music-library/music-library.js"></script>
+    <script>
+        // ===== 动效（渐进增强，与 artist-wiki 同一钩子）=====
+        (function() {
+            // 阅读进度条
+            var bar = document.getElementById('wikiProgressBar');
+            if (bar) {
+                var update = function() {
+                    var doc = document.documentElement;
+                    var scrollable = doc.scrollHeight - window.innerHeight;
+                    bar.style.width = scrollable > 0 ? (window.scrollY / scrollable * 100) + '%' : '0%';
+                };
+                window.addEventListener('scroll', update, { passive: true });
+                window.addEventListener('resize', update);
+                update();
+            }
+
+            // 滚动揭示
+            var revealEls = document.querySelectorAll('[data-rv]');
+            if ('IntersectionObserver' in window && revealEls.length > 0) {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+                revealEls.forEach(function(el) {
+                    el.classList.add('rv-armed');
+                    observer.observe(el);
+                });
+            }
+
+            // 卡片入场 stagger：观察网格新增节点，分配批内 --i
+            var grid = document.getElementById('musicGrid');
+            if (grid && 'MutationObserver' in window) {
+                var mo = new MutationObserver(function() {
+                    var cards = grid.querySelectorAll('.music-card:not([data-armed])');
+                    cards.forEach(function(card, i) {
+                        card.dataset.armed = '1';
+                        if (!card.classList.contains('skeleton-card')) {
+                            card.style.setProperty('--i', i % 15);
+                            armKeyboard(card, card.querySelector('.card-title'));
+                        }
+                    });
+                });
+                mo.observe(grid, { childList: true });
+                // 首次立即武装
+                grid.querySelectorAll('.music-card:not([data-armed])').forEach(function(card, i) {
+                    card.dataset.armed = '1';
+                    if (!card.classList.contains('skeleton-card')) {
+                        card.style.setProperty('--i', i % 15);
+                        armKeyboard(card, card.querySelector('.card-title'));
+                    }
+                });
+            }
+
+            // 键盘可达：为动态生成的 div 交互元素补 tabindex + 委托 Enter/Space 触发
+            function armKeyboard(el, labelEl) {
+                if (el.hasAttribute('tabindex')) return;
+                el.setAttribute('tabindex', '0');
+                var label = labelEl ? labelEl.textContent.trim() : '';
+                if (label && !el.hasAttribute('aria-label')) {
+                    el.setAttribute('aria-label', label);
+                }
+            }
+            function armContainer(containerId, selector) {
+                var container = document.getElementById(containerId);
+                if (!container) return;
+                var arm = function() {
+                    container.querySelectorAll(selector).forEach(function(el) { armKeyboard(el); });
+                };
+                arm();
+                if ('MutationObserver' in window) {
+                    var mo = new MutationObserver(arm);
+                    mo.observe(container, { childList: true, subtree: true });
+                }
+            }
+            armContainer('filterTags', '.tag');
+            armContainer('suggestionsList', '.suggestion-item, .geo-suggestions__item, .history-item');
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                var t = e.target;
+                if (!(t instanceof Element)) return;
+                if (t.classList.contains('music-card') || t.classList.contains('tag')
+                        || t.classList.contains('suggestion-item') || t.classList.contains('geo-suggestions__item')
+                        || t.classList.contains('history-item')) {
+                    e.preventDefault();
+                    t.click();
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
