@@ -48,6 +48,8 @@ public class ThbwikiService {
     private ThbwikiHttpClient httpClient = url -> HttpRequest.get(url)
             .header("User-Agent", "tongrenlu/1.0 (同人音乐库管理)")
             .timeout(10000)
+            // OpenSearch 返回的 URL 可能 307 到规范页面名（如繁简/别名校正），需要跟随
+            .setFollowRedirects(true)
             .execute();
 
     /** Tracks the last HTTP request timestamp for rate limiting. */
@@ -662,5 +664,103 @@ public class ThbwikiService {
             return source;
         }
         return "";
+    }
+
+    // ==================== 艺术家（社团）页面 ====================
+
+    /**
+     * 按社团名搜索 THBWiki，返回置信度最高的结果（>= 0.85）。
+     *
+     * @param artistName 社团名称
+     * @return 最佳匹配（name + url），无匹配时返回空 Optional
+     */
+    public Optional<ThbwikiAlbum> searchArtist(String artistName) {
+        if (!StringUtils.hasText(artistName)) {
+            return Optional.empty();
+        }
+        List<ThbwikiAlbum> candidates = searchAlbum(artistName);
+        return pickBestArtistMatch(artistName, candidates);
+    }
+
+    /**
+     * 从候选中选出与社团名置信度最高的条目。
+     */
+    Optional<ThbwikiAlbum> pickBestArtistMatch(String artistName, List<ThbwikiAlbum> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return Optional.empty();
+        }
+        String normalizedInput = TextNormalizer.normalizeForComparison(artistName);
+        ThbwikiAlbum best = null;
+        double bestConfidence = 0;
+        for (ThbwikiAlbum candidate : candidates) {
+            if (candidate.getName() == null || candidate.getName().isBlank()) {
+                continue;
+            }
+            String normalizedCandidate = TextNormalizer.normalizeForComparison(candidate.getName());
+            double confidence = calculateConfidence(normalizedInput, normalizedCandidate);
+            if (confidence > bestConfidence) {
+                best = candidate;
+                bestConfidence = confidence;
+            }
+        }
+        if (best != null && bestConfidence >= MIN_CONFIDENCE_THRESHOLD) {
+            log.info("Artist '{}' matched THBWiki page '{}' with confidence {}",
+                    artistName, best.getName(), String.format("%.2f", bestConfidence));
+            return Optional.of(best);
+        }
+        log.info("Artist '{}' has no THBWiki match (best candidate '{}' confidence {})",
+                artistName, best == null ? "none" : best.getName(), String.format("%.2f", bestConfidence));
+        return Optional.empty();
+    }
+
+    /**
+     * 抓取 THBWiki 页面的正文纯文本。
+     * 注：MediaWiki action=parse API 会被 THBWiki 反爬拦截（503），因此直接抓取页面 HTML
+     * （与 {@link #fetchAlbumDetail(String)} 相同方式），再用 Jsoup 剔除噪声元素提取正文。
+     *
+     * @param pageUrl THBWiki 页面 URL（如 https://thbwiki.cc/IOSYS）
+     * @return 正文纯文本，失败时返回空 Optional
+     */
+    public Optional<String> fetchArtistPageText(String pageUrl) {
+        if (!isValidThbwikiUrl(pageUrl)) {
+            log.warn("Invalid THBWiki URL for artist page: {}", pageUrl);
+            return Optional.empty();
+        }
+
+        try (HttpResponse response = fetchWithRetry(pageUrl, 2)) {
+            if (!response.isOk()) {
+                log.warn("THBWiki page returned status: {} for artist page: {}", response.getStatus(), pageUrl);
+                return Optional.empty();
+            }
+            return Optional.ofNullable(parsePageHtml(response.body(), pageUrl));
+        } catch (Exception e) {
+            log.warn("Error fetching THBWiki artist page: {}", pageUrl, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 解析页面 HTML，提取 #mw-content-text 正文纯文本。
+     */
+    String parsePageHtml(String html, String pageUrl) {
+        try {
+            Document doc = org.jsoup.Jsoup.parse(html);
+            doc.select("table, .mw-editsection, sup.reference, script, style, .navbox, "
+                    + ".printfooter, #toc, .catlinks, #footer, .mw-jump-link, .thumb")
+                    .remove();
+            Element content = doc.selectFirst("#mw-content-text .mw-parser-output");
+            String text = (content != null ? content : doc.body()).text();
+            text = text.replaceAll("\\s{2,}", " ").trim();
+
+            if (text.isBlank()) {
+                log.warn("THBWiki page text is empty for page: {}", pageUrl);
+                return null;
+            }
+            log.info("Extracted {} chars of page text from {}", text.length(), pageUrl);
+            return text;
+        } catch (Exception e) {
+            log.error("Error parsing THBWiki page HTML: {}", pageUrl, e);
+            return null;
+        }
     }
 }

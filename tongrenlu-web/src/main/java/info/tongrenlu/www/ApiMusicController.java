@@ -4,10 +4,12 @@ import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.config.FoliaConfig;
 import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.domain.AlbumDetailBean;
+import info.tongrenlu.domain.ArtistBean;
 import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.model.CloudMusicDetailResponse;
 import info.tongrenlu.model.CloudMusicSongDownloadData;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +39,7 @@ public class ApiMusicController {
     private final HomeMusicService musicService;
     private final ArtistService artistService;
     private final FoliaConfig foliaConfig;
+    private final ObjectMapper objectMapper;
 
     /**
      * 网易云外网调用 HTTP 客户端：统一设置连接/读取超时，避免上游卡住时请求线程无限期挂起。
@@ -166,6 +170,60 @@ public class ApiMusicController {
             @RequestParam(defaultValue = "30") int limit) {
         Map<String, Object> result = this.artistService.getArtistsWithAlbumCountPaged(keyword, page, limit);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 艺术家 Wiki 详情：按 id 或 name 查询，含简介、生成的 wiki 内容与互联标签。
+     */
+    @GetMapping("/artist-detail")
+    public ResponseEntity<Map<String, Object>> getArtistDetail(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name) {
+        ArtistBean artist = this.artistService.getArtistDetail(id, name);
+        if (artist == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", artist.getId());
+        result.put("name", artist.getName());
+        result.put("description", artist.getDescription());
+        result.put("cloudMusicPicUrl", artist.getCloudMusicPicUrl());
+        result.put("cloudMusicId", artist.getCloudMusicId());
+        result.put("albumCount", artist.getAlbumCount());
+        // LLM 生成内容优先，空则回落网易云简介
+        boolean hasWikiContent = StringUtils.isNotBlank(artist.getWikiContent());
+        result.put("wikiContent", hasWikiContent ? artist.getWikiContent() : artist.getDescription());
+        result.put("wikiIsGenerated", hasWikiContent);
+        result.put("wikiTags", parseWikiTags(artist.getWikiTags()));
+        result.put("thbWikiUrl", artist.getThbWikiUrl());
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 解析 wiki_tags JSON（[{"tag","artistId","type"}]），解析失败返回空列表。
+     */
+    private List<Map<String, Object>> parseWikiTags(String wikiTagsJson) {
+        List<Map<String, Object>> tags = new ArrayList<>();
+        if (StringUtils.isBlank(wikiTagsJson)) {
+            return tags;
+        }
+        try {
+            JsonNode array = objectMapper.readTree(wikiTagsJson);
+            if (array.isArray()) {
+                for (JsonNode node : array) {
+                    Map<String, Object> tag = new HashMap<>();
+                    tag.put("tag", node.path("tag").asText(""));
+                    if (node.hasNonNull("artistId")) {
+                        tag.put("artistId", node.get("artistId").asLong());
+                    }
+                    tag.put("type", node.path("type").asText("style"));
+                    tags.add(tag);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析 wiki_tags 失败: {}", wikiTagsJson, e);
+        }
+        return tags;
     }
 
     @GetMapping("/folia-album-url")

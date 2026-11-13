@@ -140,6 +140,35 @@ public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
     }
 
     /**
+     * 按ID或名称查询艺人详情（含简介、专辑数量）
+     *
+     * @param id   艺人ID（优先）
+     * @param name 艺人名称（id 为空时使用）
+     * @return 匹配的艺人，不存在时返回 null
+     */
+    public ArtistBean getArtistDetail(Long id, String name) {
+        ArtistBean artist;
+        if (id != null) {
+            artist = this.getById(id);
+        } else if (StringUtils.isNotBlank(name)) {
+            LambdaQueryWrapper<ArtistBean> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ArtistBean::getName, name)
+                    .orderByAsc(ArtistBean::getId)
+                    .last("LIMIT 1");
+            artist = this.getBaseMapper().selectOne(queryWrapper);
+        } else {
+            return null;
+        }
+        if (artist != null && artist.getTagId() != null) {
+            long albumCount = this.getBaseMapper().countAlbumsByTagId(artist.getTagId());
+            artist.setAlbumCount(albumCount);
+        } else if (artist != null) {
+            artist.setAlbumCount(0L);
+        }
+        return artist;
+    }
+
+    /**
      * 删除艺人及其关联数据
      *
      * @param artistId 艺人ID

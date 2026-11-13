@@ -37,6 +37,26 @@ public class ArtistBean {
     @TableField(value = "tag_id", jdbcType = JdbcType.INTEGER)
     private Long tagId;
 
+    /** THBWiki 社团页面链接 */
+    @TableField(value = "thb_wiki_url", jdbcType = JdbcType.VARCHAR)
+    private String thbWikiUrl;
+
+    /** THBWiki 抓取状态：PENDING / MATCHED / NOT_FOUND / FETCH_FAILED */
+    @TableField(value = "thb_wiki_status", jdbcType = JdbcType.VARCHAR)
+    private String thbWikiStatus;
+
+    /** LLM 生成的 wiki 内容（markdown） */
+    @TableField(value = "wiki_content", jdbcType = JdbcType.LONGVARCHAR)
+    private String wikiContent;
+
+    /** 互联标签 JSON 数组：[{"tag":"...","artistId":1,"type":"artist|style"}] */
+    @TableField(value = "wiki_tags", jdbcType = JdbcType.VARCHAR)
+    private String wikiTags;
+
+    /** wiki 内容更新时间 */
+    @TableField(value = "wiki_upd_date", jdbcType = JdbcType.TIMESTAMP)
+    private Date wikiUpdDate;
+
     /**
      * 已保存的专辑数量（非数据库字段，由服务层填充）
      */
