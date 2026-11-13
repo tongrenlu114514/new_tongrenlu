@@ -34,6 +34,32 @@ TONGRLU_BATCH_PROGRESS_DIR=/var/lib/tongrenlu/progress/batch
 2. **两个进度目录变量必须显式设置，且父目录必须存在、进程可写。** 写进度失败只会记一条 error 日志、不会让请求失败 —— 断点续传会静默失效，等于这次修复白做。
 3. **启用认证时口令不能为空、也不能仍是默认值 `tongrenlu`**，否则应用**启动直接失败**（这是有意的 fail-fast）。验证要看**新进程**的启动日志（会出现 `IllegalStateException` 堆栈），别只看 curl 通不通：systemd 的 `EnvironmentFile` 路径写错、或重启的是另一个实例时，会出现「新实例起不来、旧实例还在扛」的假象。
 4. **两个端点的 `done` 文案语义不同，脚本不要混用**：导入流是「进度文件已清除，导入流程结束」，补导是「补导结束：成功 X / 跳过 Y / 失败 Z，失败清单仍有 N 条，进度文件未清除」—— 补导不清进度文件，也不改写续传位置。
+5. **要上传的 jar 先过一遍预检**：`git rev-parse HEAD` 只保证源码对，不保证重启的那个 jar 是对的 —— `target/` 里可能留着几个月前的旧包（`ls target/*.jar` 一把就能捞到），而且代码没变化时 `mvn -o package` **不会**刷新 fat jar（repackage 打了日志，产物时间戳仍是上一次构建的）。用 `scripts/jar_preflight.py` 检查待上传的包，见下节。
+
+## 部署前 jar 预检（scripts/jar_preflight.py）
+
+```bash
+# 本地构建后：检查要传上去的那个 jar
+python3 scripts/jar_preflight.py target/tongrenlu-tool.jar
+
+# 上传到服务器后：再跑一次，确认传输没损坏、没拿错包
+python3 scripts/jar_preflight.py /opt/tongrenlu/tongrenlu-tool.jar --expect-sha256 <本地产物的SHA-256>
+```
+
+只依赖 Python 标准库。检查项与不通过时的含义：
+
+| 检查 | 不通过说明 |
+| --- | --- |
+| MANIFEST 有 `Main-Class` / `Start-Class` | 是薄包（`x.jar.original`），`java -jar` 直接起不来 |
+| 打包进去的 `app.basic-auth.password` 默认值为空 | 仍是明文弱口令默认值 `tongrenlu`，旧代码被打包进来了 |
+| 8 个 tool 修复相关类在 `BOOT-INF/classes` | 缺类 = 这批修复没打进去 |
+| 3 个 dao 类在嵌套 `BOOT-INF/lib/tongrenlu-dao-*.jar` | 缺类 = dao 侧修复没打进去（注意 dao 类不在 `BOOT-INF/classes`，别误判成缺失） |
+| `BOOT-INF/lib` 依赖数 > 0 | 为 0 = 不是 fat jar |
+| SHA-256 与期望一致 | 传输损坏或拿错了文件（`.original` 与 fat jar 只差文件名后缀） |
+
+退出码：`0` = PASS；`1` = FAIL（**不要部署**）；`2` = 用法错误。可直接当部署脚本的闸门。
+
+> 本 jar 不含提交号（没有 build-info / git.properties），所以「包是不是新的」只能靠上面的内容检查判断，**不能靠文件时间戳**。
 
 ## 导入歌单专辑（SSE）
 
