@@ -81,6 +81,55 @@ def default_jar_path():
     return os.path.normpath(os.path.join(here, "..", "target", "tongrenlu-tool.jar"))
 
 
+def auth_password_value(auth_line):
+    """解析 basic-auth.password 这一行的实际生效值。
+
+    形如 app.basic-auth.password=${TOOL_AUTH_PASSWORD:tongrenlu} → 默认值 "tongrenlu"
+    形如 app.basic-auth.password=${TOOL_AUTH_PASSWORD}          → 无默认值（None）
+    形如 app.basic-auth.password=tongrenlu                     → 硬编码明文 "tongrenlu"
+
+    ★ 旧实现用 ":}" 切分取值 —— 但占位符实际写法是 "${KEY:默认值}"，冒号与右花括号
+      之间永远隔着默认值，":}" 永远不会出现，那条弱口令检测是**死代码**：即便构建自
+      origin/master(5197e7a)（弱口令默认值被打进包里），闸门也会放行 —— 恰好放过了
+      这个脚本最该拦的那一版代码。
+    """
+    if "=" not in auth_line:
+        return None
+    raw = auth_line.split("=", 1)[1].strip()
+    if raw.startswith("${") and raw.endswith("}"):
+        inner = raw[2:-1]
+        if ":" in inner:
+            return inner.split(":", 1)[1].strip()
+        return None
+    return raw
+
+
+def describe_auth_value(value):
+    """只描述取值形态，不打印口令本身 —— 预检输出会进日志/终端，不能把口令泄出去。"""
+    if value is None:
+        return "<由环境变量注入，仓库内无默认值>"
+    if value == "":
+        return "<空默认（fail-fast 生效：启用认证且未注入口令时启动失败）>"
+    if value in FORBIDDEN_AUTH_DEFAULTS:
+        return "<弱口令默认值（内容已脱敏；具体弱口令名见结论行）>"
+    return "<仓库内存在非空默认值（内容已脱敏，避免写进日志）>"
+
+
+def redact_auth_line(line):
+    """回显 basic-auth.password 那一行时脱敏。
+
+    预检输出通常会进部署日志、CI 输出、甚至被贴进群里；配置里若硬编码了真实口令，
+    原样回显等于把凭据抄进了日志。已知弱口令（公开信息）也一并脱敏 ——
+    弱口令的名字由 FORBIDDEN_AUTH_DEFAULTS 列出，结论行会点名。
+    """
+    if "=" not in line:
+        return line
+    key, _, value = line.partition("=")
+    if value.strip() == "":
+        return key + "=（空）"
+    return key + "=****（已脱敏）"
+
+
 def die(msg, code=2):
     sys.stderr.write("错误：" + msg + "\n")
     sys.exit(code)
@@ -170,15 +219,17 @@ def main():
         for line in props.splitlines():
             if "basic-auth.password" in line:
                 auth_line = line.strip()
-                print("  " + line.strip())
+                print("  " + redact_auth_line(auth_line))
         if not auth_line:
             fails.append("打包的 properties 里没有 basic-auth.password")
         else:
+            value = auth_password_value(auth_line)
+            print("  生效值形态：" + describe_auth_value(value))
             for bad in FORBIDDEN_AUTH_DEFAULTS:
-                if bad in auth_line and ":}" in auth_line:
-                    default = auth_line.split(":}", 1)[1]
-                    if default.strip() == bad:
-                        fails.append("打包进去的鉴权口令默认值仍是弱口令 '%s'" % bad)
+                if value is not None and value.strip() == bad:
+                    fails.append("打包进去的鉴权口令默认值仍是弱口令 '%s' —— "
+                                 "说明这份包构建自旧代码 origin/master(5197e7a)，"
+                                 "或有人把弱口令写进了配置" % bad)
         for key in ("app.playlist-import.retry-budget",
                     "app.playlist-import.permanent-ttl-days",
                     "app.playlist-import.retry-scan-interval-ms",
