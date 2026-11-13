@@ -13,7 +13,9 @@ import info.tongrenlu.mapper.ArticleTagMapper;
 import info.tongrenlu.mapper.TagMapper;
 import info.tongrenlu.mapper.TrackMapper;
 import info.tongrenlu.model.*;
+import info.tongrenlu.support.CloudMusicAlbumFetchException;
 import info.tongrenlu.support.CloudMusicHttpClient;
+import info.tongrenlu.support.CloudMusicRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -71,17 +73,30 @@ public class HomeMusicService {
      * 请求云音乐接口并返回响应体。
      *
      * <p>连接/读取超时由 {@link CloudMusicHttpClient} 统一控制（默认连接 10s、读取 60s）；
-     * 超时或网络异常时记录 error 日志并返回 null，避免调用线程无限期挂起。
+     * 超时或网络异常时抛出 {@link CloudMusicRequestException}（属于可重试的临时故障）。
      */
-    private String fetchCloudMusicBody(String url) {
+    private String requestCloudMusicBody(String url) {
         try (HttpResponse response = cloudMusicHttpClient.get(url).execute()) {
             return response.body();
         } catch (IORuntimeException | HttpException e) {
+            throw new CloudMusicRequestException(
+                    "上游请求失败或超时（connect=" + cloudMusicHttpClient.getConnectTimeoutMs()
+                            + "ms, read=" + cloudMusicHttpClient.getReadTimeoutMs() + "ms）：" + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 请求云音乐接口并返回响应体；请求失败时降级为 null（旧行为，供既有调用点使用）。
+     */
+    private String fetchCloudMusicBody(String url) {
+        try {
+            return requestCloudMusicBody(url);
+        } catch (CloudMusicRequestException e) {
             log.error("云音乐接口请求失败或超时: url={}, connectTimeout={}ms, readTimeout={}ms, error={}",
                     url, cloudMusicHttpClient.getConnectTimeoutMs(), cloudMusicHttpClient.getReadTimeoutMs(),
                     e.getMessage(), e);
+            return null;
         }
-        return null;
     }
 
     public Page<ArticleBean> searchMusic(String keyword, int pageNumber, int pageSize, String orderBy, String tag) {
@@ -341,34 +356,58 @@ public class HomeMusicService {
         return artistTag;
     }
 
+    /**
+     * 获取专辑详情（旧签名）：失败统一降级为 null，保持既有调用点的行为不变。
+     */
     public CloudMusicAlbum getCloudMusicAlbumById(Long id) {
+        try {
+            return getCloudMusicAlbumByIdOrThrow(id);
+        } catch (CloudMusicAlbumFetchException e) {
+            log.error("get album {} error: {}", id, e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取专辑详情，失败时按原因抛出可区分的异常：
+     * <ul>
+     *   <li>上游超时 / IO 异常 → retryable = true（临时故障）</li>
+     *   <li>响应解析失败 / 空响应 → retryable = true</li>
+     *   <li>上游返回 code != 200 → retryable = false（永久失败，重试无用）</li>
+     * </ul>
+     */
+    CloudMusicAlbum getCloudMusicAlbumByIdOrThrow(Long id) {
         String url = UriComponentsBuilder.fromUriString(cloudMusicApi("/album"))
                 .queryParam("id", id)
                 .build()
                 .toString();
 
-        CloudMusicAlbumDetailResponse musicDetailResponse;
-        String json = fetchCloudMusicBody(url);
-        if (json == null) {
-            return null;
+        String json;
+        try {
+            json = requestCloudMusicBody(url);
+        } catch (CloudMusicRequestException e) {
+            throw new CloudMusicAlbumFetchException(id, e.getMessage(), true, e);
         }
+
+        CloudMusicAlbumDetailResponse musicDetailResponse;
         try {
             musicDetailResponse = new ObjectMapper().readValue(json, CloudMusicAlbumDetailResponse.class);
-            if (musicDetailResponse == null) {
-                return null;
-            }
-            int code = musicDetailResponse.getCode();
-            if (code != 200) {
-                return null;
-            }
-
-            CloudMusicAlbum album = musicDetailResponse.getAlbum();
-            album.setSongs(musicDetailResponse.getSongs());
-            return album;
         } catch (IOException e) {
-            log.error("解析云音乐专辑响应失败: url={}, error={}", url, e.getMessage(), e);
+            throw new CloudMusicAlbumFetchException(id, "响应解析失败: " + e.getMessage(), true, e);
         }
-        return null;
+        if (musicDetailResponse == null) {
+            throw new CloudMusicAlbumFetchException(id, "上游返回空响应", true);
+        }
+        if (musicDetailResponse.getCode() != 200) {
+            throw new CloudMusicAlbumFetchException(id, "上游返回 code=" + musicDetailResponse.getCode(), false);
+        }
+
+        CloudMusicAlbum album = musicDetailResponse.getAlbum();
+        if (album == null) {
+            throw new CloudMusicAlbumFetchException(id, "上游未返回专辑信息", true);
+        }
+        album.setSongs(musicDetailResponse.getSongs());
+        return album;
     }
 
 
@@ -496,10 +535,9 @@ public class HomeMusicService {
 
     @Transactional(rollbackFor = Exception.class)
     public void saveCloudMusicAlbum(Long cloudMusicId) {
-        CloudMusicAlbum cloudMusicAlbum = this.getCloudMusicAlbumById(cloudMusicId);
-        if (cloudMusicAlbum == null) {
-            return;
-        }
+        // 取不到专辑时显式抛出 CloudMusicAlbumFetchException（不再静默 return）：
+        // 静默 return 会让调用方把「未入库」当成「导入成功」并推进进度序号，专辑被永久静默跳过。
+        CloudMusicAlbum cloudMusicAlbum = this.getCloudMusicAlbumByIdOrThrow(cloudMusicId);
 
         ArticleBean articleBean = new ArticleBean();
         articleBean.setTitle(cloudMusicAlbum.getName());

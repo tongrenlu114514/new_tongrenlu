@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -34,7 +35,9 @@ public class MusicAlbumParser {
         String currentDisc = null;
         AlbumInfo currentAlbum = null;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        try (InputStream inputStream = BatchImportPaths.openSource(filePath);
+             BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(inputStream, BatchImportPaths.defaultCharset()))) {
             String line;
 
             while ((line = reader.readLine()) != null) {

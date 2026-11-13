@@ -1,19 +1,17 @@
 package info.tongrenlu;
 
+import info.tongrenlu.support.BatchImportPaths;
 import info.tongrenlu.support.MusicAlbumContext;
 import info.tongrenlu.support.MusicAlbumParser;
 import info.tongrenlu.support.MusicTrack;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,18 +20,15 @@ import java.util.stream.Collectors;
 @RestController
 public class MusicAlbumParseJob {
     private final MusicAlbumParser musicAlbumParser;
+    private final BatchImportPaths batchImportPaths;
 
     @GetMapping("/album/import")
     public void run() throws Exception {
-        String input = "E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\ls.txt";
+        // 输入文件：默认取 classpath 资源 data/ls.txt（仓库里的同名文件不移动、不删除）
+        String input = batchImportPaths.getAlbumSource();
         List<MusicTrack> tracks = musicAlbumParser.parseMusicAlbumFile(input);
 
-        int lastProgress = 0;
-        try {
-            String progress = FileUtils.readFileToString(new File("E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\album_progress.txt"), StandardCharsets.UTF_8);
-            lastProgress = Integer.parseInt(progress);
-        } catch (Exception ignored) {
-        }
+        int lastProgress = batchImportPaths.readProgress("album_progress.txt");
 
         List<MusicAlbumContext> albumList = tracks.stream()
                 .collect(Collectors.groupingBy(MusicTrack::getAlbumCode))
@@ -50,19 +45,15 @@ public class MusicAlbumParseJob {
                         .findFirst()
                         .ifPresent(musicAlbumParser::saveArticle);
                 lastProgress++;
-                FileUtils.writeStringToFile(new File("E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\album_progress.txt"),
-                        String.valueOf(lastProgress),
-                        StandardCharsets.UTF_8);
+                batchImportPaths.writeProgress("album_progress.txt", lastProgress);
 
-            } catch (IOException e) {
+            } catch (RuntimeException e) {
                 log.error("处理文件时出错: {}", e.getMessage(), e);
                 break;
             }
         }
 
         log.info("处理结束，已处理：{}", albumList.size());
-        FileUtils.writeStringToFile(new File("E:\\project\\tongrenlu\\tongrenlu-tool\\src\\main\\resources\\data\\progress.txt"),
-                String.valueOf(0),
-                StandardCharsets.UTF_8);
+        batchImportPaths.writeProgress("progress.txt", 0);
     }
 }
