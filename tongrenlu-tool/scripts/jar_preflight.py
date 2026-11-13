@@ -97,6 +97,12 @@ def main():
             if i + 1 >= len(args):
                 die("--expect-sha256 后面缺少 64 位 hex")
             expect_sha = args[i + 1].strip().lower()
+            # 长度与字符集校验：否则「用户抄错了指纹」会被误报成「传输损坏」，
+            # 排查方向被带偏。这里按用法错处理（退出码 2），不计入包本身的缺陷。
+            if len(expect_sha) != 64:
+                die("--expect-sha256 需要 64 位 hex，实际给了 %d 位：%s" % (len(expect_sha), expect_sha))
+            if any(ch not in "0123456789abcdef" for ch in expect_sha):
+                die("--expect-sha256 含有非十六进制字符：" + expect_sha)
             i += 2
             continue
         if a.startswith("-"):
