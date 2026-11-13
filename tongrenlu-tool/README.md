@@ -30,7 +30,7 @@ TONGRLU_BATCH_PROGRESS_DIR=/var/lib/tongrenlu/progress/batch
 
 ## 部署注意
 
-1. **必须从 `f4569f3` 或其后继提交构建。** `origin/master`（`5197e7a`）仍是旧代码：断点续传写死了旧仓库绝对路径、Hutool 调用点没有超时、Basic Auth 带明文弱口令默认值且没有 fail-fast。在服务器上 clone/pull 之后直接构建，会把这些旧代码原样带进生产。要么先 push 再拉，要么 `git fetch && git checkout f4569f3`，要么直接用已构建好的 jar。部署前用 `git rev-parse HEAD` 确认拿到的确实是新提交。
+1. **必须从 `f4569f3` 或其后继提交构建。** 早于 `f4569f3` 的代码：断点续传写死了旧仓库绝对路径、Hutool 调用点没有超时、Basic Auth 带明文弱口令默认值且没有 fail-fast —— 在服务器上构建旧代码，会把这些缺陷原样带进生产。★**别照抄某个提交号判断远端新旧**：先 `git fetch`，再用 `git rev-parse HEAD` 确认实际拿到的提交、`git log --oneline -1` 对一下；必要时 `git checkout f4569f3` 固定到已知的好提交，或直接用已构建好的 jar。
 2. **两个进度目录变量必须显式设置，且父目录必须存在、进程可写。** 写进度失败只会记一条 error 日志、不会让请求失败 —— 断点续传会静默失效，等于这次修复白做。
 3. **启用认证时口令不能为空、也不能仍是默认值 `tongrenlu`**，否则应用**启动直接失败**（这是有意的 fail-fast）。验证要看**新进程**的启动日志（会出现 `IllegalStateException` 堆栈），别只看 curl 通不通：systemd 的 `EnvironmentFile` 路径写错、或重启的是另一个实例时，会出现「新实例起不来、旧实例还在扛」的假象。
 4. **两个端点的 `done` 文案语义不同，脚本不要混用**：导入流是「进度文件已清除，导入流程结束」，补导是「补导结束：成功 X / 跳过 Y / 失败 Z，失败清单仍有 N 条，进度文件未清除」—— 补导不清进度文件，也不改写续传位置。

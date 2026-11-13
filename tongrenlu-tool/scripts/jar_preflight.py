@@ -26,6 +26,16 @@ jar 级部署预检：确认要上传的 jar 确实是「当前代码 + 可执�
 
 退出码：0 = 可部署；1 = 不可部署（有检查项不通过）；2 = 用法错误。
         可直接串进部署脚本做闸门：... || exit 1
+
+鉴权口径（仓库级硬要求）：
+  仓库里不允许存在任何**非空**的鉴权口令默认值。合法形态只有两种：
+    ${TOOL_AUTH_PASSWORD:}   空默认 —— 合法（fail-fast 生效）
+    ${TOOL_AUTH_PASSWORD}    无默认值 —— 合法
+  其余一律判 FAIL（退出码 1）：
+    硬编码明文、占位符里带任何非空默认值（含弱口令与非弱口令）。
+  理由：①凭据随包分发，这个包落到谁手里谁就拿到了口令；
+        ②SecurityConfig 的 fail-fast 只在口令为空或仍是默认值时才拦，
+          留着非空默认值就绕过了它，生产会在没注入 TOOL_AUTH_PASSWORD 的情况下启动。
 """
 
 import hashlib
@@ -54,7 +64,9 @@ DAO_CLASSES = {
     "CloudMusicRequestException": "info/tongrenlu/support/CloudMusicRequestException.class",
 }
 
-# 打包进去的鉴权默认值：必须是空（fail-fast），不能是明文弱口令
+# 打包进去的鉴权口令默认值：仓库里不允许任何非空默认值（空默认 / 无默认值才合法）。
+# 这里是弱口令名单，只用于在结论里点名 —— 这些内容是公开信息，不是真实凭据，
+# 所以结论行可以点名；真实口令一律脱敏。
 FORBIDDEN_AUTH_DEFAULTS = ("tongrenlu",)
 
 # 已废弃、不再识别的环境变量名：留在配置里不生效，但要提醒
@@ -62,8 +74,10 @@ LEGACY_ENV_NAMES = ("TONGRLU_PLAYLIST_PROGRESS_FILE", "TONGRENU_")
 
 REBUILD_HINT = """  ▶ 怎么修：
     1) 源码要对：git rev-parse HEAD 必须等于 f4569f3 或其后继提交
-       （origin/master=5197e7a 仍是旧代码：断点续传写死旧路径、无 Hutool 超时、
+       （早于 f4569f3 的代码：断点续传写死旧路径、Hutool 调用点没有超时、
         Basic Auth 带明文弱口令默认值且没有 fail-fast）。
+       ★ 别照抄某个提交号来判断远端是新的还是旧的 —— 先在服务器上
+         git rev-parse HEAD 看实际拿到的提交，再用 `git log --oneline -1` 对一下。
     2) 重新构建，并且独占 target/（别与别的 Maven 构建并发写同一个 target）：
          mvn -o -f <仓库>/pom.xml clean package
        注意：代码没变化时 `package` 不会刷新 fat jar（repackage 日志照打，但产物
@@ -81,12 +95,15 @@ def default_jar_path():
     return os.path.normpath(os.path.join(here, "..", "target", "tongrenlu-tool.jar"))
 
 
-def auth_password_value(auth_line):
-    """解析 basic-auth.password 这一行的实际生效值。
+def auth_password_form(auth_line):
+    """解析 basic-auth.password 这一行的实际生效值与取值形态。
 
-    形如 app.basic-auth.password=${TOOL_AUTH_PASSWORD:tongrenlu} → 默认值 "tongrenlu"
-    形如 app.basic-auth.password=${TOOL_AUTH_PASSWORD}          → 无默认值（None）
-    形如 app.basic-auth.password=tongrenlu                     → 硬编码明文 "tongrenlu"
+    返回 (value, form)：
+
+      ("",      "empty_default")      ${TOOL_AUTH_PASSWORD:}      空默认 —— 合法
+      (None,    "no_default")         ${TOOL_AUTH_PASSWORD}       无默认值 —— 合法
+      ("xxx",   "placeholder_default" ${TOOL_AUTH_PASSWORD:xxx}   非空默认值 —— 不合法
+      ("xxx",   "hardcoded")          app.basic-auth.password=xxx 硬编码明文 —— 不合法
 
     ★ 旧实现用 ":}" 切分取值 —— 但占位符实际写法是 "${KEY:默认值}"，冒号与右花括号
       之间永远隔着默认值，":}" 永远不会出现，那条弱口令检测是**死代码**：即便构建自
@@ -94,21 +111,28 @@ def auth_password_value(auth_line):
       这个脚本最该拦的那一版代码。
     """
     if "=" not in auth_line:
-        return None
+        return None, "unknown"
     raw = auth_line.split("=", 1)[1].strip()
     if raw.startswith("${") and raw.endswith("}"):
         inner = raw[2:-1]
         if ":" in inner:
-            return inner.split(":", 1)[1].strip()
-        return None
-    return raw
+            return inner.split(":", 1)[1].strip(), "placeholder_default"
+        return None, "no_default"
+    return raw, "hardcoded"
 
 
-def describe_auth_value(value):
+def auth_password_value(auth_line):
+    """只取生效值（保留这个接口名：外部脚本/自测按它取值的形态）。"""
+    return auth_password_form(auth_line)[0]
+
+
+def describe_auth_value(value, form=None):
     """只描述取值形态，不打印口令本身 —— 预检输出会进日志/终端，不能把口令泄出去。"""
-    if value is None:
+    if form == "no_default" or value is None:
         return "<由环境变量注入，仓库内无默认值>"
     if value == "":
+        if form == "hardcoded":
+            return "<空值（fail-fast 生效：启用认证且未注入口令时启动失败）>"
         return "<空默认（fail-fast 生效：启用认证且未注入口令时启动失败）>"
     if value in FORBIDDEN_AUTH_DEFAULTS:
         return "<弱口令默认值（内容已脱敏；具体弱口令名见结论行）>"
@@ -182,6 +206,8 @@ def main():
 
     fails = []
     warns = []
+    # 结论行必须引用「实际检测到的鉴权口令形态」，所以先给占位，检测到后覆盖。
+    auth_desc = "<未检测到 basic-auth.password>"
     if expect_sha and sha != expect_sha:
         fails.append("SHA-256 与期望不一致")
 
@@ -228,7 +254,8 @@ def main():
             for bad in FORBIDDEN_AUTH_DEFAULTS:
                 if value is not None and value.strip() == bad:
                     fails.append("打包进去的鉴权口令默认值仍是弱口令 '%s' —— "
-                                 "说明这份包构建自旧代码 origin/master(5197e7a)，"
+                                 "说明这份包构建自 f4569f3 之前的旧代码"
+                                 "（断点续传写死旧路径、无 Hutool 超时、无 fail-fast），"
                                  "或有人把弱口令写进了配置" % bad)
         for key in ("app.playlist-import.retry-budget",
                     "app.playlist-import.permanent-ttl-days",
