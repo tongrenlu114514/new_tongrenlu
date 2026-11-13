@@ -2,7 +2,9 @@ package info.tongrenlu;
 
 import info.tongrenlu.service.ArticleService;
 import info.tongrenlu.service.HomeMusicService;
+import info.tongrenlu.support.AlbumImportRunner;
 import info.tongrenlu.support.CloudMusicAlbumFetchException;
+import info.tongrenlu.support.PlaylistImportLock;
 import info.tongrenlu.support.PlaylistProgressStore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,7 +48,7 @@ class PlaylistImportJobResumeTest {
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
         store.saveIndex(PLAYLIST_ID, 1);
 
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -68,7 +70,7 @@ class PlaylistImportJobResumeTest {
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
         store.saveIndex(999L, 2);
 
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -91,7 +93,7 @@ class PlaylistImportJobResumeTest {
         // 当前歌单只有 3 个专辑，进度序号 99 已越界
         store.saveIndex(PLAYLIST_ID, 99);
 
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -111,7 +113,7 @@ class PlaylistImportJobResumeTest {
                 .when(musicService).saveCloudMusicAlbum(11L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -157,7 +159,7 @@ class PlaylistImportJobResumeTest {
         doThrow(new RuntimeException("数据库写入失败")).when(musicService).saveCloudMusicAlbum(11L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -191,7 +193,7 @@ class PlaylistImportJobResumeTest {
                 .when(musicService).saveCloudMusicAlbum(11L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -233,7 +235,7 @@ class PlaylistImportJobResumeTest {
                 .when(musicService).saveCloudMusicAlbum(33L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -271,7 +273,7 @@ class PlaylistImportJobResumeTest {
                 .when(musicService).saveCloudMusicAlbum(33L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -300,7 +302,7 @@ class PlaylistImportJobResumeTest {
                 .when(musicService).saveCloudMusicAlbum(55L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -320,7 +322,7 @@ class PlaylistImportJobResumeTest {
         when(articleService.getByCloudMusicId(anyLong())).thenReturn(null);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
         assertThat(events).isNotNull();
@@ -341,7 +343,7 @@ class PlaylistImportJobResumeTest {
                 .when(musicService).saveCloudMusicAlbum(11L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
 
         // 第一轮：11 临时失败（未达中止阈值），22 成功
         List<ServerSentEvent<String>> firstRound = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
@@ -376,7 +378,7 @@ class PlaylistImportJobResumeTest {
                 .when(musicService).saveCloudMusicAlbum(11L);
 
         PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
-        PlaylistImportJob job = new PlaylistImportJob(musicService, articleService, store);
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, new PlaylistImportLock());
         job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
         job.run(OTHER_PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
 
@@ -385,5 +387,30 @@ class PlaylistImportJobResumeTest {
         // 歌单 200 全部成功 → 自己的文件已清除，且没有影响歌单 100
         assertThat(store.progressFile(OTHER_PLAYLIST_ID)).doesNotExist();
         assertThat(store.read(PLAYLIST_ID).index()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("同一歌单正在补导时，导入请求被锁挡下（warn 事件，不碰进度文件）")
+    void concurrentRetryBlocksImport() {
+        HomeMusicService musicService = mock(HomeMusicService.class);
+        ArticleService articleService = mock(ArticleService.class);
+        when(musicService.getAllPlaylistAlbumIds(PLAYLIST_ID)).thenReturn(List.of(11L));
+        when(articleService.getByCloudMusicId(anyLong())).thenReturn(null);
+
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+        PlaylistImportLock lock = new PlaylistImportLock();
+        // 模拟补导正在跑：同一歌单的锁已被占用
+        assertThat(lock.tryLock(PLAYLIST_ID)).isTrue();
+
+        PlaylistImportJob job = new PlaylistImportJob(musicService, new AlbumImportRunner(musicService, articleService), store, lock);
+        List<ServerSentEvent<String>> events = job.run(PLAYLIST_ID).collectList().block(Duration.ofSeconds(60));
+
+        assertThat(events).isNotNull();
+        assertThat(events).extracting(ServerSentEvent::event).contains("warn");
+        assertThat(events).extracting(ServerSentEvent::data)
+                .anyMatch(data -> data.contains("正在导入或补导中"));
+        // 被挡下时一个专辑都不处理，也不写进度文件
+        verify(musicService, never()).saveCloudMusicAlbum(anyLong());
+        assertThat(store.progressFile(PLAYLIST_ID)).doesNotExist();
     }
 }

@@ -13,6 +13,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -233,6 +236,119 @@ class PlaylistProgressStoreTest {
                     assertThat(store.getProgressDir().toString().replace('\\', '/'))
                             .endsWith("/data/playlist_progress");
                 });
+    }
+
+    @Test
+    @DisplayName("同一专辑重复失败时 attempts 累加而不是重置")
+    void repeatedFailureAccumulatesAttempts() {
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+
+        store.markFailed(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+        store.markFailed(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+        store.markFailed(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+
+        assertThat(store.read(100L).failedAlbums())
+                .singleElement()
+                .satisfies(entry -> assertThat(entry.attempts()).isEqualTo(3));
+    }
+
+    @Test
+    @DisplayName("人工补导把失败计数归零，重新给一份预算")
+    void resetAttemptsGivesFreshBudget() {
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+        store.markFailed(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+        store.markFailed(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+
+        store.resetAttempts(100L, 55L);
+
+        assertThat(store.read(100L).failedAlbums())
+                .singleElement()
+                .satisfies(entry -> assertThat(entry.attempts()).isZero());
+
+        // 归零后再失败一次 → attempts 回到 1（不是接着原来累加）
+        store.markFailed(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+        assertThat(store.read(100L).failedAlbums())
+                .singleElement()
+                .satisfies(entry -> assertThat(entry.attempts()).isEqualTo(1));
+    }
+
+    @Test
+    @DisplayName("removeFailedAlbum 只销账，续传位置 index 原样不动")
+    void removeFailedAlbumKeepsIndex() {
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+        store.markFailed(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 7);
+
+        store.removeFailedAlbum(100L, 55L);
+
+        assertThat(store.read(100L).failedAlbums()).isEmpty();
+        assertThat(store.readIndex(100L)).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("markFailedKeepingIndex 记账但不改动续传位置")
+    void markFailedKeepingIndexDoesNotMoveIndex() {
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+        store.saveIndex(100L, 5);
+
+        store.markFailedKeepingIndex(100L, 55L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败");
+
+        assertThat(store.readIndex(100L)).isEqualTo(5);
+        assertThat(store.failedAlbumIds(100L)).containsExactly(55L);
+    }
+
+    @Test
+    @DisplayName("按失败类型筛选清单条目")
+    void failedAlbumsByTypeFiltersEntries() {
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+        store.markFailed(100L, 11L, PlaylistProgressStore.TYPE_PERMANENT, "上游返回 code=404", 1);
+        store.markFailed(100L, 22L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+        store.markFailed(100L, 33L, PlaylistProgressStore.TYPE_TRANSIENT, "上游请求超时", 1);
+
+        assertThat(store.failedAlbumsByType(100L, PlaylistProgressStore.TYPE_INSERT))
+                .extracting(PlaylistProgressStore.FailedAlbum::albumId)
+                .containsExactly(22L);
+        assertThat(store.failedAlbumsByType(100L, null)).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("TTL 清理只删 permanent，insert / transient 是待办不受影响")
+    void ttlOnlyExpiresPermanentEntries() {
+        Instant fortyDaysAgo = Instant.now().minus(40, ChronoUnit.DAYS);
+        PlaylistProgressStore oldClockStore = new PlaylistProgressStore(tempDir.resolve("progress"),
+                Duration.ofDays(30), () -> fortyDaysAgo);
+        oldClockStore.markFailed(100L, 11L, PlaylistProgressStore.TYPE_PERMANENT, "上游返回 code=404", 1);
+        oldClockStore.markFailed(100L, 22L, PlaylistProgressStore.TYPE_INSERT, "数据库写入失败", 1);
+        oldClockStore.markFailed(100L, 33L, PlaylistProgressStore.TYPE_TRANSIENT, "上游请求超时", 1);
+
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+
+        assertThat(store.read(100L).failedAlbums())
+                .extracting(PlaylistProgressStore.FailedAlbum::albumId)
+                .containsExactly(22L, 33L);
+    }
+
+    @Test
+    @DisplayName("老进度文件没有 attempts 字段时兜底为 0")
+    void legacyProgressFileWithoutAttemptsDefaultsToZero() throws Exception {
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+        Files.createDirectories(store.getProgressDir());
+        Files.writeString(store.progressFile(100L),
+                "{\"playlistId\":100,\"index\":2,\"failedAlbums\":[{\"albumId\":55,\"type\":\"insert\","
+                        + "\"reason\":\"数据库写入失败\",\"at\":\"2026-11-14T00:00:00Z\"}]}");
+
+        assertThat(store.read(100L).failedAlbums())
+                .singleElement()
+                .satisfies(entry -> assertThat(entry.attempts()).isZero());
+    }
+
+    @Test
+    @DisplayName("listPlaylistIds 列出进度目录里的歌单")
+    void listPlaylistIdsReturnsPlaylists() {
+        PlaylistProgressStore store = new PlaylistProgressStore(tempDir.resolve("progress"));
+        store.saveIndex(100L, 1);
+        store.saveIndex(200L, 2);
+
+        assertThat(store.listPlaylistIds()).containsExactlyInAnyOrder(100L, 200L);
     }
 
     private static ListAppender<ILoggingEvent> attachAppender() {

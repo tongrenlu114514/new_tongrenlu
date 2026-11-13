@@ -1,9 +1,9 @@
 package info.tongrenlu;
 
-import info.tongrenlu.domain.ArticleBean;
 import info.tongrenlu.service.ArticleService;
 import info.tongrenlu.service.HomeMusicService;
-import info.tongrenlu.support.CloudMusicAlbumFetchException;
+import info.tongrenlu.support.AlbumImportRunner;
+import info.tongrenlu.support.PlaylistImportLock;
 import info.tongrenlu.support.PlaylistProgressStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +41,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>硬约束：进度序号不得越过任何一个未成功的专辑。水位只推进到「最后一个连续成功/跳过的序号」，
  * 失败点之后的成功不会把进度推过去，避免该专辑被永久静默跳过。
+ *
+ * <p>并发：同一歌单的导入与补导共用一把互斥锁（见 {@link PlaylistImportLock}），
+ * 避免同时写同一个进度文件把清单条目或续传位置互相覆盖。
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -56,8 +59,9 @@ public class PlaylistImportJob {
     private static final int TRANSIENT_FAILURE_ABORT_THRESHOLD = 2;
 
     private final HomeMusicService homeMusicService;
-    private final ArticleService articleService;
+    private final AlbumImportRunner albumImportRunner;
     private final PlaylistProgressStore progressStore;
+    private final PlaylistImportLock importLock;
 
     /**
      * 流式导入歌单专辑
@@ -81,83 +85,103 @@ public class PlaylistImportJob {
                 );
             }
 
-            // 读取进度（支持断点续传；进度文件里的歌单ID与当前歌单不一致时视为无进度，从头开始）
-            PlaylistProgressStore.PlaylistProgress progress = progressStore.read(playlistId);
-            int startIndex = resolveStartIndex(progress.index(), albumIds.size(), playlistId);
-            List<Long> remainingAlbums = albumIds.subList(startIndex, albumIds.size());
-            int totalSize = albumIds.size();
-
-            // 进度水位：只推进到「最后一个连续成功/跳过的序号」，失败点之后的成功不推进
-            AtomicInteger watermark = new AtomicInteger(startIndex);
-
-            // 本轮内「连续」临时失败次数：成功/跳过即清零，本轮从 0 起算（不跨轮累计）
-            AtomicInteger consecutiveTransientFailures = new AtomicInteger(0);
-
-            // 本轮失败分类计数：永久 / 临时 / 入库，用于结束时在 stats 里说清失败构成
-            RoundFailures roundFailures = new RoundFailures();
-
-            // 开始事件流
-            Flux<ServerSentEvent<String>> startEvents = Flux.just(
-                    event("start", "========================================"),
-                    event("info", "开始导入歌单专辑，歌单ID: " + playlistId),
-                    event("start", "========================================"),
-                    event("info", "歌单共包含 " + totalSize + " 个专辑")
-            );
-
-            if (startIndex > 0) {
-                startEvents = startEvents.concatWithValues(
-                        event("info", "检测到进度文件，从第 " + (startIndex + 1) + " 个专辑继续导入")
+            // 同一歌单的导入 / 补导 / 扫描共用一把锁，避免并发写同一个进度文件
+            if (!importLock.tryLock(playlistId)) {
+                log.warn("歌单 {} 正在导入或补导中，本次导入请求已跳过", playlistId);
+                return Flux.just(
+                        event("warn", "歌单 " + playlistId + " 正在导入或补导中，本次导入请求已跳过")
                 );
             }
 
-            // 处理每个专辑
-            Flux<ServerSentEvent<String>> processEvents = Flux.fromIterable(remainingAlbums)
-                    .index((index, albumId) -> {
-                        int currentIndex = startIndex + index.intValue() + 1;
-                        return new IndexAlbumId(currentIndex, albumId);
-                    })
-                    // 使用 concatMap 保持顺序处理，确保事件按顺序发送
-                    // （节流延迟放在 processAlbum 内部的成功路径上，避免失败路径的事件与中止信号赛跑）
-                    .concatMap(indexed -> processAlbum(indexed, playlistId, totalSize, watermark,
-                                    consecutiveTransientFailures, roundFailures, successCount, skipCount, failCount))
-                    .subscribeOn(Schedulers.boundedElastic()); // 将阻塞操作放到弹性线程池
+            try {
+                // 读取进度（支持断点续传；进度文件里的歌单ID与当前歌单不一致时视为无进度，从头开始）
+                PlaylistProgressStore.PlaylistProgress progress = progressStore.read(playlistId);
+                int startIndex = resolveStartIndex(progress.index(), albumIds.size(), playlistId);
+                List<Long> remainingAlbums = albumIds.subList(startIndex, albumIds.size());
+                int totalSize = albumIds.size();
 
-            // 完成事件流
-            Flux<ServerSentEvent<String>> endEvents = Flux.defer(() -> {
-                List<ServerSentEvent<String>> events = new ArrayList<>();
-                events.add(event("complete", "========================================"));
-                events.add(event("complete", "导入完成！"));
-                events.add(event("complete", "========================================"));
-                events.add(event("stats", "歌单总专辑数: " + totalSize));
-                events.add(event("stats", "成功导入: " + successCount.get()));
-                events.add(event("stats", "跳过（已存在）: " + skipCount.get()));
-                events.add(event("stats", "失败: " + failCount.get()));
+                // 进度水位：只推进到「最后一个连续成功/跳过的序号」，失败点之后的成功不推进
+                AtomicInteger watermark = new AtomicInteger(startIndex);
 
-                // 失败构成说清楚：永久（上游 code!=200）/ 临时（超时、IO、解析）/ 入库（其它异常）
-                int permanentFailures = roundFailures.permanentCount();
-                int transientFailures = roundFailures.transientCount();
-                int insertFailures = roundFailures.insertCount();
-                int failedThisRound = permanentFailures + transientFailures + insertFailures;
-                if (failedThisRound > 0) {
-                    events.add(event("stats", "本次失败 " + failedThisRound + " 个专辑（永久 " + permanentFailures
-                            + " / 临时 " + transientFailures + " / 入库 " + insertFailures + "）"));
+                // 本轮内「连续」临时失败次数：成功/跳过即清零，本轮从 0 起算（不跨轮累计）
+                AtomicInteger consecutiveTransientFailures = new AtomicInteger(0);
+
+                // 本轮失败分类计数：永久 / 临时 / 入库，用于结束时在 stats 里说清失败构成
+                RoundFailures roundFailures = new RoundFailures();
+
+                // 开始事件流
+                Flux<ServerSentEvent<String>> startEvents = Flux.just(
+                        event("start", "========================================"),
+                        event("info", "开始导入歌单专辑，歌单ID: " + playlistId),
+                        event("start", "========================================"),
+                        event("info", "歌单共包含 " + totalSize + " 个专辑")
+                );
+
+                if (startIndex > 0) {
+                    startEvents = startEvents.concatWithValues(
+                            event("info", "检测到进度文件，从第 " + (startIndex + 1) + " 个专辑继续导入")
+                    );
                 }
 
-                // 失败清单非空时保留进度文件（没导成的专辑还要能补导回来）
-                int failedCount = progressStore.read(playlistId).failedAlbums().size();
-                if (failedCount > 0) {
-                    events.add(event("stats", "失败清单共 " + failedCount + " 个专辑，已保留在进度文件中: "
-                            + progressStore.progressFile(playlistId)));
-                }
-                progressStore.clear(playlistId);
+                // 处理每个专辑
+                Flux<ServerSentEvent<String>> processEvents = Flux.fromIterable(remainingAlbums)
+                        .index((index, albumId) -> {
+                            int currentIndex = startIndex + index.intValue() + 1;
+                            return new IndexAlbumId(currentIndex, albumId);
+                        })
+                        // 使用 concatMap 保持顺序处理，确保事件按顺序发送
+                        // （节流延迟放在 processAlbum 内部的成功路径上，避免失败路径的事件与中止信号赛跑）
+                        .concatMap(indexed -> processAlbum(indexed, playlistId, totalSize, watermark,
+                                        consecutiveTransientFailures, roundFailures, successCount, skipCount, failCount))
+                        .subscribeOn(Schedulers.boundedElastic()); // 将阻塞操作放到弹性线程池
 
-                events.add(event("done", "进度文件已清除，导入流程结束"));
-                return Flux.fromIterable(events);
-            });
+                // 完成事件流
+                Flux<ServerSentEvent<String>> endEvents = Flux.defer(() -> {
+                    List<ServerSentEvent<String>> events = new ArrayList<>();
+                    events.add(event("complete", "========================================"));
+                    events.add(event("complete", "导入完成！"));
+                    events.add(event("complete", "========================================"));
+                    events.add(event("stats", "歌单总专辑数: " + totalSize));
+                    events.add(event("stats", "成功导入: " + successCount.get()));
+                    events.add(event("stats", "跳过（已存在）: " + skipCount.get()));
+                    events.add(event("stats", "失败: " + failCount.get()));
 
-            return startEvents
-                    .concatWith(processEvents)
-                    .concatWith(endEvents);
+                    // 失败构成说清楚：永久（上游 code!=200）/ 临时（超时、IO、解析）/ 入库（其它异常）
+                    int permanentFailures = roundFailures.permanentCount();
+                    int transientFailures = roundFailures.transientCount();
+                    int insertFailures = roundFailures.insertCount();
+                    int failedThisRound = permanentFailures + transientFailures + insertFailures;
+                    if (failedThisRound > 0) {
+                        events.add(event("stats", "本次失败 " + failedThisRound + " 个专辑（永久 " + permanentFailures
+                                + " / 临时 " + transientFailures + " / 入库 " + insertFailures + "）"));
+                    }
+
+                    // 失败清单非空时保留进度文件（没导成的专辑还要能补导回来）
+                    int failedCount = progressStore.read(playlistId).failedAlbums().size();
+                    if (failedCount > 0) {
+                        events.add(event("stats", "失败清单共 " + failedCount + " 个专辑，已保留在进度文件中: "
+                                + progressStore.progressFile(playlistId)));
+                    }
+                    progressStore.clear(playlistId);
+
+                    events.add(event("done", "进度文件已清除，导入流程结束"));
+                    return Flux.fromIterable(events);
+                });
+
+                return startEvents
+                        .concatWith(processEvents)
+                        .concatWith(endEvents)
+                        // 客户端断开 / 正常结束 / 出错都要释放锁。
+                        // 用 doOnTerminate + doOnCancel（而不是 doFinally）：doFinally 在终止信号
+                        // 传给下游之后才回调，调用方可能在锁释放前就拿到结果并立刻再跑一轮；
+                        // doOnTerminate 在信号传播前回调，锁一定先释放再让下游看到完成。
+                        .doOnTerminate(() -> importLock.unlock(playlistId))
+                        .doOnCancel(() -> importLock.unlock(playlistId));
+
+            } catch (RuntimeException e) {
+                importLock.unlock(playlistId);
+                throw e;
+            }
 
         }).subscribeOn(Schedulers.boundedElastic()) // 初始阻塞操作也在弹性线程池
           .onErrorResume(e -> {
@@ -208,9 +232,10 @@ public class PlaylistImportJob {
                     int currentIndex = indexed.index();
 
                     return Mono.fromCallable(() -> {
-                                // 检查专辑是否已存在
-                                ArticleBean existing = articleService.getByCloudMusicId(albumId);
-                                if (existing != null) {
+                                // 单个专辑的导入逻辑与补导共用（AlbumImportRunner）：
+                                // 已存在 → 跳过；取专辑 / 入库失败按既有规则抛出去，由下面的 onErrorResume 分流
+                                AlbumImportRunner.ImportOutcome outcome = albumImportRunner.importOne(albumId);
+                                if (outcome.status() == AlbumImportRunner.ImportOutcome.Status.SKIPPED) {
                                     skipCount.incrementAndGet();
                                     consecutiveTransientFailures.set(0); // 成功/跳过 → 连续失败计数清零
                                     advanceWatermark(watermark, currentIndex);
@@ -218,12 +243,10 @@ public class PlaylistImportJob {
                                     progressStore.markSuccess(playlistId, albumId, watermark.get());
                                     return List.of(
                                             event("skip", String.format("[%d/%d] 专辑已存在，跳过: albumId=%d, title=%s",
-                                                    currentIndex, totalSize, albumId, existing.getTitle()))
+                                                    currentIndex, totalSize, albumId, outcome.title()))
                                     );
                                 }
 
-                                // 保存专辑（取不到专辑时 dao 会抛 CloudMusicAlbumFetchException，不再静默当成功）
-                                homeMusicService.saveCloudMusicAlbum(albumId);
                                 successCount.incrementAndGet();
                                 consecutiveTransientFailures.set(0); // 成功 → 连续失败计数清零
                                 advanceWatermark(watermark, currentIndex);
@@ -245,14 +268,17 @@ public class PlaylistImportJob {
                             indexed.index(), totalSize, indexed.albumId(), e.getMessage(), e);
                     failCount.incrementAndGet();
 
+                    // 失败分类（与补导共用）：取专辑失败按 retryable 分 permanent / transient，其余归 insert
+                    AlbumImportRunner.Failure failure = albumImportRunner.classify(e);
+
                     // 事件分流：error 是旧事件（语义固定为「导入过程抛异常」，文案一字不改），
                     // failed 是纯新增事件（只用于「取专辑失败」），两者互斥，老脚本不受影响。
-                    if (!(e instanceof CloudMusicAlbumFetchException fetchException)) {
+                    if (!failure.fetchFailure()) {
                         // 非取专辑异常（入库等）：只发 error，老路径保持原样；
                         // 但该专辑同样没入库，必须记入失败清单并推进水位，否则整流结束时进度文件被清掉就静默丢了
                         advanceWatermark(watermark, indexed.index());
                         progressStore.markFailed(playlistId, indexed.albumId(),
-                                PlaylistProgressStore.TYPE_INSERT, e.getMessage(), watermark.get());
+                                PlaylistProgressStore.TYPE_INSERT, failure.reason(), watermark.get());
                         roundFailures.countInsert();
                         log.warn("专辑 {} 发生非取专辑异常（入库等），已记入歌单 {} 的失败清单",
                                 indexed.albumId(), playlistId);
@@ -260,8 +286,8 @@ public class PlaylistImportJob {
                                 indexed.index(), totalSize, indexed.albumId(), e.getMessage())));
                     }
 
-                    boolean retryable = fetchException.isRetryable();
-                    String reason = fetchException.getReason();
+                    boolean retryable = failure.retryable();
+                    String reason = failure.reason();
 
                     // 取专辑失败：只发 failed 事件，不发 error
                     ServerSentEvent<String> failedEvent = event("failed",
