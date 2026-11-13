@@ -54,6 +54,8 @@ python3 tongrenlu-tool/scripts/jar_preflight.py /opt/tongrenlu/tongrenlu-tool.ja
 
 > SHA-256 用脚本自己打印的那个值，**不要在部署文档里写死** —— 每次重新构建产物都会变。
 
+> 参数顺序不限（`--expect-sha256` 后面必须紧跟 64 位 hex）；未知参数、缺参数、给了多个 jar 路径都直接以退出码 `2` 报错，不会误判成"可部署"。
+
 没有 `python3` 时用 `unzip` 三连，同样能判出是不是 fat jar、是不是新代码：
 
 ```bash
