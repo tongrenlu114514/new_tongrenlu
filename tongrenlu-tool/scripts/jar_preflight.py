@@ -249,14 +249,25 @@ def main():
         if not auth_line:
             fails.append("打包的 properties 里没有 basic-auth.password")
         else:
-            value = auth_password_value(auth_line)
-            print("  生效值形态：" + describe_auth_value(value))
-            for bad in FORBIDDEN_AUTH_DEFAULTS:
-                if value is not None and value.strip() == bad:
-                    fails.append("打包进去的鉴权口令默认值仍是弱口令 '%s' —— "
-                                 "说明这份包构建自 f4569f3 之前的旧代码"
-                                 "（断点续传写死旧路径、无 Hutool 超时、无 fail-fast），"
-                                 "或有人把弱口令写进了配置" % bad)
+            value, form = auth_password_form(auth_line)
+            auth_desc = describe_auth_value(value, form)
+            print("  生效值形态：" + auth_desc)
+            if form == "no_default" or value == "":
+                # 合法：仓库里没有口令值，口令只能由 TOOL_AUTH_PASSWORD 在运行时注入。
+                # 空默认 / 无默认都必须放行 —— 这正是 HEAD 的正确形态。
+                pass
+            elif value in FORBIDDEN_AUTH_DEFAULTS:
+                fails.append("打包进去的鉴权口令默认值仍是弱口令 '%s' —— "
+                             "说明这份包构建自 f4569f3 之前的旧代码"
+                             "（断点续传写死旧路径、无 Hutool 超时、无 fail-fast），"
+                             "或有人把弱口令写进了配置" % value)
+            else:
+                fails.append("仓库内存在非空鉴权口令默认值（内容已脱敏）—— 仓库里不允许留任何"
+                             "非空口令默认值，口令只能通过 TOOL_AUTH_PASSWORD 注入。留着它有两重害处："
+                             "①凭据随包分发，这个包落到谁手里，谁就拿到了这个口令；"
+                             "②SecurityConfig 的 fail-fast 只在口令为空或仍是默认值时才拦，"
+                             "有非空默认值时它不触发，生产会在没注入 TOOL_AUTH_PASSWORD 的情况下"
+                             "直接用包里的口令启动")
         for key in ("app.playlist-import.retry-budget",
                     "app.playlist-import.permanent-ttl-days",
                     "app.playlist-import.retry-scan-interval-ms",
@@ -330,9 +341,12 @@ def main():
         print(REBUILD_HINT)
         return 1
     print("  能不能用：能部署。")
-    print("  依据：可执行 fat jar（Main-Class/Start-Class 齐全）、鉴权默认口令为空、"
+    # ★ 结论里的鉴权形态必须引用**实际检测到的形态**（auth_desc），不能写死：
+    #   旧版无条件断言「口令默认为空」，包内硬编码了真口令时结论照样这么写 ——
+    #   结论与事实不符比不报更危险，因为人会信它。
+    print("  依据：可执行 fat jar（Main-Class/Start-Class 齐全）、鉴权口令形态 %s、"
           "tool 修复类 %d 个与 dao 修复类 %d 个齐全、BOOT-INF/lib 依赖 %d 个。"
-          % (len(TOOL_CLASSES), len(DAO_CLASSES), deps))
+          % (auth_desc, len(TOOL_CLASSES), len(DAO_CLASSES), deps))
     for w in warns:
         print("  WARN " + w)
     print("  （本 jar 不含提交号，新旧只能靠上面的内容检查判断，所以务必跑本脚本。）")

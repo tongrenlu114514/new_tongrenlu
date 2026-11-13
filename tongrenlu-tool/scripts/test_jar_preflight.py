@@ -4,7 +4,8 @@
 jar_preflight.py 的回归自测。
 
 用途：预检脚本是部署闸门，它自己必须有人守。本脚本把 Chief 复测过的 12 个场景
-固化成可重复执行的用例，另外补了 5 个容易回归的边界场景。
+固化成可重复执行的用例，另外补了容易回归的边界场景与闸门口径用例
+（仓库内任何非空口令默认值一律拦、结论行不得写死与事实不符的断言）。
 
 设计约束（刻意为之）：
   · 只用标准库（unittest / tempfile / zipfile / io / subprocess / hashlib …）；
@@ -68,6 +69,7 @@ CONTRACT = [
     ("S10", "--expect-sha256 缺值", 2),
     ("S11", "大写 hex（Windows Get-FileHash 的输出形态）", 0),
     ("S12", "含废弃变量名的包（只告警，不阻断）", 0),
+    ("S13", "仓库内存在非空鉴权口令默认值（硬编码明文 / 占位符带非空默认值）", 1),
 ]
 
 EMPTY_CLASS = b"\xca\xfe\xba\xbe"
@@ -164,6 +166,7 @@ class JarPreflightTest(unittest.TestCase):
         cls.legacy = os.path.join(cls.tmp, "legacy-vars.jar")
         cls.hardcoded_weak = os.path.join(cls.tmp, "hardcoded-weak.jar")
         cls.hardcoded_strong = os.path.join(cls.tmp, "hardcoded-strong.jar")
+        cls.placeholder_strong = os.path.join(cls.tmp, "placeholder-strong-default.jar")
         cls.no_default = os.path.join(cls.tmp, "no-default.jar")
         build_fat_jar(cls.fat)
         build_thin_jar(cls.thin)
@@ -175,6 +178,8 @@ class JarPreflightTest(unittest.TestCase):
         build_fat_jar(cls.hardcoded_weak,
                       auth_raw="app.basic-auth.password=" + FORBIDDEN_AUTH_DEFAULTS[0])
         build_fat_jar(cls.hardcoded_strong, auth_raw="app.basic-auth.password=S3cret-Not-Weak")
+        build_fat_jar(cls.placeholder_strong,
+                      auth_raw="app.basic-auth.password=${TOOL_AUTH_PASSWORD:SomeStrongDefault}")
         build_fat_jar(cls.no_default, auth_raw="app.basic-auth.password=${TOOL_AUTH_PASSWORD}")
 
     @classmethod
@@ -325,10 +330,16 @@ class JarPreflightTest(unittest.TestCase):
         self.assert_code(1, code, out)
         self.assertIn("弱口令", out)
 
-    def test_21_hardcoded_strong_password_is_not_flagged_and_not_printed(self):
-        """硬编码强口令不该被拦；但也绝不能把口令内容打印进日志/终端。"""
+    def test_21_hardcoded_strong_password_is_flagged_and_not_printed(self):
+        """硬编码强口令同样必须拦；但也绝不能把口令内容打印进日志/终端。
+
+        旧口径只拦弱口令、放行硬编码强口令，等于给「把口令写进仓库」开了个口子：
+        ①凭据随包分发，这个包落到谁手里谁就拿到了这个口令；
+        ②SecurityConfig 的 fail-fast 判据是「口令为空或仍是默认值」，有非空默认值时
+          它不触发 —— 生产可以在没注入 TOOL_AUTH_PASSWORD 的情况下用包里的口令启动。
+        """
         code, out, _ = run_preflight([self.hardcoded_strong])
-        self.assert_code(0, code, out)
+        self.assert_code(1, code, out)
         self.assertNotIn("S3cret-Not-Weak", out)
 
     def test_22_placeholder_without_default_passes(self):
@@ -366,6 +377,42 @@ class JarPreflightTest(unittest.TestCase):
             self.assertIsNotNone(row, "README 契约表里缺少 %s 这一行" % sid)
             self.assertIn("| %d |" % want_code, row,
                           "README 里 %s 的期望退出码与本文件不一致（应为 %d）" % (sid, want_code))
+
+    # ── 闸门口径：仓库内任何非空口令默认值一律拦 ─────────────────────────
+    def test_25_placeholder_with_nonempty_default_fails(self):
+        """${TOOL_AUTH_PASSWORD:SomeStrongDefault}（占位符带非空默认值，但不是弱口令）→ 仍判 FAIL。
+
+        判据是「有没有把口令写进仓库」，不是「这个口令够不够强」——
+        否则换个更复杂的默认值就能绕过闸门，凭据照样随包分发、fail-fast 照样被绕过。
+        """
+        code, out, _ = run_preflight([self.placeholder_strong])
+        self.assert_code(1, code, out)
+        self.assertNotIn("SomeStrongDefault", out, "非空默认值内容不得回显到输出里")
+        self.assertIn("TOOL_AUTH_PASSWORD", out, "失败提示要指明正确的注入方式")
+
+    def test_26_conclusion_line_is_generated_from_actual_form(self):
+        """守「结论行不得无条件写死与事实不符的断言」这个坑。
+
+        ① 运行时：包内存在非空默认值时，输出里不得出现那句与事实不符的断言；
+        ② 源码级：这句措辞在脚本里彻底消失，谁也别想直接写回来；
+        ③ 通过路径的结论必须引用**实际检测到的形态**，而不是常量。
+        """
+        code, out, _ = run_preflight([self.hardcoded_strong])
+        self.assert_code(1, code, out)
+        self.assertNotIn("鉴权默认口令为空", out,
+                         "结论与事实不符：包里明明有非空默认值，结论却这么断言")
+
+        with open(PREFLIGHT, encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertNotIn("鉴权默认口令为空", src,
+                         "结论行又写死了这句与事实无关的断言 —— 必须由实际检测形态生成")
+
+        for jar, value in ((self.fat, ""), (self.no_default, None)):
+            code, out, _ = run_preflight([jar])
+            self.assert_code(0, code, out)
+            conclusion = out.split("=== 结论 ===", 1)[-1]
+            self.assertIn(MOD.describe_auth_value(value), conclusion,
+                          "结论行没有引用实际检测到的鉴权口令形态")
 
 
 if __name__ == "__main__":

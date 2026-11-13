@@ -36,6 +36,7 @@ TONGRLU_BATCH_PROGRESS_DIR=/var/lib/tongrenlu/progress/batch
 4. **两个端点的 `done` 文案语义不同，脚本不要混用**：导入流是「进度文件已清除，导入流程结束」，补导是「补导结束：成功 X / 跳过 Y / 失败 Z，失败清单仍有 N 条，进度文件未清除」—— 补导不清进度文件，也不改写续传位置。
 5. **上传前对要部署的那个 jar 跑一遍预检**：`git rev-parse HEAD` 只保证源码对，不保证重启的那个 jar 是对的 —— `target/` 里可能躺着几个月前的旧包，而且代码没变化时 `mvn -o package` **不会**刷新 fat jar（repackage 打了日志，产物时间戳仍是上一次构建的）。两条路：有 `python3` 就跑 `python3 tongrenlu-tool/scripts/jar_preflight.py`（**不带参数即用默认路径** `tongrenlu-tool/target/tongrenlu-tool.jar`）；没有 `python3` 就用 `unzip` 三连（见下节）。**① `mvn -o package` 会同时产出 `tongrenlu-tool.jar`（fat，可执行）与 `tongrenlu-tool.jar.original`（薄包，不可执行），只上传前者**；`ls -la target/ | grep -i jar` 才看得到 `.original`，`ls *.jar` 看不到它。**② dao 的类在嵌套的 `BOOT-INF/lib/tongrenlu-dao-*.jar` 里，`unzip -l` 查不到不代表缺失。**
 6. **要拿到新产物，必须 `clean package`**：实测在代码未变时重跑 `mvn -o package`，日志照打 `Replacing main artifact ... with repackaged archive`，但产物的 mtime 与 jar 内条目时间戳都停在上一次构建，SHA-256 也一模一样 —— 也就是**包根本没被重写**。只有 `clean package` 会真正刷新（实测 SHA-256 从 `9c87a6ed…` 变为 `7e880801…`，条目时间戳全部更新）。⚠️ 用 `-pl <模块>` 单模块跑 `clean package` 会因缺 `-am` 而 BUILD FAILURE，且 `clean` 已经把产物删掉了 —— 请在全仓库根目录跑 `mvn -o clean package`。另外打包时要确认没有别的 Maven 构建在跑（两个构建并发写同一个 `target/` 会互相干扰）。
+7. **仓库里不能留任何非空的鉴权口令默认值。** 只有 `${TOOL_AUTH_PASSWORD:}`（空默认）与 `${TOOL_AUTH_PASSWORD}`（无默认）两种形态合法；**硬编码明文、占位符里带任何非空默认值（含弱口令与非弱口令）一律判不通过**（预检退出码 1）。理由有两条：①凭据随包分发 —— 这个 jar 落到谁手里，谁就拿到了这个口令；②`SecurityConfig` 的 fail-fast 只在「口令为空或仍是默认值」时才拦，留着非空默认值就绕过了它 —— 生产会在**没有注入 `TOOL_AUTH_PASSWORD`** 的情况下用包里的口令启动。**口令只通过 `TOOL_AUTH_PASSWORD` 环境变量注入，不写进任何配置文件。**
 
 ## 部署前自检：jar 预检（tongrenlu-tool/scripts/jar_preflight.py）
 
@@ -64,14 +65,14 @@ unzip -p tongrenlu-tool.jar BOOT-INF/classes/application.properties | grep basic
 unzip -l tongrenlu-tool.jar | grep -E "PlaylistProgressStore|PlaylistRetryJob|PlaylistFailedController"
 ```
 
-> 判定标准：MANIFEST 必须有 `Main-Class` 与 `Start-Class`（薄包 `.jar.original` 没有，`java -jar` 起不来）；`basic-auth.password` 的默认值必须为空（`${TOOL_AUTH_PASSWORD:}`，不能是弱口令默认值）；三个 tool 类必须出现（dao 的类在嵌套 `BOOT-INF/lib/tongrenlu-dao-*.jar` 里，`unzip -l` 查不到不代表缺失）。
+> 判定标准：MANIFEST 必须有 `Main-Class` 与 `Start-Class`（薄包 `.jar.original` 没有，`java -jar` 起不来）；`basic-auth.password` **不能带任何非空默认值**（`${TOOL_AUTH_PASSWORD:}` 空默认或 `${TOOL_AUTH_PASSWORD}` 无默认才合法；硬编码明文与占位符带非空默认值都不行）；三个 tool 类必须出现（dao 的类在嵌套 `BOOT-INF/lib/tongrenlu-dao-*.jar` 里，`unzip -l` 查不到不代表缺失）。
 
 脚本只依赖 Python 标准库，检查项与不通过时的含义：
 
 | 检查 | 不通过说明 |
 | --- | --- |
 | MANIFEST 有 `Main-Class` / `Start-Class` | 是薄包（`x.jar.original`），`java -jar` 直接起不来 |
-| 打包进去的 `app.basic-auth.password` 默认值为空 | 仍是明文弱口令默认值 `tongrenlu`，旧代码被打包进来了 |
+| 打包进去的 `app.basic-auth.password` 没有非空默认值 | 仓库里留了口令默认值（弱口令 `tongrenlu` 只是其中一种）—— 凭据随包分发，且 fail-fast 被绕过 |
 | 8 个 tool 修复相关类在 `BOOT-INF/classes` | 缺类 = 这批修复没打进去 |
 | 嵌套 dao jar 的**数量**与其中 3 个 dao 类 | dao 类不在 `BOOT-INF/classes`，查不到不代表缺失；嵌套包按 `tongrenlu-dao-*.jar` 前缀匹配，不写死版本号 |
 | `BOOT-INF/lib` 依赖数 > 0 | 为 0 = 不是 fat jar |
@@ -83,7 +84,7 @@ unzip -l tongrenlu-tool.jar | grep -E "PlaylistProgressStore|PlaylistRetryJob|Pl
 ```
 === 结论 ===
   能不能用：能部署。
-  依据：可执行 fat jar（Main-Class/Start-Class 齐全）、鉴权默认口令为空、tool 修复类 8 个与 dao 修复类 3 个齐全、BOOT-INF/lib 依赖 88 个。
+  依据：可执行 fat jar（Main-Class/Start-Class 齐全）、鉴权口令形态 <空默认（fail-fast 生效：启用认证且未注入口令时启动失败）>、tool 修复类 8 个与 dao 修复类 3 个齐全、BOOT-INF/lib 依赖 88 个。
 ```
 
 示例输出（薄包 `.jar.original`，不通过，退出码 1）：
@@ -120,7 +121,7 @@ python3 tongrenlu-tool/scripts/test_jar_preflight.py -v       # 详细输出
 
 - 只用 Python 标准库；**所有探针 jar 都在临时目录里现造**，不依赖本机 `target/` 产物，因此在没有构建过的机器上也能跑。
 - 用子进程调用被测脚本，断言的是**真实退出码**（`0` 可部署 / `1` 不可部署 / `2` 用法错），而不是函数返回值 —— 闸门真正依赖的就是退出码。
-- 覆盖场景：fat jar（显式路径 / 默认路径且与 cwd 无关）、薄包 `.jar.original`、指纹不符、63 位 hex、含非 hex 字符、未知参数、多个路径、文件不存在、大写 hex（Windows `Get-FileHash` 输出是大写）、选项前置、`--expect-sha256` 缺值、弱口令默认值、硬编码弱口令、硬编码强口令（且不得回显）、占位符无默认值、缺 tool 类、缺嵌套 dao jar、缺 `application.properties`、废弃变量残留（警告级、不拦部署）、失败时必须给出可执行的重建指引、检查表类清单不得被改小。
+- 覆盖场景：fat jar（显式路径 / 默认路径且与 cwd 无关）、薄包 `.jar.original`、指纹不符、63 位 hex、含非 hex 字符、未知参数、多个路径、文件不存在、大写 hex（Windows `Get-FileHash` 输出是大写）、选项前置、`--expect-sha256` 缺值、弱口令默认值、硬编码弱口令、**硬编码强口令（现在也判不通过，且不得回显）**、**占位符带非空默认值（同样判不通过）**、占位符无默认值（放行）、空默认（放行）、**结论行不得写死与事实不符的断言**、缺 tool 类、缺嵌套 dao jar、缺 `application.properties`、废弃变量残留（警告级、不拦部署）、失败时必须给出可执行的重建指引、检查表类清单不得被改小。
 - 类名、弱口令默认值、废弃变量名一律**从被测脚本 import**（单一事实来源），不在自测里硬编码第二份；自测只守「覆盖面下限」两个数字，防止有人悄悄把检查项删少。
 
 **退出码契约（对外契约：改脚本行为必须同步改这张表，自测会逐条校验）**
@@ -139,6 +140,7 @@ python3 tongrenlu-tool/scripts/test_jar_preflight.py -v       # 详细输出
 | S10 | `--expect-sha256` 缺值 | 2 | 用法错 |
 | S11 | 大写 hex（Windows `Get-FileHash` 的输出形态） | 0 | 可部署 |
 | S12 | 含废弃变量名的包（只告警，不阻断） | 0 | 可部署 |
+| S13 | 仓库内存在非空鉴权口令默认值（硬编码明文 / 占位符带非空默认值） | 1 | 不可部署 |
 
 `0` = 可部署；`1` = 包有问题（换产物 / 重新 build）；`2` = 用法错（改命令）。后两者排查方向
 完全不同 —— 用法错让你去改参数，包有问题让你去重新 build，混在一起容易白折腾一轮。
