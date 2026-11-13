@@ -377,25 +377,40 @@
     rail.addEventListener('scroll', updateRailUI, { passive: true });
 
     // drag to scroll (pointer: fine only)
+    //
+    // 注意：pointerdown 时不能立刻加 is-dragging。CSS 里
+    // `.rail.is-dragging * { pointer-events: none; }` 会让所有子元素失去命中能力，
+    // 于是 pointerup 的命中目标落到 rail 上，mouseup/click 的目标也跟着变成 rail，
+    // click 最终派发到 mousedown 与 mouseup 的共同祖先（rail 而不是 <a>），
+    // 链接的默认跳转就永远不触发 —— 表现为「卡片点不动」。
+    // 因此只有真的拖动起来（超过阈值）才加 is-dragging，单纯点击全程不动样式。
     if (finePointer) {
-      let down = false, startX = 0, startLeft = 0, moved = 0;
+      let down = false, startX = 0, startLeft = 0, moved = 0, dragging = false;
+      const DRAG_THRESHOLD = 4; // px，超过才算拖拽；阈值内保持原样，点击才不会被吃掉
       rail.addEventListener('pointerdown', (e) => {
         if (e.pointerType === 'touch' || e.button !== 0) return;
-        down = true; moved = 0;
+        down = true; dragging = false; moved = 0;
         startX = e.clientX; startLeft = rail.scrollLeft;
-        rail.classList.add('is-dragging');
       });
       rail.addEventListener('pointermove', (e) => {
         if (!down) return;
         const dx = e.clientX - startX;
         moved = Math.max(moved, Math.abs(dx));
-        if (moved > 3) e.preventDefault();
+        if (!dragging) {
+          if (moved <= DRAG_THRESHOLD) return; // 手抖不滚动，避免卡片在指针下挪位
+          dragging = true;
+          rail.classList.add('is-dragging');
+        }
+        e.preventDefault();
         rail.scrollLeft = startLeft - dx;
       });
       const end = () => {
         if (!down) return;
         down = false;
-        rail.classList.remove('is-dragging');
+        if (dragging) {
+          rail.classList.remove('is-dragging');
+          dragging = false;
+        }
         if (moved > 40) rail.dataset.justDragged = '1';
         setTimeout(() => { delete rail.dataset.justDragged; }, 60);
       };
