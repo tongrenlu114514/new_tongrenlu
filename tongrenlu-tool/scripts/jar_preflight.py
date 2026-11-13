@@ -121,11 +121,6 @@ def auth_password_form(auth_line):
     return raw, "hardcoded"
 
 
-def auth_password_value(auth_line):
-    """只取生效值（保留这个接口名：外部脚本/自测按它取值的形态）。"""
-    return auth_password_form(auth_line)[0]
-
-
 def describe_auth_value(value, form=None):
     """只描述取值形态，不打印口令本身 —— 预检输出会进日志/终端，不能把口令泄出去。"""
     if form == "no_default" or value is None:
