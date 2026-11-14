@@ -1,9 +1,11 @@
 package info.tongrenlu;
 
 import info.tongrenlu.domain.ArtistBean;
+import info.tongrenlu.domain.TagBean;
 import info.tongrenlu.mapper.ArtistMapper;
-import info.tongrenlu.service.ArtistWikiService;
+import info.tongrenlu.mapper.TagMapper;
 import info.tongrenlu.service.ThbwikiService;
+import info.tongrenlu.service.WikiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,21 +20,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 艺术家 Wiki 生成任务的触发/监控接口，以及单艺术家的同步生成（测试用）。
+ * 旧艺术家 Wiki 控制面，现为 /admin/wiki/* 的兼容别名（合并后的统一入口）。
+ * 保留路径以免打断仓库外的运维脚本；新代码请使用 AdminWikiController。
  */
+@Deprecated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/artist-wiki")
 @Slf4j
 public class AdminArtistWikiController {
 
-    private final ArtistWikiGenerateJob job;
-    private final ArtistWikiService artistWikiService;
+    private final WikiGenerateJob job;
+    private final WikiService wikiService;
     private final ArtistMapper artistMapper;
+    private final TagMapper tagMapper;
     private final ThbwikiService thbwikiService;
 
     @GetMapping("/status")
-    public ArtistWikiGenerateJob.JobStatus status() {
+    public WikiGenerateJob.JobStatus status() {
         return job.status();
     }
 
@@ -55,7 +60,7 @@ public class AdminArtistWikiController {
     }
 
     /**
-     * 单艺术家同步生成。force=true 时忽略已有内容重新生成。
+     * 单艺术家同步生成：先按 m_artist.id 找到关联 tag_id，再走统一词条生成。
      */
     @PostMapping("/artist/{id}")
     public ResponseEntity<Map<String, Object>> generateOne(
@@ -64,22 +69,28 @@ public class AdminArtistWikiController {
         Map<String, Object> response = new HashMap<>();
 
         ArtistBean artist = artistMapper.selectById(id);
-        if (artist == null) {
+        if (artist == null || artist.getTagId() == null) {
             response.put("success", false);
-            response.put("message", "Artist not found: id=" + id);
+            response.put("message", "Artist or linked wiki entry not found: id=" + id);
+            return ResponseEntity.status(404).body(response);
+        }
+        TagBean tag = tagMapper.selectById(artist.getTagId());
+        if (tag == null) {
+            response.put("success", false);
+            response.put("message", "Wiki entry not found: tagId=" + artist.getTagId());
             return ResponseEntity.status(404).body(response);
         }
 
-        boolean updated = artistWikiService.generateForArtist(artist, force);
+        boolean updated = wikiService.generateForTag(tag, force);
+        WikiService.WikiFields fields = wikiService.getWikiFields(tag.getId());
 
-        ArtistBean refreshed = artistMapper.selectById(id);
         response.put("success", true);
         response.put("updated", updated);
-        response.put("name", refreshed.getName());
-        response.put("thbWikiUrl", refreshed.getThbWikiUrl());
-        response.put("thbWikiStatus", refreshed.getThbWikiStatus());
-        response.put("wikiContentLength", refreshed.getWikiContent() == null ? 0 : refreshed.getWikiContent().length());
-        response.put("wikiTags", refreshed.getWikiTags());
+        response.put("name", artist.getName());
+        response.put("wikiStatus", fields.status());
+        response.put("wikiContentLength", fields.content() == null ? 0 : fields.content().length());
+        response.put("wikiTags", fields.tags());
+        response.put("thbWikiUrl", fields.sourceUrl());
         return ResponseEntity.ok(response);
     }
 

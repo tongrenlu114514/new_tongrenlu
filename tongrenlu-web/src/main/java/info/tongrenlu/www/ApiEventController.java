@@ -1,6 +1,7 @@
 package info.tongrenlu.www;
 
 import info.tongrenlu.service.TagService;
+import info.tongrenlu.service.WikiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class ApiEventController {
 
     private final TagService tagService;
+    private final WikiService wikiService;
 
     /**
      * 获取展会列表
@@ -61,7 +63,14 @@ public class ApiEventController {
             if (event == null) {
                 return ResponseEntity.notFound().build();
             }
-            return ResponseEntity.ok(event);
+            // TagService 返回的是缓存中的 Map，复制后再追加词条字段，避免污染缓存
+            Map<String, Object> result = new HashMap<>(event);
+            WikiService.WikiFields wiki = wikiService.getWikiFields(id);
+            result.put("wikiContent", wiki.content());
+            result.put("wikiTags", wiki.tags());
+            result.put("wikiSourceUrl", wiki.sourceUrl());
+            result.put("wikiStatus", wiki.status());
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Error getting event detail for id: {}", id, e);
             return ResponseEntity.internalServerError().build();

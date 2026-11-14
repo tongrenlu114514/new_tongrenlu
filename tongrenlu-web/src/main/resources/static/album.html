@@ -15,7 +15,7 @@
 
     <style>
         /* ================================================================
-           音乐库 — Award Tier Design System（与 artist-wiki 同一语言）
+           音乐库 — Award Tier Design System（与 wiki 同一语言）
            令牌 → 基础 → 头部 → 筛选工具条 → 网格卡片 → 骨架 → 分页 → 模态框 → 动效 → 响应式
            ================================================================ */
         :root {
@@ -1332,8 +1332,9 @@
         <div class="geo-nav__links">
             <a href="index.html" class="geo-nav__link">首页</a>
             <a href="album.html" class="geo-nav__link active">音乐库</a>
-            <a href="artist-wiki.html" class="geo-nav__link">艺术家</a>
-            <a href="event.html" class="geo-nav__link">展会</a>
+            <a href="wiki.html" class="geo-nav__link">百科</a>
+            <a href="wiki.html?type=artist" class="geo-nav__link">艺术家</a>
+            <a href="wiki.html?type=event" class="geo-nav__link">展会</a>
         </div>
         <div class="geo-nav__stats">
             <span class="geo-nav__number" id="navAlbumCount">--</span>
@@ -1452,7 +1453,7 @@
     <script src="components/shared/folia-player.js"></script>
     <script src="components/music-library/music-library.js"></script>
     <script>
-        // ===== 动效（渐进增强，与 artist-wiki 同一钩子）=====
+        // ===== 动效（渐进增强，与 wiki 同一钩子）=====
         (function() {
             // 阅读进度条
             var bar = document.getElementById('wikiProgressBar');

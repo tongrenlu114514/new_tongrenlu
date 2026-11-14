@@ -2,10 +2,10 @@ package info.tongrenlu;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import info.tongrenlu.domain.ArtistBean;
-import info.tongrenlu.enums.ThbWikiStatus;
-import info.tongrenlu.mapper.ArtistMapper;
-import info.tongrenlu.service.ArtistWikiService;
+import info.tongrenlu.domain.TagBean;
+import info.tongrenlu.enums.WikiStatus;
+import info.tongrenlu.mapper.TagMapper;
+import info.tongrenlu.service.WikiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,24 +19,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 艺术家 Wiki 内容批量生成任务：
- * 每轮从 thb_wiki_status='PENDING' 的艺术家中取一批（artist.wiki.batch-limit，默认 2），
- * 依次执行 THBWiki 抓取 → LLM 生成 → 入库。
+ * Wiki 词条统一批量生成任务：每轮从 m_tag 中取一批 wiki_status='PENDING' 的词条
+ * （artist + event，wiki.batch-limit 默认 2），依次执行素材抓取 → LLM 生成 → 入库。
+ * 取代原 ArtistWikiGenerateJob，全模块只保留这一个调度任务。
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class ArtistWikiGenerateJob {
+public class WikiGenerateJob {
 
-    private final ArtistMapper artistMapper;
-    private final ArtistWikiService artistWikiService;
+    private final TagMapper tagMapper;
+    private final WikiService wikiService;
 
-    @Value("${artist.wiki.batch-limit:2}")
+    @Value("${wiki.batch-limit:2}")
     private int batchLimit;
 
     private final AtomicBoolean paused = new AtomicBoolean(false);
     private final AtomicInteger processedCount = new AtomicInteger(0);
-    private final AtomicReference<String> lastArtistName = new AtomicReference<>(null);
+    private final AtomicReference<String> lastName = new AtomicReference<>(null);
     private final AtomicReference<String> lastError = new AtomicReference<>(null);
     private final AtomicReference<String> currentPhase = new AtomicReference<>("IDLE");
 
@@ -57,26 +57,23 @@ public class ArtistWikiGenerateJob {
         }
 
         currentPhase.set("RUNNING");
-        log.info("Starting artist wiki generate cycle from page {}", currentPage);
+        log.info("Starting wiki generate cycle from page {}", currentPage);
 
-        Page<ArtistBean> page = new Page<>(currentPage, PAGE_SIZE);
-        artistMapper.selectPage(page, new LambdaQueryWrapper<ArtistBean>()
-                .eq(ArtistBean::getThbWikiStatus, ThbWikiStatus.PENDING.name())
-                .isNotNull(ArtistBean::getTagId)
-                .orderByAsc(ArtistBean::getId));
+        Page<TagBean> page = new Page<>(currentPage, PAGE_SIZE);
+        tagMapper.selectPage(page, pendingWrapper());
 
         if (page.getRecords().isEmpty()) {
-            log.info("No pending artists at page {}, cycle complete", currentPage);
+            log.info("No pending wiki entries at page {}, cycle complete", currentPage);
             currentPage = 1;
             currentPhase.set("IDLE");
             return;
         }
 
         int processedThisCycle = 0;
-        for (ArtistBean artist : page.getRecords()) {
+        for (TagBean tag : page.getRecords()) {
             if (paused.get()) {
-                log.info("Paused at artist id={}, name={}, saving cursor page={}",
-                        artist.getId(), artist.getName(), currentPage);
+                log.info("Paused at entry id={}, name={}, saving cursor page={}",
+                        tag.getId(), tag.getTag(), currentPage);
                 break;
             }
             if (processedThisCycle >= batchLimit) {
@@ -86,15 +83,15 @@ public class ArtistWikiGenerateJob {
 
             processedCount.incrementAndGet();
             processedThisCycle++;
-            lastArtistName.set(artist.getName());
+            lastName.set(tag.getTag());
             lastError.set(null);
 
-            log.info("Processing artist: {} (id={})", artist.getName(), artist.getId());
+            log.info("Processing wiki entry: {} (id={}, type={})", tag.getTag(), tag.getId(), tag.getType());
             try {
-                artistWikiService.generateForArtist(artist, false);
+                wikiService.generateForTag(tag, false);
             } catch (Exception e) {
-                log.error("Failed to generate wiki for artist {} (id={})", artist.getName(), artist.getId(), e);
-                lastError.set(artist.getName() + ": " + e.getMessage());
+                log.error("Failed to generate wiki for {} (id={})", tag.getTag(), tag.getId(), e);
+                lastError.set(tag.getTag() + ": " + e.getMessage());
             }
         }
 
@@ -106,6 +103,14 @@ public class ArtistWikiGenerateJob {
         log.info("Cycle page {} complete. processed this cycle={}, total={}",
                 page.getCurrent(), processedThisCycle, processedCount.get());
         currentPhase.set("IDLE");
+    }
+
+    private LambdaQueryWrapper<TagBean> pendingWrapper() {
+        return new LambdaQueryWrapper<TagBean>()
+                .eq(TagBean::getWikiStatus, WikiStatus.PENDING.name())
+                .in(TagBean::getType, WikiService.TYPE_ARTIST, WikiService.TYPE_EVENT)
+                .eq(TagBean::getDelFlg, "0")
+                .orderByAsc(TagBean::getId);
     }
 
     public void pause() {
@@ -124,26 +129,35 @@ public class ArtistWikiGenerateJob {
     }
 
     public JobStatus status() {
-        long totalRemaining = artistMapper.selectCount(
-                new LambdaQueryWrapper<ArtistBean>()
-                        .eq(ArtistBean::getThbWikiStatus, ThbWikiStatus.PENDING.name())
-                        .isNotNull(ArtistBean::getTagId));
+        long totalRemaining = tagMapper.selectCount(pendingWrapper());
+        long artistRemaining = tagMapper.selectCount(new LambdaQueryWrapper<TagBean>()
+                .eq(TagBean::getWikiStatus, WikiStatus.PENDING.name())
+                .eq(TagBean::getType, WikiService.TYPE_ARTIST)
+                .eq(TagBean::getDelFlg, "0"));
+        long eventRemaining = tagMapper.selectCount(new LambdaQueryWrapper<TagBean>()
+                .eq(TagBean::getWikiStatus, WikiStatus.PENDING.name())
+                .eq(TagBean::getType, WikiService.TYPE_EVENT)
+                .eq(TagBean::getDelFlg, "0"));
         return new JobStatus(
                 currentPhase.get(),
-                lastArtistName.get(),
+                lastName.get(),
                 lastError.get(),
                 processedCount.get(),
                 currentPage,
-                totalRemaining
+                totalRemaining,
+                artistRemaining,
+                eventRemaining
         );
     }
 
     public record JobStatus(
             String phase,
-            String lastArtistName,
+            String lastName,
             String lastError,
             int processedCount,
             int currentPage,
-            long totalRemaining
+            long totalRemaining,
+            long artistRemaining,
+            long eventRemaining
     ) {}
 }

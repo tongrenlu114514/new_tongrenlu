@@ -458,7 +458,7 @@ function searchMusic(keyword, page = 1, orderBy = currentOrderBy, tag = currentT
     const params = new URLSearchParams();
     params.append('keyword', keyword);
     params.append('pageNumber', page.toString());
-    params.append('pageSize', '18');
+    params.append('pageSize', '12');
     params.append('orderBy', orderBy);
     if (tag) {
         params.append('tag', tag);
@@ -484,7 +484,7 @@ function renderSkeletonScreen() {
     const musicGrid = $('.music-grid');
     let html = '';
     
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 12; i++) {
         html += `
             <div class="music-card skeleton-card">
                 <div class="skeleton-cover"></div>

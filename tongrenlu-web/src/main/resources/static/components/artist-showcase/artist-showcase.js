@@ -158,8 +158,8 @@ function createCard(artist) {
     // Wiki 条目快捷入口
     const wikiLink = $('<a>', {
         class: 'artist-card__wiki',
-        href: 'artist-wiki.html?name=' + encodeURIComponent(artist.name),
-        title: '查看 ' + artist.name + ' 的 Wiki 条目',
+        href: 'wiki.html?tag=' + encodeURIComponent(artist.name),
+        title: '查看 ' + artist.name + ' 的百科词条',
         html: '<i class="fas fa-book-open"></i>',
         click: function(e) {
             e.stopPropagation();

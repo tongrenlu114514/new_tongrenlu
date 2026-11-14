@@ -17,7 +17,7 @@ import java.util.Optional;
  * LLM 客户端：调用 OpenAI 兼容的 /chat/completions 接口。
  * 配置（环境变量）：
  *   LLM_API_BASE — 接口基址，默认 https://api.deepseek.com
- *   LLM_API_KEY  — API 密钥，未配置时服务不可用（generateArtistWiki 返回 empty）
+ *   LLM_API_KEY  — API 密钥，未配置时服务不可用（generateWiki 返回 empty）
  *   LLM_MODEL    — 模型名，默认 deepseek-chat
  */
 @Service
@@ -45,15 +45,21 @@ public class LlmService {
     }
 
     /**
-     * LLM 生成的艺术家 wiki 条目。
+     * LLM 生成的 wiki 条目（artist / event 通用）。
      *
      * @param content markdown 正文
-     * @param tags    互联标签（相关社团名 / 风格标签）
+     * @param tags    互联标签（相关社团 / 展会 / 风格标签）
+     */
+    public record WikiResult(String content, List<String> tags) {
+    }
+
+    /**
+     * 兼容旧调用方：艺术家 wiki 结果。
      */
     public record ArtistWiki(String content, List<String> tags) {
     }
 
-    private static final String SYSTEM_PROMPT = """
+    private static final String ARTIST_SYSTEM_PROMPT = """
             你是东方Project同人音乐维基的编辑。根据提供的 THBWiki 页面文本，为同人社团『%s』撰写中文维基条目，只输出 JSON。
 
             要求：
@@ -63,20 +69,38 @@ public class LlmService {
             4. 输出格式：{"content": "...", "tags": ["...", "..."]}
             """;
 
+    private static final String EVENT_SYSTEM_PROMPT = """
+            你是东方Project同人展会维基的编辑。根据提供的本站收录数据，为展会『%s』撰写中文维基条目，只输出 JSON。
+
+            要求：
+            1. content 为 markdown 字符串，使用二级标题（##）分节，依次包含：展会简介、收录规模、代表作品（从提供的专辑列表中挑选 3-5 张并简要说明）、活跃社团（仅当能从数据中推断时列举）。
+            2. 严格基于提供的数据撰写，不得编造举办日期、地点、主办方、届次等未提供的事实；信息不足时相应分节写"暂无资料"。
+            3. tags 为 3-8 个相关标签的字符串数组：优先给出同系列展会名（如"Comic Market"、"例大祭"、"M3"、"东方红楼梦"），可补充 1-2 个类型词。
+            4. 输出格式：{"content": "...", "tags": ["...", "..."]}
+            """;
+
     /**
-     * 为艺术家生成 wiki 内容与互联标签。
+     * 按词条类型选择提示词。未知类型回落到 artist 提示词。
+     */
+    private String systemPrompt(String type) {
+        return "event".equals(type) ? EVENT_SYSTEM_PROMPT : ARTIST_SYSTEM_PROMPT;
+    }
+
+    /**
+     * 按词条类型生成 wiki 内容与互联标签。
      *
-     * @param artistName 社团名称
-     * @param sourceText THBWiki 页面纯文本
+     * @param name       词条名称（社团名 / 展会名）
+     * @param type       artist / event
+     * @param sourceText 素材（THBWiki 页面纯文本 / 本站收录数据）
      * @return 生成结果；LLM 未配置或调用/解析失败时返回 empty
      */
-    public Optional<ArtistWiki> generateArtistWiki(String artistName, String sourceText) {
+    public Optional<WikiResult> generateWiki(String name, String type, String sourceText) {
         if (!StringUtils.hasText(apiKey)) {
-            log.warn("LLM_API_KEY 未配置，跳过 wiki 内容生成（artist: {}）", artistName);
+            log.warn("LLM_API_KEY 未配置，跳过 wiki 内容生成（name: {}, type: {}）", name, type);
             return Optional.empty();
         }
         if (!StringUtils.hasText(sourceText)) {
-            log.warn("源文本为空，跳过 wiki 内容生成（artist: {}）", artistName);
+            log.warn("源文本为空，跳过 wiki 内容生成（name: {}, type: {}）", name, type);
             return Optional.empty();
         }
 
@@ -84,27 +108,37 @@ public class LlmService {
                 ? sourceText.substring(0, MAX_SOURCE_CHARS)
                 : sourceText;
 
-        String body = buildRequestBody(artistName, truncatedSource);
+        String body = buildRequestBody(name, type, truncatedSource);
         String response = postChatCompletions(body);
         if (response == null) {
             return Optional.empty();
         }
 
-        return parseResponse(response, artistName);
+        return parseResponse(response, name);
+    }
+
+    /**
+     * 为艺术家生成 wiki 内容与互联标签（薄委托，保留旧调用签名）。
+     */
+    public Optional<ArtistWiki> generateArtistWiki(String artistName, String sourceText) {
+        return generateWiki(artistName, "artist", sourceText)
+                .map(r -> new ArtistWiki(r.content(), r.tags()));
     }
 
     /**
      * 组装 chat/completions 请求体（JSON mode）。
      */
-    String buildRequestBody(String artistName, String sourceText) {
+    String buildRequestBody(String name, String type, String sourceText) {
         try {
             var messages = objectMapper.createArrayNode();
             var system = messages.addObject();
             system.put("role", "system");
-            system.put("content", SYSTEM_PROMPT.formatted(artistName));
+            system.put("content", systemPrompt(type).formatted(name));
             var user = messages.addObject();
             user.put("role", "user");
-            user.put("content", "社团名称：" + artistName + "\n\nTHBWiki 页面文本：\n" + sourceText);
+            String label = "event".equals(type) ? "展会名称" : "社团名称";
+            String sourceLabel = "event".equals(type) ? "本站收录数据" : "THBWiki 页面文本";
+            user.put("content", label + "：" + name + "\n\n" + sourceLabel + "：\n" + sourceText);
 
             var root = objectMapper.createObjectNode();
             root.put("model", model);
@@ -175,21 +209,21 @@ public class LlmService {
     }
 
     /**
-     * 解析响应中的 choices[0].message.content（JSON 字符串）为 ArtistWiki。
+     * 解析响应中的 choices[0].message.content（JSON 字符串）为 WikiResult。
      */
-    Optional<ArtistWiki> parseResponse(String responseBody, String artistName) {
+    Optional<WikiResult> parseResponse(String responseBody, String name) {
         try {
             JsonNode root = objectMapper.readTree(responseBody);
             String content = root.path("choices").path(0).path("message").path("content").asText(null);
             if (!StringUtils.hasText(content)) {
-                log.warn("LLM 响应无正文（artist: {}）", artistName);
+                log.warn("LLM 响应无正文（name: {}）", name);
                 return Optional.empty();
             }
 
             JsonNode wiki = objectMapper.readTree(content);
             String markdown = wiki.path("content").asText(null);
             if (!StringUtils.hasText(markdown)) {
-                log.warn("LLM 输出缺少 content 字段（artist: {}）", artistName);
+                log.warn("LLM 输出缺少 content 字段（name: {}）", name);
                 return Optional.empty();
             }
 
@@ -203,9 +237,9 @@ public class LlmService {
                     }
                 });
             }
-            return Optional.of(new ArtistWiki(markdown, tags));
+            return Optional.of(new WikiResult(markdown, tags));
         } catch (Exception e) {
-            log.error("解析 LLM 响应失败（artist: {}）", artistName, e);
+            log.error("解析 LLM 响应失败（name: {}）", name, e);
             return Optional.empty();
         }
     }
