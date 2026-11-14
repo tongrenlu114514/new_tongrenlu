@@ -43,6 +43,7 @@ public class ThbwikiService {
     private final ObjectMapper objectMapper;
     private final Clock clock = Clock.systemUTC();
     private final TrackMapper trackMapper;
+    private final OriginalTagService originalTagService;
 
     /** Functional interface for HTTP execution — enables test mocking. */
     private ThbwikiHttpClient httpClient = url -> HttpRequest.get(url)
@@ -382,7 +383,9 @@ public class ThbwikiService {
 
             if (isTrackRow(firstCellText, cells)) {
                 // Save previous track's original info before starting new one
-                if (currentTrack != null && !pendingOriginalNames.isEmpty()) {
+                // 只有游戏(.source>a)没有原曲名(.ogmusic>a)的曲目也要保留
+                if (currentTrack != null
+                        && (!pendingOriginalNames.isEmpty() || StringUtils.hasText(pendingOriginalSource[0]))) {
                     assignOriginalInfo(currentTrack, pendingOriginalNames, pendingOriginalSource[0], pendingOriginalUrl[0]);
                 }
 
@@ -421,7 +424,8 @@ public class ThbwikiService {
         }
 
         // Attach original info to the last track
-        if (currentTrack != null && !pendingOriginalNames.isEmpty()) {
+        if (currentTrack != null
+                && (!pendingOriginalNames.isEmpty() || StringUtils.hasText(pendingOriginalSource[0]))) {
             assignOriginalInfo(currentTrack, pendingOriginalNames, pendingOriginalSource[0], pendingOriginalUrl[0]);
         }
 
@@ -436,9 +440,9 @@ public class ThbwikiService {
      */
     private void assignOriginalInfo(ThbwikiTrack track, List<String> originalNames,
             String originalSource, String originalUrl) {
-        if (originalNames.isEmpty()) {
-            return;
-        }
+        // 结构化原曲名列表，供 matchAndSave 直接写 tag。
+        // 必须拷贝：调用方随后会 clear() 传入的 pendingOriginalNames。
+        track.setOriginalSongNames(new ArrayList<>(originalNames));
         // Build: each ogmusic name paired with the game source, newline-separated
         List<String> lines = new ArrayList<>();
         for (String name : originalNames) {
@@ -603,8 +607,9 @@ public class ThbwikiService {
     }
 
     /**
-     * Match a track against THBWiki album tracks and save the original info to database.
-     * Logs the input track name, matched THBWiki track, confidence score, and save outcome.
+     * Match a track against THBWiki album tracks and save the original info.
+     * 写两处：{@code m_track.original}/{@code originalUrl}（前台副标题与兼容），
+     * 以及用结构化的原曲名列表 / 原作名直接生成原曲 / 原作 tag（不经文本反解析）。
      *
      * @param track the local track to match and update
      * @param thbwikiTracks the list of THBWiki tracks to match against
@@ -640,6 +645,19 @@ public class ThbwikiService {
                 log.info("Successfully saved original '{}' originalUrl '{}' to track id={}", originalInfo, originalUrl, track.getId());
             } else {
                 log.warn("TrackMapper not set, cannot persist match for track id={}", track.getId());
+            }
+
+            // 直接用 THBWiki 解析出的结构化原曲 / 原作名写 tag，不再把 m_track.original 文本拆回来
+            List<String> songs = matchedThbwikiTrack.getOriginalSongNames() == null
+                    ? List.of() : matchedThbwikiTrack.getOriginalSongNames();
+            List<String> games = StringUtils.hasText(matchedThbwikiTrack.getOriginalSource())
+                    ? List.of(matchedThbwikiTrack.getOriginalSource()) : List.of();
+            if (this.originalTagService != null) {
+                this.originalTagService.saveOriginalTags(track, songs, games);
+                log.info("Saved {} original_track / {} original_game tag(s) for track id={}",
+                        songs.size(), games.size(), track.getId());
+            } else {
+                log.warn("OriginalTagService not set, cannot save original tags for track id={}", track.getId());
             }
             return true;
         } else {

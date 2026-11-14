@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import info.tongrenlu.domain.ArticleTagBean;
 import info.tongrenlu.domain.MusicBean;
 import info.tongrenlu.domain.TagBean;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -31,5 +32,14 @@ public interface ArticleTagMapper  extends BaseMapper<ArticleTagBean> {
             "WHERE r.article_id = #{articleId} AND t.type = 'artist' " +
             "LIMIT 1")
     String findArtistNameByArticleId(@Param("articleId") Long articleId);
+
+    /**
+     * 清空「原曲 / 原作」标签的关联，供重建使用。只删 r_article_tag，保留 m_tag 词条本身。
+     */
+    @Delete("""
+        DELETE FROM r_article_tag
+        WHERE tag_id IN (SELECT id FROM m_tag WHERE type IN ('original_track', 'original_game'))
+        """)
+    int deleteOriginalTagLinks();
 
 }

@@ -38,6 +38,8 @@ import java.util.stream.Stream;
 public class HomeMusicService {
     public static final String ARTIST = "artist";
     public static final String EVENT = "event";
+    public static final String ORIGINAL_TRACK = "original_track";
+    public static final String ORIGINAL_GAME = "original_game";
     public static final String M_ARTICLE = "m_article";
     public static final int SEARCH_TYPE_ALBUM = 10;
     public static final int SEARCH_TYPE_ARTIST = 100;
