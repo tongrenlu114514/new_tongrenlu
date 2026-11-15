@@ -23,6 +23,7 @@ public interface WikiMapper {
      * 提前终止，每次列表请求（含无限滚动）都要全量重算。派生表只扫一次 r_article_tag。
      * m_artist 可能存在重复 tag_id，用聚合派生表保证一词条一行。
      * hasContent 用 wiki_status 判断，避免为了判空去读 MEDIUMTEXT 正文列。
+     * 未指定 type（百科视图）时排除 artist / event，只展示其它类型词条。
      */
     @Select("""
         <script>
@@ -46,8 +47,10 @@ public interface WikiMapper {
             GROUP BY tag_id
         ) a ON a.tag_id = t.id AND t.type = 'artist'
         WHERE t.del_flg = '0'
-          AND t.type IN ('artist', 'event')
-          <if test='type != null'> AND t.type = #{type} </if>
+          <choose>
+              <when test='type != null'> AND t.type = #{type} </when>
+              <otherwise> AND t.type NOT IN ('artist', 'event') </otherwise>
+          </choose>
           <if test='keyword != null'> AND t.tag LIKE CONCAT('%', #{keyword}, '%') </if>
         ORDER BY albumCount DESC, t.tag ASC
         LIMIT #{offset}, #{limit}
@@ -58,14 +61,16 @@ public interface WikiMapper {
                                                @Param("offset") long offset,
                                                @Param("limit") int limit);
 
-    /** 词条总数（与 findWikiEntries 相同条件）。 */
+    /** 词条总数（与 findWikiEntries 相同条件：指定 type 按类型，未指定排除 artist/event）。 */
     @Select("""
         <script>
         SELECT COUNT(*)
         FROM m_tag t
         WHERE t.del_flg = '0'
-          AND t.type IN ('artist', 'event')
-          <if test='type != null'> AND t.type = #{type} </if>
+          <choose>
+              <when test='type != null'> AND t.type = #{type} </when>
+              <otherwise> AND t.type NOT IN ('artist', 'event') </otherwise>
+          </choose>
           <if test='keyword != null'> AND t.tag LIKE CONCAT('%', #{keyword}, '%') </if>
         </script>
         """)
@@ -74,6 +79,7 @@ public interface WikiMapper {
     /** 词条详情（含正文、标签、来源、artist 附加信息）。 */
     @Select("""
         SELECT t.id AS tagId, t.tag AS name, t.type, t.text,
+               t.okf_description AS okfDescription,
                t.wiki_content AS wikiContent, t.wiki_tags AS wikiTags,
                t.wiki_source_url AS wikiSourceUrl, t.wiki_status AS wikiStatus,
                t.wiki_upd_date AS wikiUpdDate,
@@ -135,6 +141,22 @@ public interface WikiMapper {
         ORDER BY id ASC LIMIT 1
         """)
     Long selectTagIdByName(@Param("name") String name);
+
+    /**
+     * OKF 导出清单：全部 wiki 词条的轻量字段（不取正文/大字段）。
+     * 与 WikiService 的 4 个词条类型保持一致。
+     */
+    @Select("""
+        SELECT t.id AS tagId, t.tag AS name, t.type,
+               t.okf_description AS okfDescription,
+               t.wiki_status AS wikiStatus,
+               t.wiki_upd_date AS wikiUpdDate
+        FROM m_tag t
+        WHERE t.del_flg = '0'
+          AND t.type IN ('artist', 'event', 'original_game', 'original_track')
+        ORDER BY t.type, t.tag
+        """)
+    List<Map<String, Object>> listOkfEntries();
 
     /**
      * 旧 artist-wiki.html?name= 深链回退：按 m_artist.name 找到关联词条。

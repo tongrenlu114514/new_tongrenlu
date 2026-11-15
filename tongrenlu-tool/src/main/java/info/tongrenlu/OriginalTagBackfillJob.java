@@ -5,8 +5,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.mapper.ArticleTagMapper;
 import info.tongrenlu.mapper.TrackMapper;
+import info.tongrenlu.model.ThbwikiAlbum;
 import info.tongrenlu.service.OriginalTagParser;
 import info.tongrenlu.service.OriginalTagService;
+import info.tongrenlu.service.ThbwikiService;
+import info.tongrenlu.support.TextNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,16 +17,21 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 后台批量任务：扫描 {@code m_track} 中 {@code original} 非空、且不含全角 ／ 的遗留格式曲目，
- * 解析出「原曲 / 原作」并调用 {@link OriginalTagService} 保存成 tag。
- * THBWiki 匹配写出的 {@code "原曲 ／ 原作"} 由 {@code ThbwikiService.matchAndSave} 直接写 tag，
- * 不再由本任务处理（见 scopeFilter）；仅 {@code all=true} 的一次性全量触发会连带处理。
+ * 解析出「原曲 / 原作」，先经 THBWiki opensearch 把变体归一到规范页面名（搜索去重），
+ * 再调用 {@link OriginalTagService} 保存成 tag。
+ * THBWiki 匹配写出的 {@code "原曲 ／ 原作"} 由 {@code ThbwikiService.matchAndSave} 直接写 tag
+ * （名字来自 THBWiki 页面文本，已是规范名，不再搜索），不再由本任务处理（见 scopeFilter）；
+ * 仅 {@code all=true} 的一次性全量触发会连带处理。
+ * 归一规则：opensearch 第一个结果的页面名为规范名；失败/无结果回落原名，保证幂等可重跑。
  *
  * <p>照 {@link OriginalUrlBackfillJob} 的运维方式：分页游标 + pause/resume + dry-run +
  * preview + status。区别是任务本身没有「已处理」标记列，因此单次 trigger 会走完整轮
@@ -52,6 +60,7 @@ public class OriginalTagBackfillJob {
     private final TrackMapper trackMapper;
     private final ArticleTagMapper articleTagMapper;
     private final OriginalTagService originalTagService;
+    private final ThbwikiService thbwikiService;
     private final OriginalTagParser parser = new OriginalTagParser();
 
     private final AtomicBoolean paused = new AtomicBoolean(false);
@@ -59,13 +68,22 @@ public class OriginalTagBackfillJob {
     private final AtomicInteger processedCount = new AtomicInteger(0);
     private final AtomicInteger taggedCount = new AtomicInteger(0);
     private final AtomicInteger skippedCount = new AtomicInteger(0);
+    /** 搜索归一成功的候选名数 / 搜索失败或无结果回落原名的候选名数 */
+    private final AtomicInteger canonicalizedCount = new AtomicInteger(0);
+    private final AtomicInteger fallbackCount = new AtomicInteger(0);
     private final AtomicReference<String> currentPhase = new AtomicReference<>("IDLE");
     private final AtomicReference<String> lastError = new AtomicReference<>(null);
+
+    /** 变体 → 规范名缓存：同一写法只请求一次 THBWiki */
+    private final Map<String, String> canonicalCache = new ConcurrentHashMap<>();
 
     /** 断点续跑的页码游标 */
     private volatile int currentPage = 1;
 
     private static final int PAGE_SIZE = 100;
+
+    /** 与 OriginalTagService.MAX_TAG_LENGTH 一致，超长规范名回落原名 */
+    private static final int MAX_CANONICAL_LENGTH = 255;
 
     /** 默认范围的一次完整轮次（等效于 {@code trigger(false)} 的同步版本）。 */
     public void runCycle() {
@@ -160,7 +178,12 @@ public class OriginalTagBackfillJob {
         }
         if (!dryRun) {
             try {
-                originalTagService.syncTrack(track);
+                // 搜索去重：变体归一到 THBWiki 规范页面名，相同规范名合并为一个词条
+                LinkedHashSet<String> songs = new LinkedHashSet<>();
+                LinkedHashSet<String> games = new LinkedHashSet<>();
+                parsed.songs().forEach(song -> songs.add(canonicalize(song)));
+                parsed.games().forEach(game -> games.add(canonicalize(game)));
+                originalTagService.saveOriginalTags(track, songs, games);
             } catch (Exception e) {
                 lastError.set("track id=" + track.getId() + ": " + e.getMessage());
                 log.warn("Failed to sync original tags for track id={}", track.getId(), e);
@@ -171,6 +194,42 @@ public class OriginalTagBackfillJob {
         log.debug("{} track id={} songs={} games={}",
                 dryRun ? "[DRY-RUN]" : "Tagged",
                 track.getId(), parsed.songs(), parsed.games());
+    }
+
+    /**
+     * 用 THBWiki opensearch 把本地变体（简繁 / 前缀 / 副题 / 空格差异）归一到规范页面名：
+     * 第一个搜索结果的页面名即规范名，同一变体总是得到同一规范名，从而去重。
+     * 搜索失败或无结果时回落原名（词条仍会创建，后续可在 wiki 管理端 force 重试生成）。
+     */
+    private String canonicalize(String name) {
+        if (name == null || name.isBlank()) {
+            return name;
+        }
+        String cacheKey = TextNormalizer.normalizeForComparison(name);
+        String cached = canonicalCache.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        String canonical = name.strip();
+        try {
+            List<ThbwikiAlbum> results = thbwikiService.searchAlbum(name.strip());
+            if (results != null && !results.isEmpty()
+                    && results.get(0).getName() != null && !results.get(0).getName().isBlank()) {
+                canonical = results.get(0).getName().strip();
+                canonicalizedCount.incrementAndGet();
+            } else {
+                fallbackCount.incrementAndGet();
+            }
+        } catch (Exception e) {
+            fallbackCount.incrementAndGet();
+            log.warn("THBWiki canonicalize failed for '{}': {}", name, e.getMessage());
+        }
+        if (canonical.length() > MAX_CANONICAL_LENGTH) {
+            canonical = name.strip();
+        }
+        canonicalCache.put(cacheKey, canonical);
+        return canonical;
     }
 
     /** 抽样预览解析结果，不写库。all=true 时抽样范围包含 THBWiki 格式行。 */
@@ -221,6 +280,9 @@ public class OriginalTagBackfillJob {
         processedCount.set(0);
         taggedCount.set(0);
         skippedCount.set(0);
+        canonicalizedCount.set(0);
+        fallbackCount.set(0);
+        canonicalCache.clear();
         currentPage = 1;
         lastError.set(null);
         currentPhase.set("IDLE");
@@ -243,6 +305,8 @@ public class OriginalTagBackfillJob {
                 processedCount.get(),
                 taggedCount.get(),
                 skippedCount.get(),
+                canonicalizedCount.get(),
+                fallbackCount.get(),
                 currentPage,
                 totalTracks,
                 dryRun.get());
@@ -261,6 +325,8 @@ public class OriginalTagBackfillJob {
             int processedCount,
             int taggedCount,
             int skippedCount,
+            int canonicalizedCount,
+            int fallbackCount,
             int currentPage,
             long totalTracks,
             boolean dryRun

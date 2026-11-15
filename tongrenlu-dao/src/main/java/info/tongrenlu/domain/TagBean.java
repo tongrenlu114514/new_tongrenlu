@@ -59,4 +59,8 @@ public class TagBean implements Serializable {
     @TableField(value = "wiki_upd_date", jdbcType = JdbcType.TIMESTAMP)
     private Date wikiUpdDate;
 
+    /** OKF frontmatter description：LLM 生成的一两句摘要 */
+    @TableField(value = "okf_description", jdbcType = JdbcType.VARCHAR, select = false)
+    private String okfDescription;
+
 }

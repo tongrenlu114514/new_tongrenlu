@@ -21,6 +21,9 @@ import java.util.Date;
  *   <li>{@code r_article_tag} 把词条关联到曲目所属专辑（{@code type=m_article}）。</li>
  * </ul>
  * 全程「查重 + 插入」，可重复执行（幂等），不覆盖已有词条、不删除其它类型标签。
+ * 遗留文本（{@code m_track.original}）的解析在 {@code OriginalTagBackfillJob} 完成——
+ * 变体需先经 THBWiki opensearch 归一到规范页面名（搜索去重）再调
+ * {@link #saveOriginalTags}，因此本类不直接依赖解析器与 THBWiki。
  */
 @Service
 @RequiredArgsConstructor
@@ -31,25 +34,12 @@ public class OriginalTagService {
 
     private final TagMapper tagMapper;
     private final ArticleTagMapper articleTagMapper;
-    private final OriginalTagParser parser = new OriginalTagParser();
 
     /**
-     * 解析并保存一首曲目的原曲 / 原作标签（遗留回填路径，数据源是 m_track.original 文本）。
-     * 关联目标封装在 {@link #linkTag} 里：目前关联到专辑 (articleId)。
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void syncTrack(TrackBean track) {
-        if (track == null || track.getArticleId() == null) {
-            return;
-        }
-        OriginalTagParser.ParsedOriginal parsed = parser.parse(track.getOriginal());
-        saveTags(track.getArticleId(), parsed.songs(), HomeMusicService.ORIGINAL_TRACK);
-        saveTags(track.getArticleId(), parsed.games(), HomeMusicService.ORIGINAL_GAME);
-    }
-
-    /**
-     * 直接用结构化的原曲 / 原作名写 tag（THBWiki 匹配路径）。
-     * 不经过 m_track.original 文本中转与反解析，避免曲名里的「、」「／」等被误切。
+     * 直接用结构化的原曲 / 原作名写 tag。
+     * THBWiki 匹配路径的名字来自页面文本（已是规范名）；遗留文本路径由
+     * {@code OriginalTagBackfillJob} 先做搜索归一，不经过 m_track.original 文本反解析，
+     * 避免曲名里的「、」「／」等被误切。
      */
     @Transactional(rollbackFor = Exception.class)
     public void saveOriginalTags(TrackBean track, Collection<String> songs, Collection<String> games) {
@@ -72,7 +62,6 @@ public class OriginalTagService {
         }
     }
 
-    /** 与 OriginalTagParser.clean 一致的清洗：trim、去空、限长。 */
     private String clean(String value) {
         if (value == null) {
             return null;

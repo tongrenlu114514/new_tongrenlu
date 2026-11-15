@@ -27,7 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** {@link OriginalTagService#saveOriginalTags} 与遗留 {@link OriginalTagService#syncTrack} 的单测。 */
+/** {@link OriginalTagService#saveOriginalTags} 的单测。 */
 class OriginalTagServiceTest {
 
     private TagMapper tagMapper;
@@ -125,21 +125,5 @@ class OriginalTagServiceTest {
         service.saveOriginalTags(new TrackBean(), List.of("X"), List.of("Y"));
         verify(tagMapper, never()).insert(any(TagBean.class));
         verify(articleTagMapper, never()).insert(any(ArticleTagBean.class));
-    }
-
-    @Test
-    @DisplayName("遗留 syncTrack 仍按文本解析出原曲 + 原作两类 tag")
-    void syncTrackStillParsesOriginalText() {
-        TrackBean t = track();
-        t.setOriginal("少女さとり ～ 3rd eye ／ 东方地灵殿");
-
-        service.syncTrack(t);
-
-        ArgumentCaptor<TagBean> tags = ArgumentCaptor.forClass(TagBean.class);
-        verify(tagMapper, times(2)).insert(tags.capture());
-        assertThat(tags.getAllValues())
-                .extracting(TagBean::getType)
-                .containsExactlyInAnyOrder(
-                        HomeMusicService.ORIGINAL_TRACK, HomeMusicService.ORIGINAL_GAME);
     }
 }

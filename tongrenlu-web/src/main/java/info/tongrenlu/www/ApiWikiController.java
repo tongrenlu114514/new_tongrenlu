@@ -3,6 +3,7 @@ package info.tongrenlu.www;
 import info.tongrenlu.service.WikiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 公开 Wiki 词条接口：词条主体为 m_tag（type=artist / event）。
+ * 公开 Wiki 词条接口：词条主体为 m_tag（artist / event / original_game / original_track）。
+ * 另提供 OKF（Open Knowledge Format）bundle 导出。
  */
 @RestController
 @RequiredArgsConstructor
@@ -59,6 +61,42 @@ public class ApiWikiController {
             error.put("error", "获取词条专辑失败");
             return ResponseEntity.internalServerError().body(error);
         }
+    }
+
+    /**
+     * OKF（Open Knowledge Format）bundle 索引：按类型分组列出全部词条的概念文档链接
+     * （渐进披露入口）。文本响应，人和 agent 都可直接消费。
+     */
+    @GetMapping("/okf/index.md")
+    public ResponseEntity<String> okfIndex() {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .body(wikiService.okfIndex());
+    }
+
+    /** OKF 保留文件 log.md：按更新时间倒序的词条变更记录。 */
+    @GetMapping("/okf/log.md")
+    public ResponseEntity<String> okfLog() {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .body(wikiService.okfLog());
+    }
+
+    /**
+     * OKF 概念文档：单个词条的 YAML frontmatter（type/title/description/resource/tags/
+     * timestamp）+ markdown 正文。路径即概念 ID（如 artist/123）。
+     */
+    @GetMapping("/okf/{type}/{tagId}.md")
+    public ResponseEntity<String> okfEntry(
+            @PathVariable("type") String type,
+            @PathVariable("tagId") Long tagId) {
+        String document = wikiService.okfDocument(type, tagId);
+        if (document == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .body(document);
     }
 
     /**

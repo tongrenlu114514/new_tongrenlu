@@ -4,6 +4,8 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import info.tongrenlu.cache.ThbwikiCacheService;
 import info.tongrenlu.domain.TrackBean;
 import info.tongrenlu.mapper.TrackMapper;
@@ -23,9 +25,12 @@ import org.springframework.util.StringUtils;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,6 +60,33 @@ public class ThbwikiService {
 
     /** Tracks the last HTTP request timestamp for rate limiting. */
     private final AtomicReference<Instant> lastRequestTime = new AtomicReference<>();
+
+    /**
+     * 索引页（原曲列表 / 官方音乐CD曲目列表）HTML 很大，一次批量生成会反复按词条名查询：
+     * 解析出的「曲名 → 词条页 URL」链接索引按 URL 缓存复用。TTL 6 小时，超期后重新抓取；
+     * 抓取失败不缓存，下次自动重试。
+     */
+    private final LoadingCache<String, Map<String, String>> linkIndexCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofHours(6))
+            .maximumSize(8)
+            .build(this::loadLinkIndex);
+
+    /** 索引页正文纯文本缓存（供 WikiService 截取索引片段），与链接索引同策略。 */
+    private final LoadingCache<String, String> indexTextCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofHours(6))
+            .maximumSize(8)
+            .build(this::loadIndexText);
+
+    /** 索引页 HTML 原文缓存（供 OKF 导入的结构化解析），与上同策略。 */
+    private final LoadingCache<String, String> indexHtmlCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofHours(6))
+            .maximumSize(4)
+            .build(this::loadIndexHtml);
+
+    /** OKF 导入：索引页解析出的条目。rawUrl 为来源条目链接（raw 表的唯一标识）；rawJson 为结构化原始字段。 */
+    public record OkfIndexEntry(String type, String name, String game, String sourceUrl,
+                                String description, String rawJson) {
+    }
 
     /**
      * Enforce minimum interval between HTTP requests to THBWiki.
@@ -779,6 +811,369 @@ public class ThbwikiService {
         } catch (Exception e) {
             log.error("Error parsing THBWiki page HTML: {}", pageUrl, e);
             return null;
+        }
+    }
+
+    // ==================== 索引页「挖掘」 ====================
+
+    /**
+     * 索引页挖掘：原曲列表 / CD 曲目列表等索引页只有条目链接（无曲目详细内容），
+     * 按曲名定位条目链接，返回其指向的词条页面完整 URL，供 {@link #fetchArtistPageText(String)}
+     * 抓取详情正文。索引页的解析结果走 {@link #linkIndexCache} 缓存，同一索引页在一次
+     * 批量生成中只抓取与解析一次。
+     *
+     * @param indexUrl 索引页 URL
+     * @param name     曲名（词条名）
+     * @return 词条页面 URL；未找到匹配条目时返回空 Optional
+     */
+    public Optional<String> findEntryLink(String indexUrl, String name) {
+        if (!isValidThbwikiUrl(indexUrl) || !StringUtils.hasText(name)) {
+            return Optional.empty();
+        }
+        Map<String, String> index = linkIndexCache.get(indexUrl);
+        if (index == null || index.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(lookupLinkIndex(index, name));
+    }
+
+    /**
+     * 带缓存的索引页正文纯文本（原曲列表 / 官方音乐CD曲目列表等大索引页）：
+     * WikiService 会反复按词条名截取索引片段，解析与抓取结果按 URL 复用。
+     * 仅用于索引页 URL；抓取失败返回空 Optional（Caffeine 不缓存 null，下次重试）。
+     */
+    public Optional<String> fetchIndexPageText(String indexUrl) {
+        if (!isValidThbwikiUrl(indexUrl)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(indexTextCache.get(indexUrl));
+    }
+
+    /** 带缓存的索引页 HTML 原文（OKF 导入的结构化解析用）；仅用于索引页 URL。 */
+    public Optional<String> fetchIndexHtml(String indexUrl) {
+        if (!isValidThbwikiUrl(indexUrl)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(indexHtmlCache.get(indexUrl));
+    }
+
+    private String loadIndexHtml(String indexUrl) {
+        try (HttpResponse response = fetchWithRetry(indexUrl, 2)) {
+            if (!response.isOk()) {
+                log.warn("THBWiki index page returned status: {} for {}", response.getStatus(), indexUrl);
+                return null; // 不缓存失败结果，下次自动重试
+            }
+            return response.body();
+        } catch (Exception e) {
+            log.warn("Error loading THBWiki index HTML: {}", indexUrl, e);
+            return null;
+        }
+    }
+
+    /**
+     * 解析索引页 HTML：normalized 曲名（含去「～/〜/~」副标题的主名变体）→ 词条页完整 URL。
+     * 命中带半角冒号的链接（File:/Category:/Special: 等命名空间）时跳过。
+     */
+    Map<String, String> buildLinkIndex(String html) {
+        Map<String, String> index = new LinkedHashMap<>();
+        Document doc = org.jsoup.Jsoup.parse(html);
+        Element content = doc.selectFirst("#mw-content-text");
+        if (content == null) {
+            return index;
+        }
+        for (Element a : content.select("a[href]")) {
+            String href = a.attr("href");
+            if (!StringUtils.hasText(href) || href.startsWith("#")
+                    || href.toLowerCase().contains(":")) {
+                continue;
+            }
+            String text = TextNormalizer.normalizeForComparison(a.text());
+            if (!StringUtils.hasText(text)) {
+                continue;
+            }
+            String url = THBWIKI_BASE_URL + (href.startsWith("/") ? href : "/" + href);
+            index.putIfAbsent(text, url);
+            String primary = primaryOf(text);
+            if (primary != null) {
+                index.putIfAbsent(primary, url);
+            }
+        }
+        return index;
+    }
+
+    /**
+     * 在索引页 HTML 中按曲名匹配条目链接（非缓存路径，单测/排查用）。
+     * 匹配优先级：1) 链接文本与曲名全名相等；2) 与去「～/〜/~」副标题后的主名相等。
+     *
+     * @return 词条页面完整 URL；无匹配返回 null
+     */
+    String findEntryLinkInHtml(String html, String name) {
+        return lookupLinkIndex(buildLinkIndex(html), name);
+    }
+
+    private Map<String, String> loadLinkIndex(String indexUrl) {
+        try (HttpResponse response = fetchWithRetry(indexUrl, 2)) {
+            if (!response.isOk()) {
+                log.warn("THBWiki index page returned status: {} for {}", response.getStatus(), indexUrl);
+                return null; // 不缓存失败结果，下次自动重试
+            }
+            return buildLinkIndex(response.body());
+        } catch (Exception e) {
+            log.warn("Error loading THBWiki index page: {}", indexUrl, e);
+            return null;
+        }
+    }
+
+    private String loadIndexText(String indexUrl) {
+        try (HttpResponse response = fetchWithRetry(indexUrl, 2)) {
+            if (!response.isOk()) {
+                log.warn("THBWiki index page returned status: {} for {}", response.getStatus(), indexUrl);
+                return null; // 不缓存失败结果，下次自动重试
+            }
+            return parsePageHtml(response.body(), indexUrl);
+        } catch (Exception e) {
+            log.warn("Error loading THBWiki index text: {}", indexUrl, e);
+            return null;
+        }
+    }
+
+    private String lookupLinkIndex(Map<String, String> index, String name) {
+        String target = TextNormalizer.normalizeForComparison(name);
+        if (!StringUtils.hasText(target)) {
+            return null;
+        }
+        String url = index.get(target);
+        if (url != null) {
+            return url;
+        }
+        String[] parts = name.split("[\\u301C\\uFF5E~]");
+        if (parts.length > 0 && StringUtils.hasText(parts[0])) {
+            return index.get(TextNormalizer.normalizeForComparison(parts[0].strip()));
+        }
+        return null;
+    }
+
+    /** normalized 文本去「〜/～/~」副标题后的主名；无副标题时返回 null。 */
+    private String primaryOf(String normalizedText) {
+        String[] parts = normalizedText.split("[\\u301C\\uFF5E~]");
+        if (parts.length == 0 || !StringUtils.hasText(parts[0]) || parts[0].equals(normalizedText)) {
+            return null;
+        }
+        return parts[0].strip();
+    }
+
+    // ==================== OKF 导入：索引页结构化解析 ====================
+
+    /** THBWiki 绝对 URL；空/锚点返回 null。 */
+    private String absoluteThbwikiUrl(String href) {
+        if (!StringUtils.hasText(href) || href.startsWith("#")) {
+            return null;
+        }
+        return THBWIKI_BASE_URL + (href.startsWith("/") ? href : "/" + href);
+    }
+
+    /**
+     * 解析 THBWiki「原曲列表」页：仅「游戏」h3 分组产出——每个作品一张
+     * &lt;table class="wikitable sortable"&gt;（表头 th&gt;a 为作品名与作品页链接），
+     * 数据行恒 5 个 td：序号 | 曲目编号 | 中文名(链接) | 日文名 | 英文名。
+     * 产出 original_game（作品）与 game_track（曲目）两类条目；
+     * 「CD/合集」「出版物附属」「其他」分组不产出。
+     */
+    public List<OkfIndexEntry> parseTrackListIndex(String html) {
+        List<OkfIndexEntry> entries = new ArrayList<>();
+        Document doc = org.jsoup.Jsoup.parse(html);
+        Element content = doc.selectFirst("#mw-content-text .mw-parser-output");
+        if (content == null) {
+            content = doc.selectFirst("#mw-content-text");
+        }
+        if (content == null) {
+            return entries;
+        }
+        // 子树搜索（文档序）：表可能嵌套在容器 div 内，不能只遍历直接子元素
+        String group = null;
+        for (Element el : content.select("h3, table.wikitable")) {
+            if (el.tagName().equals("h3")) {
+                group = el.text().strip();
+                continue;
+            }
+            if (!"游戏".equals(group)) {
+                continue;
+            }
+            parseTrackListTable(el, entries);
+        }
+        return entries;
+    }
+
+    private void parseTrackListTable(Element table, List<OkfIndexEntry> entries) {
+        // 作品名与作品页：表头 th[colspan] 内唯一的 a[href]（红链/编辑链接跳过）
+        Element headLink = table.selectFirst("th[colspan] > a[href]");
+        if (headLink == null) {
+            return;
+        }
+        String workName = headLink.text().strip();
+        String workUrl = headLink.attr("href").toLowerCase().contains("index.php")
+                ? null : absoluteThbwikiUrl(headLink.attr("href"));
+        if (!StringUtils.hasText(workName)) {
+            return;
+        }
+        if (workUrl != null) {
+            entries.add(new OkfIndexEntry("original_game", workName, null, workUrl, null,
+                    rawJson(Map.of("group", "游戏"))));
+        }
+
+        for (Element row : table.select("> tbody > tr")) {
+            row.select("sup.reference").remove();
+            Elements cells = row.select("> td");
+            if (cells.size() < 3) {
+                continue; // 表头行（th）/「共N首原曲」汇总行
+            }
+            Element nameCell = cells.get(2);
+            Element link = nameCell.selectFirst("a[href]");
+            if (link == null || link.attr("href").toLowerCase().contains("index.php")) {
+                continue;
+            }
+            String trackName = link.text().strip();
+            String trackUrl = absoluteThbwikiUrl(link.attr("href"));
+            if (!StringUtils.hasText(trackName) || trackUrl == null) {
+                continue;
+            }
+            String trackNo = cells.get(1).text().strip();
+            String jaName = cells.size() > 3 ? cells.get(3).text().strip() : "";
+            String enName = cells.size() > 4 ? cells.get(4).text().strip() : "";
+
+            StringBuilder description = new StringBuilder("《").append(workName).append("》");
+            if (StringUtils.hasText(trackNo)) {
+                description.append("曲目编号 ").append(trackNo).append("；");
+            }
+            if (StringUtils.hasText(jaName)) {
+                description.append("日文名：").append(jaName).append("；");
+            }
+            if (StringUtils.hasText(enName)) {
+                description.append("英文名：").append(enName).append("；");
+            }
+            String rawJson = rawJson(Map.of("no", cells.get(0).text().strip(), "track_no", trackNo,
+                    "name_ja", jaName, "name_en", enName));
+            entries.add(new OkfIndexEntry("game_track", trackName, workName, trackUrl,
+                    description.toString(), rawJson));
+        }
+    }
+
+    /**
+     * 解析 THBWiki「官方音乐CD曲目列表」页：&lt;h3 id="CD名"&gt; 分组 +
+     * &lt;table class="musicTable"&gt；一个曲目 = 主行（td.infoYD|infoRD 内 &lt;b&gt;曲号&lt;/b&gt;
+     * + td.title 曲名链接 + td.time）→ 恰一个 td.bigtext 行（日文名）→ 0+ 个 label 行
+     * （作曲/来源/原曲/编曲/演奏/社团…）。产出 cd_track 条目。
+     */
+    public List<OkfIndexEntry> parseCdTrackIndex(String html) {
+        List<OkfIndexEntry> entries = new ArrayList<>();
+        Document doc = org.jsoup.Jsoup.parse(html);
+        Element content = doc.selectFirst("#mw-content-text .mw-parser-output");
+        if (content == null) {
+            content = doc.selectFirst("#mw-content-text");
+        }
+        if (content == null) {
+            return entries;
+        }
+        // 子树搜索（文档序）：h3 CD 名 → 其后最近的 musicTable 归属该 CD
+        String cdName = null;
+        String trackNo = null;
+        String trackName = null;
+        String trackUrl = null;
+        String jaName = null;
+        String duration = null;
+        Map<String, String> labels = new LinkedHashMap<>();
+
+        for (Element el : content.select("h3, table.musicTable")) {
+            if (el.tagName().equals("h3")) {
+                // CD 切换：先收尾上一首
+                appendCdTrack(entries, cdName, trackNo, trackName, trackUrl, jaName, duration, labels);
+                trackNo = null;
+                trackName = null;
+                trackUrl = null;
+                jaName = null;
+                duration = null;
+                labels = new LinkedHashMap<>();
+                cdName = el.text().strip();
+                continue;
+            }
+            if (!el.tagName().equals("table") || !el.hasClass("musicTable")) {
+                continue;
+            }
+            for (Element row : el.select("> tbody > tr")) {
+                row.select("sup.reference").remove();
+                Element numberCell = row.selectFirst("td.infoYD, td.infoRD");
+                if (numberCell != null) {
+                    appendCdTrack(entries, cdName, trackNo, trackName, trackUrl, jaName, duration, labels);
+                    trackNo = numberCell.text().strip();
+                    Element timeCell = row.selectFirst("td.time");
+                    duration = timeCell != null ? timeCell.text().strip() : null;
+                    Element titleLink = row.selectFirst("td.title a[href]");
+                    Element titleCell = row.selectFirst("td.title");
+                    if (titleLink != null && !titleLink.attr("href").toLowerCase().contains("index.php")) {
+                        trackName = titleLink.text().strip();
+                        trackUrl = absoluteThbwikiUrl(titleLink.attr("href"));
+                    } else {
+                        trackName = titleCell != null ? titleCell.text().strip() : null;
+                        trackUrl = null;
+                    }
+                    jaName = null;
+                    labels = new LinkedHashMap<>();
+                    continue;
+                }
+                if (row.selectFirst("td.bigtext") != null) {
+                    jaName = row.select("td.bigtext").text().strip();
+                    continue;
+                }
+                Element labelCell = row.selectFirst("td.label");
+                if (labelCell != null && trackNo != null) {
+                    Elements tds = row.select("> td");
+                    String value = tds.size() > 2 ? tds.get(2).text().strip() : "";
+                    if (StringUtils.hasText(value)) {
+                        labels.put(labelCell.text().strip(), value);
+                    }
+                }
+            }
+        }
+        appendCdTrack(entries, cdName, trackNo, trackName, trackUrl, jaName, duration, labels);
+        return entries;
+    }
+
+    /** 收尾一条 cd_track：曲名为空则跳过。 */
+    private void appendCdTrack(List<OkfIndexEntry> entries, String cdName, String trackNo,
+                               String trackName, String trackUrl, String jaName, String duration,
+                               Map<String, String> labels) {
+        if (!StringUtils.hasText(trackName)) {
+            return;
+        }
+        StringBuilder description = new StringBuilder();
+        if (StringUtils.hasText(cdName)) {
+            description.append("《").append(cdName).append("》");
+        }
+        if (StringUtils.hasText(trackNo)) {
+            description.append("曲目 ").append(trackNo).append("；");
+        }
+        if (StringUtils.hasText(jaName)) {
+            description.append("日文名：").append(jaName).append("；");
+        }
+        if (!labels.isEmpty()) {
+            labels.forEach((label, value) ->
+                    description.append(label).append("：").append(value).append("；"));
+        }
+        String rawJson = rawJson(Map.of("track_no", trackNo == null ? "" : trackNo,
+                "name_ja", jaName == null ? "" : jaName,
+                "duration", duration == null ? "" : duration,
+                "labels", labels));
+        entries.add(new OkfIndexEntry("cd_track", trackName, cdName, trackUrl,
+                description.length() > 0 ? description.toString() : null, rawJson));
+    }
+
+    /** 结构化字段 → raw JSON；序列化失败回落 "{}"。 */
+    private String rawJson(Map<String, ?> fields) {
+        try {
+            return objectMapper.writeValueAsString(fields);
+        } catch (Exception e) {
+            log.warn("Failed to serialize raw fields: {}", e.getMessage());
+            return "{}";
         }
     }
 }

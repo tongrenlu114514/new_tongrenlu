@@ -36,6 +36,28 @@ public class AdminWikiController {
         return job.status();
     }
 
+    /**
+     * 按类型批量重置词条为 PENDING，让生成任务用当前素材源重新生成（「更新」入口）。
+     * 例如原作词条改从官方游戏列表页获取后：
+     * {@code POST /admin/wiki/regenerate?type=original_game}
+     */
+    @PostMapping("/regenerate")
+    public ResponseEntity<Map<String, Object>> regenerate(@RequestParam("type") String type) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            int reset = wikiService.resetTypeToPending(type);
+            response.put("success", true);
+            response.put("type", type);
+            response.put("reset", reset);
+            response.put("message", "已重置 " + reset + " 条词条为 PENDING，等待生成任务处理");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @PostMapping("/trigger")
     public Map<String, Object> trigger() {
         job.trigger();

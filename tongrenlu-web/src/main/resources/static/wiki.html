@@ -352,6 +352,19 @@
         .geo-wiki-desc li::before { content: '—'; position: absolute; left: 0; color: var(--wiki-accent); font-weight: 600; }
         .geo-wiki-desc--empty { color: var(--wiki-muted); font-style: italic; }
 
+        /* OKF description 导语（词条正文前的 LLM 摘要） */
+        .geo-wiki-lead {
+            margin: 0 0 1.1rem;
+            padding: 0.9rem 1.1rem;
+            background: var(--wiki-paper-2);
+            border-left: 4px solid var(--wiki-accent);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 400;
+            line-height: 1.8;
+            color: var(--wiki-ink);
+        }
+
         .geo-wiki-tags { display: flex; flex-wrap: wrap; gap: 0.65rem; }
         .geo-wiki-tag {
             display: inline-flex; align-items: center; gap: 0.45rem;
@@ -435,9 +448,9 @@
         <div class="geo-nav__links">
             <a href="index.html" class="geo-nav__link">首页</a>
             <a href="album.html" class="geo-nav__link">音乐库</a>
-            <a href="wiki.html" id="navWikiAll" class="geo-nav__link active">百科</a>
             <a href="wiki.html?type=artist" id="navWikiArtist" class="geo-nav__link">艺术家</a>
             <a href="wiki.html?type=event" id="navWikiEvent" class="geo-nav__link">展会</a>
+            <a href="wiki.html" id="navWikiAll" class="geo-nav__link active">百科</a>
         </div>
         <div class="geo-nav__stats">
             <span class="geo-nav__number" id="navWikiCount">--</span>
@@ -467,9 +480,11 @@
             <div class="geo-wiki-filter" data-rv>
                 <div class="geo-wiki-filter__inner">
                     <div class="geo-wiki-tabs">
-                        <button class="wiki-type-tab active" data-type="all">全部</button>
+                        <button class="wiki-type-tab active" data-type="all">百科</button>
                         <button class="wiki-type-tab" data-type="artist">艺术家</button>
                         <button class="wiki-type-tab" data-type="event">展会</button>
+                        <button class="wiki-type-tab" data-type="original_game">原作</button>
+                        <button class="wiki-type-tab" data-type="original_track">原曲</button>
                     </div>
                     <div class="geo-wiki-filter__count"><b id="wikiIndexCount">--</b> ENTRIES</div>
                 </div>

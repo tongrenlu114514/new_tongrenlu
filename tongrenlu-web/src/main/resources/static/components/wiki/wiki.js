@@ -41,13 +41,25 @@ function init() {
 }
 
 function normalizeType(value) {
-    return value === 'artist' || value === 'event' ? value : 'all';
+    return value === 'artist' || value === 'event'
+            || value === 'original_game' || value === 'original_track' ? value : 'all';
+}
+
+// 词条类型的图标与中文标签；未知类型回落 tag 图标 + 类型原文
+function typeMeta(type) {
+    switch (type) {
+        case 'artist': return { icon: 'fa-user', label: '艺术家' };
+        case 'event': return { icon: 'fa-calendar-alt', label: '展会' };
+        case 'original_game': return { icon: 'fa-gamepad', label: '原作' };
+        case 'original_track': return { icon: 'fa-music', label: '原曲' };
+        default: return { icon: 'fa-tag', label: type || '词条' };
+    }
 }
 
 function syncTypeTabs(type) {
     $('.wiki-type-tab').removeClass('active')
         .filter('[data-type="' + type + '"]').addClass('active');
-    // 导航高亮跟随类型：全部→百科，艺术家/展会→对应入口
+    // 导航高亮跟随类型：默认（百科视图）→导航「百科」，艺术家/展会→对应入口
     $('#navWikiAll').toggleClass('active', type === 'all');
     $('#navWikiArtist').toggleClass('active', type === 'artist');
     $('#navWikiEvent').toggleClass('active', type === 'event');
@@ -226,8 +238,12 @@ function appendCards(entries) {
 }
 
 function createCard(entry) {
-    const type = entry.type === 'event' ? 'event' : 'artist';
+    const type = entry.type || 'artist';
+    const meta = typeMeta(type);
+    const typeIcon = meta.icon;
+    const typeLabel = meta.label;
     const isEvent = type === 'event';
+    const isArtist = type === 'artist';
     const name = entry.name || '未命名词条';
     const tagId = pickField(entry, 'tagId', 'id');
     const albumCount = pickField(entry, 'albumCount', 'album_count') || 0;
@@ -243,7 +259,7 @@ function createCard(entry) {
     });
 
     const cover = $('<div>', { class: 'wiki-card__cover' });
-    if (!isEvent && coverUrl) {
+    if (isArtist && coverUrl) {
         const optimizedUrl = typeof getOptimizedImageUrl === 'function'
             ? getOptimizedImageUrl(coverUrl, 200, 200)
             : coverUrl;
@@ -252,17 +268,17 @@ function createCard(entry) {
             src: optimizedUrl,
             alt: name,
             loading: 'lazy',
-            onerror: "this.parentElement.innerHTML = '<div class=\"wiki-card__placeholder\"><i class=\"fas fa-user\"></i></div>'"
+            onerror: "this.parentElement.innerHTML = '<div class=\"wiki-card__placeholder\"><i class=\"fas " + typeIcon + "\"></i></div>'"
         }));
     } else {
         cover.append($('<div>', {
             class: 'wiki-card__placeholder',
-            html: isEvent ? '<i class="fas fa-calendar-alt"></i>' : '<i class="fas fa-user"></i>'
+            html: '<i class="fas ' + typeIcon + '"></i>'
         }));
     }
     cover.append($('<span>', {
         class: 'wiki-card__badge',
-        text: isEvent ? '展会' : '艺术家'
+        text: typeLabel
     }));
 
     const info = $('<div>', { class: 'wiki-card__info' });
@@ -358,18 +374,52 @@ function loadDetail(param) {
 }
 
 /**
- * 展会词条的 THBWiki 外链：m_tag 里多为届次名（C91 / 例大祭9 / 東方紅楼夢11），
- * THBWiki 通常只有系列总览页，按系列映射过去；未识别的回落到「活动导航」。
- * 这些页面均已在 THBWiki 上验证有效（Special:Search / index.php?search 会被 WAF 拦成欢迎页，不能用）。
+ * 展会词条的 THBWiki 外链：m_tag 里多为届次/简称（C91 / 例大祭9 / 红8 / 上海CP27），
+ * THBWiki 通常只有系列总览页，按下方别名表映射；未识别的回落到「活动导航」。
+ * 目标页面均已在 THBWiki 上验证有效（Special:Search / index.php?search 会被 WAF 拦成欢迎页，不能用）。
+ * 别名依据 THBWiki 各系列页概述：
+ *   Comic Market = Comiket/Comike/CM/C+届数/コミックマーケット/こみっくまーけっと
+ *   博丽神社例大祭 = 例大祭/RTS/れいたいさい
+ *   COMICUP = 魔都同人祭/CP/上海CP
+ *   魅知幻想博览会 = 魅博
+ *   上海THONLY = 上海TH0X（如 上海TH09）
+ *   东方红楼梦 = 紅楼夢/红楼梦/红X（如 红8）
+ *   M3 = Music Media-Mix Market
  */
 function thbwikiEventUrl(name) {
     const n = String(name || '');
-    if (/^C\d+/i.test(n) || /comic\s*market/i.test(n) || n.includes('コミケ')) {
+    // Comic Market：C+届数 / Comiket / Comike / CM / 假名写法
+    if (/^C\d+/i.test(n)
+            || /comic\s*market|comiket|comike/i.test(n)
+            || /\bCM\d*\b/i.test(n)
+            || /コミ(ケ|ックマーケット)/.test(n)
+            || n.includes('こみっくまーけっと')) {
         return 'https://thbwiki.cc/Comic_Market';
     }
-    if (n.includes('例大祭')) return 'https://thbwiki.cc/博丽神社例大祭';
-    if (n.includes('紅楼夢') || n.includes('红楼梦')) return 'https://thbwiki.cc/东方红楼梦';
-    if (/^M3/i.test(n) || n.includes('M3')) return 'https://thbwiki.cc/M3';
+    // COMICUP（魔都同人祭）：CP / 上海CP
+    if (/comicup/i.test(n) || n.includes('魔都同人祭') || /\bCP\d*\b/i.test(n)) {
+        return 'https://thbwiki.cc/COMICUP';
+    }
+    // 魅知幻想博览会：魅博
+    if (n.includes('魅知') || n.includes('魅博')) {
+        return 'https://thbwiki.cc/魅知幻想博览会';
+    }
+    // 上海THONLY：上海TH0X
+    if (/th\s*only/i.test(n) || /上海\s*TH\d+/i.test(n)) {
+        return 'https://thbwiki.cc/上海THONLY';
+    }
+    // 博丽神社例大祭：例大祭 / RTS
+    if (n.includes('例大祭') || n.includes('れいたいさい') || /\bRTS\b/i.test(n)) {
+        return 'https://thbwiki.cc/博丽神社例大祭';
+    }
+    // 东方红楼梦：紅楼夢 / 红+届数
+    if (n.includes('紅楼夢') || n.includes('红楼梦') || n.includes('こうろうむ') || /红\d/.test(n)) {
+        return 'https://thbwiki.cc/东方红楼梦';
+    }
+    // M3：M3 / Music Media-Mix Market
+    if (/^M3/i.test(n) || n.includes('M3') || /music\s*media-mix\s*market/i.test(n)) {
+        return 'https://thbwiki.cc/M3';
+    }
     return 'https://thbwiki.cc/活动导航';
 }
 
@@ -379,8 +429,12 @@ function renderDetail(entry) {
     $('#wikiDetailContent').show();
 
     const name = entry.name || '--';
-    const type = entry.type === 'event' ? 'event' : 'artist';
+    const type = entry.type || 'artist';
     const isEvent = type === 'event';
+    const isArtist = type === 'artist';
+    const meta = typeMeta(type);
+    const typeIcon = meta.icon;
+    const typeLabel = meta.label + '词条';
     const coverUrl = pickField(entry, 'coverUrl', 'cloud_music_pic_url');
     const albumCount = pickField(entry, 'albumCount', 'album_count') || 0;
     const cloudMusicId = pickField(entry, 'cloudMusicId', 'cloud_music_id');
@@ -394,19 +448,19 @@ function renderDetail(entry) {
     // 头像
     const avatar = $('#wikiHeroAvatar');
     avatar.empty();
-    if (!isEvent && coverUrl) {
+    if (isArtist && coverUrl) {
         const optimizedUrl = typeof getOptimizedImageUrl === 'function'
             ? getOptimizedImageUrl(coverUrl, 300, 300)
             : coverUrl;
         avatar.append($('<img>', {
             src: optimizedUrl,
             alt: name,
-            onerror: "this.parentElement.innerHTML = '<div class=\"wiki-card__placeholder\"><i class=\"fas fa-user\"></i></div>'"
+            onerror: "this.parentElement.innerHTML = '<div class=\"wiki-card__placeholder\"><i class=\"fas " + typeIcon + "\"></i></div>'"
         }));
     } else {
         avatar.append($('<div>', {
             class: 'wiki-card__placeholder',
-            html: isEvent ? '<i class="fas fa-calendar-alt"></i>' : '<i class="fas fa-user"></i>'
+            html: '<i class="fas ' + typeIcon + '"></i>'
         }));
     }
 
@@ -416,7 +470,7 @@ function renderDetail(entry) {
     stats.empty();
     stats.append($('<span>', {
         class: 'geo-wiki-stat geo-wiki-stat--accent',
-        html: '<i class="fas ' + (isEvent ? 'fa-calendar-alt' : 'fa-user') + '"></i> ' + (isEvent ? '展会词条' : '艺术家词条')
+        html: '<i class="fas ' + typeIcon + '"></i> ' + typeLabel
     }));
     stats.append($('<span>', {
         class: 'geo-wiki-stat',
@@ -432,7 +486,7 @@ function renderDetail(entry) {
             html: '<i class="fas fa-book"></i> THBWiki'
         }));
     }
-    if (!isEvent && cloudMusicId) {
+    if (isArtist && cloudMusicId) {
         links.append($('<a>', {
             class: 'geo-wiki-link', href: 'https://music.163.com/#/artist?id=' + cloudMusicId,
             target: '_blank', rel: 'noopener',
@@ -440,13 +494,17 @@ function renderDetail(entry) {
         }));
     }
 
-    // 正文：词条内容优先，回落简介
+    // 正文：词条内容优先，回落简介；OKF description（LLM 摘要）作为导语
+    const okfDescription = entry.okfDescription;
     const desc = $('#wikiDesc');
     desc.removeClass('geo-wiki-desc--empty');
+    const lead = okfDescription && String(okfDescription).trim()
+        ? '<p class="geo-wiki-lead">' + escapeHtml(String(okfDescription)) + '</p>'
+        : '';
     if (wikiContent && String(wikiContent).trim()) {
-        desc.html(renderMarkdown(String(wikiContent)));
+        desc.html(lead + renderMarkdown(String(wikiContent)));
     } else if (description && String(description).trim()) {
-        desc.html(renderMarkdown(String(description)));
+        desc.html(lead + renderMarkdown(String(description)));
     } else {
         desc.addClass('geo-wiki-desc--empty');
         desc.text('暂无词条内容');

@@ -9,7 +9,6 @@ import info.tongrenlu.service.WikiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,9 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Wiki 词条统一批量生成任务：每轮从 m_tag 中取一批 wiki_status='PENDING' 的词条
- * （artist + event，wiki.batch-limit 默认 2），依次执行素材抓取 → LLM 生成 → 入库。
- * 取代原 ArtistWikiGenerateJob，全模块只保留这一个调度任务。
+ * 【已废弃调度】m_tag 侧词条生成任务——生成管线已切换到 OKF 表
+ * （{@link OkfGenerateJob} + /admin/okf/generate/*），本类不再定时执行；
+ * 仅保留手动 trigger 兼容（/admin/wiki/trigger），新内容全部写入 m_okf_entry。
  */
 @Component
 @Slf4j
@@ -45,10 +44,11 @@ public class WikiGenerateJob {
 
     private static final int PAGE_SIZE = 50;
 
-    @Scheduled(fixedDelay = 120, initialDelay = 60, timeUnit = TimeUnit.SECONDS)
-    public void runScheduledCycle() {
-        runCycle();
-    }
+    /** 调度已移除：生成管线切换到 OkfGenerateJob（m_okf_entry）。手动触发保留。 */
+    // @Scheduled(fixedDelay = 120, initialDelay = 60, timeUnit = TimeUnit.SECONDS)
+    // public void runScheduledCycle() {
+    //     runCycle();
+    // }
 
     public void runCycle() {
         if (paused.get()) {
@@ -108,7 +108,8 @@ public class WikiGenerateJob {
     private LambdaQueryWrapper<TagBean> pendingWrapper() {
         return new LambdaQueryWrapper<TagBean>()
                 .eq(TagBean::getWikiStatus, WikiStatus.PENDING.name())
-                .in(TagBean::getType, WikiService.TYPE_ARTIST, WikiService.TYPE_EVENT)
+                .in(TagBean::getType, WikiService.TYPE_ARTIST, WikiService.TYPE_EVENT,
+                        WikiService.TYPE_ORIGINAL_GAME, WikiService.TYPE_ORIGINAL_TRACK)
                 .eq(TagBean::getDelFlg, "0")
                 .orderByAsc(TagBean::getId);
     }
@@ -138,6 +139,14 @@ public class WikiGenerateJob {
                 .eq(TagBean::getWikiStatus, WikiStatus.PENDING.name())
                 .eq(TagBean::getType, WikiService.TYPE_EVENT)
                 .eq(TagBean::getDelFlg, "0"));
+        long originalGameRemaining = tagMapper.selectCount(new LambdaQueryWrapper<TagBean>()
+                .eq(TagBean::getWikiStatus, WikiStatus.PENDING.name())
+                .eq(TagBean::getType, WikiService.TYPE_ORIGINAL_GAME)
+                .eq(TagBean::getDelFlg, "0"));
+        long originalTrackRemaining = tagMapper.selectCount(new LambdaQueryWrapper<TagBean>()
+                .eq(TagBean::getWikiStatus, WikiStatus.PENDING.name())
+                .eq(TagBean::getType, WikiService.TYPE_ORIGINAL_TRACK)
+                .eq(TagBean::getDelFlg, "0"));
         return new JobStatus(
                 currentPhase.get(),
                 lastName.get(),
@@ -146,7 +155,9 @@ public class WikiGenerateJob {
                 currentPage,
                 totalRemaining,
                 artistRemaining,
-                eventRemaining
+                eventRemaining,
+                originalGameRemaining,
+                originalTrackRemaining
         );
     }
 
@@ -158,6 +169,8 @@ public class WikiGenerateJob {
             int currentPage,
             long totalRemaining,
             long artistRemaining,
-            long eventRemaining
+            long eventRemaining,
+            long originalGameRemaining,
+            long originalTrackRemaining
     ) {}
 }
