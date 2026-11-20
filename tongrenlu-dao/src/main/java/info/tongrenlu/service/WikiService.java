@@ -7,9 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import info.tongrenlu.domain.ArtistBean;
 import info.tongrenlu.domain.TagBean;
 import info.tongrenlu.enums.WikiStatus;
-import info.tongrenlu.domain.OkfEntryBean;
 import info.tongrenlu.mapper.ArtistMapper;
-import info.tongrenlu.mapper.OkfEntryMapper;
 import info.tongrenlu.mapper.TagMapper;
 import info.tongrenlu.mapper.WikiMapper;
 import info.tongrenlu.model.ThbwikiAlbum;
@@ -81,7 +79,6 @@ public class WikiService {
     private final WikiMapper wikiMapper;
     private final TagMapper tagMapper;
     private final ArtistMapper artistMapper;
-    private final OkfEntryMapper okfEntryMapper;
     private final ObjectMapper objectMapper;
 
     /** 互联标签：命中现有词条的带 tagId / artistId，未命中的为 style。 */
@@ -335,7 +332,6 @@ public class WikiService {
     }
 
     private void saveResult(TagBean tag, String description, String content, String tags, String sourceUrl, WikiStatus status) {
-        tag.setOkfDescription(description);
         tag.setWikiContent(content);
         tag.setWikiTags(tags);
         tag.setWikiSourceUrl(sourceUrl);
@@ -360,159 +356,6 @@ public class WikiService {
                 .eq(TagBean::getDelFlg, "0")
                 .set(TagBean::getWikiStatus, WikiStatus.PENDING.name())
                 .set(TagBean::getWikiUpdDate, new Date()));
-    }
-
-    // ==================== OKF（Open Knowledge Format）导出 ====================
-
-    /**
-     * 单词条 → OKF 概念文档（YAML frontmatter + markdown 正文）。
-     * frontmatter：type（词条类型）/ title（词条名）/ description / resource（THBWiki 素材页）/
-     * tags / timestamp。type 或词条不存在时返回 null。
-     */
-    public String okfDocument(String type, Long tagId) {
-        Map<String, Object> detail = getDetail(tagId, null);
-        if (detail == null || !type.equals(String.valueOf(detail.get("type")))) {
-            return null;
-        }
-        return toOkfDocument(detail);
-    }
-
-    /**
-     * OKF bundle 索引（index.md）：根文件声明 okf_version，按类型分组的标题 + 链接列表
-     * （渐进披露）。OKF v0.2 §8。
-     */
-    public String okfIndex() {
-        List<Map<String, Object>> entries = wikiMapper.listOkfEntries();
-        StringBuilder md = new StringBuilder("---\nokf_version: \"0.2\"\n---\n\n");
-        md.append("# 同人百科 OKF Bundle\n\n");
-        md.append("东方同人录 wiki 词条的 OKF 概念文档索引；文档路径即概念 ID（如 `artist/123`）。\n\n");
-        String lastType = null;
-        for (Map<String, Object> entry : entries) {
-            String type = String.valueOf(entry.get("type"));
-            if (!type.equals(lastType)) {
-                md.append("## ").append(type).append('\n');
-                lastType = type;
-            }
-            String name = String.valueOf(entry.get("name")).replace("[", "\\[").replace("]", "\\]");
-            md.append("- [").append(name).append("](").append(type).append('/')
-                    .append(entry.get("tagId")).append(".md)");
-            Object description = entry.get("okfDescription");
-            if (description != null && StringUtils.hasText(description.toString())) {
-                md.append(" — ").append(description.toString().replace('\n', ' '));
-            }
-            md.append('\n');
-        }
-        return md.toString();
-    }
-
-    /**
-     * OKF 保留文件 log.md：按 ISO 日期倒序分组的词条变更记录（OKF v0.2 §9）。
-     */
-    public String okfLog() {
-        List<Map<String, Object>> entries = wikiMapper.listOkfEntries();
-        Map<String, List<Map<String, Object>>> byDate = new LinkedHashMap<>();
-        List<Map<String, Object>> undated = new ArrayList<>();
-        for (Map<String, Object> entry : entries) {
-            if (entry.get("wikiUpdDate") instanceof java.util.Date d) {
-                byDate.computeIfAbsent(
-                        d.toInstant().atZone(java.time.ZoneOffset.UTC).toLocalDate().toString(),
-                        k -> new ArrayList<>()).add(entry);
-            } else {
-                undated.add(entry);
-            }
-        }
-
-        StringBuilder md = new StringBuilder("# 变更日志\n\n");
-        byDate.entrySet().stream()
-                .sorted(Map.Entry.<String, List<Map<String, Object>>>comparingByKey().reversed())
-                .forEach(day -> {
-                    md.append("## ").append(day.getKey()).append('\n');
-                    day.getValue().forEach(entry -> md.append("- ").append(logEntry(entry)).append('\n'));
-                    md.append('\n');
-                });
-        if (!undated.isEmpty()) {
-            md.append("## 未记录日期\n");
-            undated.forEach(entry -> md.append("- ").append(logEntry(entry)).append('\n'));
-        }
-        return md.toString();
-    }
-
-    private String logEntry(Map<String, Object> entry) {
-        String name = String.valueOf(entry.get("name")).replace("[", "\\[").replace("]", "\\]");
-        return "[" + name + "](" + entry.get("type") + "/" + entry.get("tagId") + ".md) — "
-                + entry.get("wikiStatus");
-    }
-
-    /**
-     * 词条详情 → OKF v0.2 概念文档（YAML frontmatter + markdown 正文）。
-     * 字段：type/title/description/resource/tags（v0.1 基础族）+ status/generated/sources
-     * （v0.2 trust 族）。generated.by 记录生成管线身份（agent/tongrenlu-wiki/1.0）。
-     */
-    String toOkfDocument(Map<String, Object> detail) {
-        String type = String.valueOf(detail.getOrDefault("type", "concept"));
-        String title = String.valueOf(detail.getOrDefault("name", ""));
-        StringBuilder md = new StringBuilder("---\n");
-        md.append("type: ").append(yamlScalar(type)).append('\n');
-        md.append("title: ").append(yamlScalar(title)).append('\n');
-        Object description = detail.get("okfDescription");
-        if (description != null && StringUtils.hasText(description.toString())) {
-            md.append("description: ").append(yamlScalar(description.toString())).append('\n');
-        }
-        Object resource = detail.get("wikiSourceUrl");
-        if (resource != null && StringUtils.hasText(resource.toString())) {
-            md.append("resource: ").append(yamlScalar(resource.toString())).append('\n');
-        }
-        if (detail.get("wikiTags") instanceof List<?> tags && !tags.isEmpty()) {
-            md.append("tags:\n");
-            for (Object tag : tags) {
-                if (tag instanceof Map<?, ?> tagMap && tagMap.get("tag") != null
-                        && StringUtils.hasText(tagMap.get("tag").toString())) {
-                    md.append("  - ").append(yamlScalar(tagMap.get("tag").toString())).append('\n');
-                }
-            }
-        }
-        // v0.2 lifecycle：GENERATED → stable，其余 → draft（缺省即 stable，但显式更利于 agent 过滤）
-        md.append("status: ").append(yamlScalar(
-                WikiStatus.GENERATED.name().equals(String.valueOf(detail.get("wikiStatus")))
-                        ? "stable" : "draft")).append('\n');
-        // v0.2 provenance：generated 取代 v0.1 timestamp，by 记录生产者身份
-        if (detail.get("wikiUpdDate") instanceof java.util.Date upd) {
-            md.append("generated: { by: ").append(yamlScalar("agent/tongrenlu-wiki/1.0"))
-                    .append(", at: ").append(yamlScalar(upd.toInstant().toString())).append(" }\n");
-        }
-        // v0.2 provenance：概念来源素材页（resource 必填；无素材页则省略整个 sources 族）。
-        // artist 类额外补网易云音乐艺人描述页（信息来源之二）。
-        boolean hasThbSource = resource != null && StringUtils.hasText(resource.toString());
-        boolean hasNeteaseSource = "artist".equals(type)
-                && detail.get("cloudMusicId") != null
-                && StringUtils.hasText(String.valueOf(detail.get("cloudMusicId")));
-        if (hasThbSource || hasNeteaseSource) {
-            md.append("sources:\n");
-            if (hasThbSource) {
-                md.append("  - id: ").append(yamlScalar("thbwiki")).append('\n');
-                md.append("    resource: ").append(yamlScalar(resource.toString())).append('\n');
-                md.append("    title: ").append(yamlScalar("THBWiki 素材页")).append('\n');
-            }
-            if (hasNeteaseSource) {
-                md.append("  - id: ").append(yamlScalar("netease-desc")).append('\n');
-                md.append("    resource: ").append(yamlScalar(
-                        "https://music.163.com/#/artist/desc?id=" + detail.get("cloudMusicId"))).append('\n');
-                md.append("    title: ").append(yamlScalar("网易云音乐艺人描述")).append('\n');
-            }
-        }
-        md.append("---\n\n");
-        Object content = detail.get("wikiContent");
-        if (content != null && StringUtils.hasText(content.toString())) {
-            md.append(content.toString().strip()).append('\n');
-        } else {
-            md.append("# ").append(title).append("\n\n暂无词条内容。\n");
-        }
-        return md.toString();
-    }
-
-    /** YAML 双引号标量：转义反斜杠 / 双引号 / 换行。 */
-    private String yamlScalar(String value) {
-        return '"' + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + '"';
     }
 
     /**
@@ -679,34 +522,10 @@ public class WikiService {
             return null;
         }
         detail.put("wikiTags", parseTags((String) detail.get("wikiTags")));
-        // 并行期过渡桥：m_tag 词条无内容时回落 OKF 表（读路径切换前的桥，读不改写）
-        fallBackToOkf(detail);
         return detail;
     }
 
-    /** m_tag 词条缺内容/摘要/来源时，从同名 OKF 条目补齐 detail（只补空字段，不落库）。 */
-    private void fallBackToOkf(Map<String, Object> detail) {
-        if (StringUtils.hasText((String) detail.get("wikiContent"))) {
-            return;
-        }
-        String type = String.valueOf(detail.get("type"));
-        String name = String.valueOf(detail.get("name"));
-        OkfEntryBean okf = okfEntryMapper.findByTypeAndName(type, name);
-        if (okf == null) {
-            return;
-        }
-        if (!StringUtils.hasText((String) detail.get("wikiContent")) && StringUtils.hasText(okf.getContent())) {
-            detail.put("wikiContent", okf.getContent());
-        }
-        if (!StringUtils.hasText((String) detail.get("okfDescription")) && StringUtils.hasText(okf.getDescription())) {
-            detail.put("okfDescription", okf.getDescription());
-        }
-        if (!StringUtils.hasText((String) detail.get("wikiSourceUrl")) && StringUtils.hasText(okf.getSourceUrl())) {
-            detail.put("wikiSourceUrl", okf.getSourceUrl());
-        }
-    }
-
-    /** 轻量读取词条字段（不带专辑统计）；content 为空时回落 OKF 表（并行期过渡桥）。 */
+    /** 轻量读取词条字段（不带专辑统计）。 */
     public WikiFields getWikiFields(Long tagId) {
         if (tagId == null) {
             return new WikiFields(null, List.of(), null, null);
@@ -716,16 +535,6 @@ public class WikiService {
             return new WikiFields(null, List.of(), null, null);
         }
         String content = (String) fields.get("content");
-        if (!StringUtils.hasText(content)) {
-            TagBean tag = tagMapper.selectById(tagId);
-            if (tag != null) {
-                OkfEntryBean okf = okfEntryMapper.findByTypeAndName(
-                        String.valueOf(tag.getType()), String.valueOf(tag.getTag()));
-                if (okf != null && StringUtils.hasText(okf.getContent())) {
-                    content = okf.getContent();
-                }
-            }
-        }
         return new WikiFields(
                 content,
                 parseTags((String) fields.get("tags")),

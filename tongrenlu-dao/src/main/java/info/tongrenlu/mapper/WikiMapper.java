@@ -79,7 +79,6 @@ public interface WikiMapper {
     /** 词条详情（含正文、标签、来源、artist 附加信息）。 */
     @Select("""
         SELECT t.id AS tagId, t.tag AS name, t.type, t.text,
-               t.okf_description AS okfDescription,
                t.wiki_content AS wikiContent, t.wiki_tags AS wikiTags,
                t.wiki_source_url AS wikiSourceUrl, t.wiki_status AS wikiStatus,
                t.wiki_upd_date AS wikiUpdDate,
@@ -141,22 +140,6 @@ public interface WikiMapper {
         ORDER BY id ASC LIMIT 1
         """)
     Long selectTagIdByName(@Param("name") String name);
-
-    /**
-     * OKF 导出清单：全部 wiki 词条的轻量字段（不取正文/大字段）。
-     * 与 WikiService 的 4 个词条类型保持一致。
-     */
-    @Select("""
-        SELECT t.id AS tagId, t.tag AS name, t.type,
-               t.okf_description AS okfDescription,
-               t.wiki_status AS wikiStatus,
-               t.wiki_upd_date AS wikiUpdDate
-        FROM m_tag t
-        WHERE t.del_flg = '0'
-          AND t.type IN ('artist', 'event', 'original_game', 'original_track')
-        ORDER BY t.type, t.tag
-        """)
-    List<Map<String, Object>> listOkfEntries();
 
     /**
      * 旧 artist-wiki.html?name= 深链回退：按 m_artist.name 找到关联词条。

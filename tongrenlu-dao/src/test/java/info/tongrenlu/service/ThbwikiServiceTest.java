@@ -182,68 +182,6 @@ class ThbwikiServiceTest {
         verify(httpClient, times(1)).execute(any(String.class));
     }
 
-    @Test
-    @DisplayName("parseTrackListIndex：仅游戏分组产出 original_game + game_track")
-    void parseTrackListIndexParsesGamesOnly() {
-        String html = """
-                <html><body><div id="mw-content-text">
-                <h3><span class="mw-headline" id="游戏">游戏</span></h3>
-                <h4><span class="mw-headline">东方灵异传</span></h4>
-                <table class="wikitable sortable"><tbody>
-                <tr><th colspan="5"><a href="/%E4%B8%9C%E6%96%B9%E7%81%B5%E5%BC%82%E4%BC%A0" title="东方灵异传">东方灵异传</a>原曲列表</th></tr>
-                <tr><th>序号</th><th>曲目编号</th><th>中文名</th><th>日文名</th><th>英文名</th></tr>
-                <tr><td>1</td><td>1</td><td><a href="/A_Sacred_Lot" title="A Sacred Lot">A Sacred Lot</a></td><td><span lang="ja">A Sacred Lot</span></td><td><span lang="en">A Sacred Lot</span></td></tr>
-                <tr><th colspan="5">共1首原曲</th></tr>
-                </tbody></table>
-                <h3><span class="mw-headline" id="CD.2F.E5.90.88.E9.9B.86">CD/合集</span></h3>
-                <h4><span class="mw-headline">蓬莱人形</span></h4>
-                <table class="wikitable sortable"><tbody>
-                <tr><th colspan="5"><a href="/%E8%93%AC%E8%8E%B1%E4%BA%BA%E5%BD%A2">蓬莱人形</a>原曲列表</th></tr>
-                <tr><td>1</td><td>1</td><td><a href="/%E8%93%AC%E8%8E%B1%E4%BC%A0%E8%AF%B4">蓬莱传说</a></td><td><span lang="ja">蓬莱伝説</span></td><td><span lang="en">Legend</span></td></tr>
-                </tbody></table>
-                </div></body></html>
-                """;
-
-        List<ThbwikiService.OkfIndexEntry> entries = service.parseTrackListIndex(html);
-
-        assertThat(entries).extracting(ThbwikiService.OkfIndexEntry::type)
-                .containsExactly("original_game", "game_track");
-        var game = entries.get(0);
-        assertThat(game.name()).isEqualTo("东方灵异传");
-        assertThat(game.sourceUrl()).isEqualTo("https://thbwiki.cc/%E4%B8%9C%E6%96%B9%E7%81%B5%E5%BC%82%E4%BC%A0");
-        var track = entries.get(1);
-        assertThat(track.name()).isEqualTo("A Sacred Lot");
-        assertThat(track.game()).isEqualTo("东方灵异传");
-        assertThat(track.sourceUrl()).isEqualTo("https://thbwiki.cc/A_Sacred_Lot");
-        assertThat(track.description()).contains("曲目编号 1").contains("日文名");
-    }
-
-    @Test
-    @DisplayName("parseCdTrackIndex：主行+bigtext+label 行合并为一条 cd_track")
-    void parseCdTrackIndexMergesRows() {
-        String html = """
-                <html><body><div id="mw-content-text">
-                <h3><span class="mw-headline" id="蓬莱人形">蓬莱人形</span></h3>
-                <table class="musicTable"><tbody>
-                <tr><td class="infoYD"><b>01</b></td><td colspan="2" class="title"><a href="/%E8%93%AC%E8%8E%B1%E4%BC%A0%E8%AF%B4" title="蓬莱传说">蓬莱传说</a></td><td class="time">03:43</td></tr>
-                <tr><td class="left"></td><td colspan="3" class="bigtext">蓬莱伝説</td></tr>
-                <tr><td class="left"></td><td class="label">作曲</td><td colspan="2" class="text">ZUN</td></tr>
-                </tbody></table>
-                </div></body></html>
-                """;
-
-        List<ThbwikiService.OkfIndexEntry> entries = service.parseCdTrackIndex(html);
-
-        assertThat(entries).hasSize(1);
-        var track = entries.get(0);
-        assertThat(track.type()).isEqualTo("cd_track");
-        assertThat(track.name()).isEqualTo("蓬莱传说");
-        assertThat(track.game()).isEqualTo("蓬莱人形");
-        assertThat(track.sourceUrl()).isEqualTo("https://thbwiki.cc/%E8%93%AC%E8%8E%B1%E4%BC%A0%E8%AF%B4");
-        assertThat(track.description()).contains("《蓬莱人形》").contains("曲目 01")
-                .contains("日文名：蓬莱伝説").contains("作曲：ZUN");
-    }
-
     private Document readFixture(String name) throws Exception {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream(name)) {
             assertThat(in).as("test fixture " + name).isNotNull();
