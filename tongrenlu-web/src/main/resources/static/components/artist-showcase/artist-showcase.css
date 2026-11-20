@@ -39,11 +39,6 @@
     opacity: 0.4;
 }
 
-/* 列表计数靠右：本页没有类型标签页，只有计数一个子项 */
-.geo-wiki-filter__inner .geo-wiki-filter__count {
-    margin-left: auto;
-}
-
 /* 正文来源提示（词条正文为空、回退到艺人简介时） */
 .artist-note {
     font-family: 'Outfit', 'Noto Sans SC', sans-serif;
@@ -65,4 +60,15 @@
     font-family: 'Outfit', 'Noto Sans SC', sans-serif;
     font-size: 0.85rem;
     letter-spacing: 0.08em;
+}
+
+/* 列表分页：与音乐库、展会同一套组件，外边距对齐网格 */
+#artistPagination {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--ws-m) 2rem var(--ws-xl);
+}
+
+@media (max-width: 600px) {
+    #artistPagination { padding: var(--ws-s) 1.25rem var(--ws-l); }
 }

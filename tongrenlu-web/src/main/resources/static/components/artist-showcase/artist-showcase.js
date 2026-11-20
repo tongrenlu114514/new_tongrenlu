@@ -5,9 +5,9 @@
 // ===== 列表状态 =====
 let listKeyword = '';
 let listPage = 1;
+let listOrder = 'album_count'; // 列表排序：album_count | name
 let listLoading = false;
-let listHasMore = true;
-const LIST_PAGE_SIZE = 30;
+const LIST_PAGE_SIZE = 10; // 桌面五列时正好两行；翻页更好扫
 
 // ===== 详情状态（专辑为服务端分页）=====
 let currentArtistId = null;
@@ -25,11 +25,18 @@ $(function() {
 function init() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    const keyword = params.get('keyword');
 
-    if (keyword) {
-        listKeyword = keyword;
-        $('#artistSearchInput').val(keyword);
+    // 从地址栏恢复上一次的搜索词 / 排序 / 页码
+    const saved = window.TongrenluListState
+        ? window.TongrenluListState.read({ keyword: '', sort: 'album_count', filter: '', page: 1 })
+        : { keyword: params.get('keyword') || '', sort: 'album_count', page: 1 };
+
+    listKeyword = saved.keyword || '';
+    listOrder = saved.sort === 'name' ? 'name' : 'album_count';
+    listPage = saved.page || 1;
+
+    if (listKeyword) {
+        $('#artistSearchInput').val(listKeyword);
         $('#artistSearchClear').addClass('visible');
     }
 
@@ -42,9 +49,35 @@ function init() {
     }
 
     initSearch();
-    initScrollLoad();
+    initSort();
     initDetailEvents();
     initHistory();
+}
+
+// ===== 列表排序：宽屏按钮 / 窄屏下拉 =====
+function applyListSort(order, reload) {
+    listOrder = order === 'name' ? 'name' : 'album_count';
+    $('.sort-btn').removeClass('active').attr('aria-pressed', 'false')
+        .filter('[data-sort="' + listOrder + '"]').addClass('active').attr('aria-pressed', 'true');
+    $('#artistSortSelect').val(listOrder);
+    if (reload) {
+        listPage = 1;
+        loadArtists(1, false);
+    }
+}
+
+function initSort() {
+    $('.geo-sort').on('click', '.sort-btn', function() {
+        const value = $(this).data('sort');
+        if (!value || value === listOrder) return;
+        applyListSort(value, true);
+    });
+
+    $('#artistSortSelect').on('change', function() {
+        applyListSort($(this).val(), true);
+    });
+
+    applyListSort(listOrder, false);
 }
 
 // ===== 动效（渐进增强）=====
@@ -75,12 +108,33 @@ function playDetailEnter() {
 }
 
 // ===== 路由 =====
+// 列表状态（搜索词 / 排序 / 页码）由 list-state 统一拼成查询串，
+// 列表 URL 与详情深链共用同一份规则，从详情返回才能回到同一屏
+const LIST_STATE_DEFAULTS = { keyword: '', sort: 'album_count', filter: '', page: 1 };
+
+function listState() {
+    return {
+        keyword: listKeyword,
+        sort: listOrder,
+        filter: '',
+        page: listPage
+    };
+}
+
+function listQuery() {
+    return window.TongrenluListState
+        ? window.TongrenluListState.toQuery(listState(), LIST_STATE_DEFAULTS)
+        : '';
+}
+
 function listUrl() {
-    return 'artist-showcase.html';
+    const query = listQuery();
+    return 'artist-showcase.html' + (query ? '?' + query : '');
 }
 
 function detailUrl(id) {
-    return 'artist-showcase.html?id=' + encodeURIComponent(id);
+    const query = listQuery();
+    return 'artist-showcase.html?id=' + encodeURIComponent(id) + (query ? '&' + query : '');
 }
 
 function showList(pushState = true) {
@@ -93,9 +147,7 @@ function showList(pushState = true) {
     }
 
     if ($('#artistGrid').children().length === 0 && !listLoading) {
-        listPage = 1;
-        listHasMore = true;
-        loadArtists(1, false);
+        loadArtists(listPage, false);
     }
 }
 
@@ -128,6 +180,27 @@ function initHistory() {
 }
 
 // ===== 列表 =====
+// 列表分页：与音乐库 / 展会共用同一套分页组件
+// 翻页后等新数据落地再滚回列表顶部（加载期间列表会先隐藏，立即滚会滚到页首）
+let pendingListScroll = false;
+
+function renderListPagination(page, totalPages, total) {
+    const mount = document.getElementById('artistPagination');
+    if (!mount) return;
+
+    TongrenluPagination.render(mount, {
+        page: page,
+        totalPages: totalPages,
+        total: total,
+        unit: '位',
+        jump: true,
+        onPage: function(next) {
+            pendingListScroll = true;
+            loadArtists(next, false);
+        }
+    });
+}
+
 function loadArtists(page, append) {
     if (listLoading) return;
     listLoading = true;
@@ -144,7 +217,8 @@ function loadArtists(page, append) {
         data: {
             keyword: listKeyword || null,
             page: page,
-            limit: LIST_PAGE_SIZE
+            limit: LIST_PAGE_SIZE,
+            orderBy: listOrder
         },
         dataType: 'json',
         success: function(data) {
@@ -152,20 +226,42 @@ function loadArtists(page, append) {
             const total = data.total || 0;
             const totalPages = data.totalPages || 1;
 
+            // 地址栏里的页码可能已经超出范围（换了搜索词后），退到最后一页
+            if (page > totalPages) {
+                listLoading = false;
+                loadArtists(totalPages, false);
+                return;
+            }
+
             $('#navArtistCount').text(total);
-            $('#artistListCount').text(total);
 
             listPage = page;
-            listHasMore = page < totalPages;
 
-            if (append) {
-                appendCards(records);
-            } else {
-                renderCards(records);
+            // 搜索词 / 排序 / 页码写进地址栏
+            if (window.TongrenluListState) {
+                window.TongrenluListState.write(
+                    { keyword: listKeyword, sort: listOrder, filter: '', page: page },
+                    LIST_STATE_DEFAULTS
+                );
             }
+
+            renderCards(records);
+            renderListPagination(page, totalPages, total);
 
             $('#artistLoading').hide();
             $('#artistGrid').show();
+
+            // 列表显示出来之后再滚，否则 scrollIntoView 量到的是隐藏元素（页面顶部）
+            if (pendingListScroll) {
+                pendingListScroll = false;
+                const grid = document.getElementById('artistGrid');
+                if (grid) {
+                    grid.scrollIntoView({
+                        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                        block: 'start'
+                    });
+                }
+            }
             if (records.length === 0 && page === 1) {
                 $('#artistEmpty').show();
             }
@@ -215,6 +311,57 @@ function appendCards(records) {
     });
 }
 
+// 网易云默认艺人头像（站点上大量艺术家共用同一张），用它或空图时改为按名字生成封面
+const DEFAULT_ARTIST_PIC = '5639395138885805';
+
+function isDefaultArtistCover(url) {
+    return !url || String(url).indexOf(DEFAULT_ARTIST_PIC) >= 0;
+}
+
+// 生成封面直接写完整名字；长度分档决定字号，太长的靠行数截断
+function coverLengthBucket(name) {
+    const len = Array.from(String(name || '').trim()).length;
+    if (len <= 5) return '1';
+    if (len <= 10) return '2';
+    if (len <= 18) return '3';
+    return '4';
+}
+
+// 同一名字永远得到同一张封面：哈希拆出配色 / 位置 / 字号三组随机量
+function coverHash(name) {
+    let hash = 2166136261;
+    for (const ch of String(name || '')) {
+        hash ^= ch.codePointAt(0);
+        hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    return hash >>> 0;
+}
+
+// 三套配色 × 四种画面处理，全部由名字哈希决定
+function coverVariation(name) {
+    const hash = coverHash(name);
+    return {
+        scheme: ['bw', 'wb', 'br'][hash % 3],                        // 黑底白 / 白底黑 / 黑底红
+        fx: ['none', 'noise', 'blur', 'sharpen'][Math.floor(hash / 3) % 4],
+        scale: ['0.9', '1', '1.1'][Math.floor(hash / 48) % 3]
+    };
+}
+
+function generatedCover(name, extraClass) {
+    const label = String(name || '').trim() || '?';
+    const variation = coverVariation(label);
+
+    return $('<div>', {
+        class: 'wiki-card__generated' + (extraClass ? ' ' + extraClass : ''),
+        'aria-hidden': 'true'
+    })
+        .attr('data-scheme', variation.scheme)
+        .attr('data-fx', variation.fx)
+        .attr('data-len', coverLengthBucket(label))
+        .css('--gen-scale', variation.scale)
+        .append($('<span>', { class: 'wiki-card__generated-text', text: label }));
+}
+
 function createCard(artist) {
     const name = artist.name || '未命名艺术家';
     const artistId = artist.id;
@@ -230,22 +377,22 @@ function createCard(artist) {
     });
 
     const cover = $('<div>', { class: 'wiki-card__cover' });
-    if (coverUrl) {
+    if (!isDefaultArtistCover(coverUrl)) {
         const optimizedUrl = typeof getOptimizedImageUrl === 'function'
             ? getOptimizedImageUrl(coverUrl, 200, 200)
             : coverUrl;
-        cover.append($('<img>', {
+        const img = $('<img>', {
             class: 'wiki-card__image',
             src: optimizedUrl,
             alt: name,
-            loading: 'lazy',
-            onerror: "this.parentElement.innerHTML = '<div class=\"wiki-card__placeholder\"><i class=\"fas fa-user\"></i></div>'"
-        }));
+            loading: 'lazy'
+        });
+        img.on('error', function () {
+            $(this).parent().empty().append(generatedCover(name));
+        });
+        cover.append(img);
     } else {
-        cover.append($('<div>', {
-            class: 'wiki-card__placeholder',
-            html: '<i class="fas fa-user"></i>'
-        }));
+        cover.append(generatedCover(name));
     }
     cover.append($('<span>', {
         class: 'wiki-card__badge',
@@ -254,7 +401,6 @@ function createCard(artist) {
 
     const info = $('<div>', { class: 'wiki-card__info' });
     info.append($('<h3>', { class: 'wiki-card__name', text: name, title: name }));
-    info.append($('<div>', { class: 'wiki-card__count', text: '艺术家' }));
 
     card.append(cover, info);
     card.on('click', function() { showDetail({ id: artistId }); });
@@ -272,6 +418,22 @@ function initSearch() {
     const searchInput = $('#artistSearchInput');
     const searchClear = $('#artistSearchClear');
     let searchTimer = null;
+    let historyTimer = null;
+
+    // 搜索历史：与音乐库同一套下拉外观，独立存储
+    const searchHistory = window.TongrenluSearchHistory
+        ? window.TongrenluSearchHistory.mount({
+            input: '#artistSearchInput',
+            panel: '#artistSearchHistory',
+            storageKey: 'tongrenlu_search_history_artist'
+        })
+        : null;
+
+    if (searchHistory) {
+        searchInput.on('keydown', function (e) {
+            if (e.key === 'Enter') searchHistory.save($(this).val());
+        });
+    }
 
     searchInput.on('input', function() {
         const keyword = $(this).val().trim();
@@ -281,9 +443,14 @@ function initSearch() {
         searchTimer = setTimeout(function() {
             listKeyword = keyword;
             listPage = 1;
-            listHasMore = true;
             loadArtists(1, false);
         }, 300);
+
+        // 停手 1.2 秒仍停在这个关键词上，才记进历史，避免逐字入库
+        if (historyTimer) clearTimeout(historyTimer);
+        historyTimer = setTimeout(function() {
+            if (searchHistory && keyword.length >= 2) searchHistory.save(keyword);
+        }, 1200);
     });
 
     searchClear.on('click', function() {
@@ -291,29 +458,7 @@ function initSearch() {
         listKeyword = '';
         $(this).removeClass('visible');
         listPage = 1;
-        listHasMore = true;
         loadArtists(1, false);
-    });
-}
-
-// 无限滚动（详情视图打开时不再翻列表）
-function initScrollLoad() {
-    // rAF 节流：与 wiki.js 同一写法，避免每个 scroll 事件都读一次布局
-    let scrollQueued = false;
-    $(window).on('scroll', function() {
-        if (scrollQueued || listLoading || !listHasMore) return;
-        scrollQueued = true;
-        window.requestAnimationFrame(function() {
-            scrollQueued = false;
-            if (listLoading || !listHasMore) return;
-            if ($('#artistListView').is(':hidden')) return;
-            const scrollTop = window.scrollY;
-            const windowHeight = window.innerHeight;
-            const docHeight = document.documentElement.scrollHeight;
-            if (scrollTop + windowHeight >= docHeight - 200) {
-                loadArtists(listPage + 1, true);
-            }
-        });
     });
 }
 
@@ -347,20 +492,17 @@ function renderDetail(artist) {
     // 头像
     const avatar = $('#artistHeroAvatar');
     avatar.empty();
-    if (artist.cloudMusicPicUrl) {
+    if (!isDefaultArtistCover(artist.cloudMusicPicUrl)) {
         const optimizedUrl = typeof getOptimizedImageUrl === 'function'
             ? getOptimizedImageUrl(artist.cloudMusicPicUrl, 300, 300)
             : artist.cloudMusicPicUrl;
-        avatar.append($('<img>', {
-            src: optimizedUrl,
-            alt: name,
-            onerror: "this.parentElement.innerHTML = '<div class=\"wiki-card__placeholder\"><i class=\"fas fa-user\"></i></div>'"
-        }));
+        const img = $('<img>', { src: optimizedUrl, alt: name });
+        img.on('error', function () {
+            $(this).parent().empty().append(generatedCover(name, 'wiki-card__generated--hero'));
+        });
+        avatar.append(img);
     } else {
-        avatar.append($('<div>', {
-            class: 'wiki-card__placeholder',
-            html: '<i class="fas fa-user"></i>'
-        }));
+        avatar.append(generatedCover(name, 'wiki-card__generated--hero'));
     }
 
     // 名称 + 统计

@@ -11,10 +11,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <link href="webjars/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/geometric-theme.css?v=20261120" rel="stylesheet">
-    <link href="assets/css/wiki.css?v=20261120" rel="stylesheet">
-    <link href="assets/css/list-page.css?v=20261120" rel="stylesheet">
-    <link href="components/shared/pagination.css?v=20261120" rel="stylesheet">
+    <link href="assets/css/geometric-theme.css?v=20261240" rel="stylesheet">
+    <link href="assets/css/wiki.css?v=20261240" rel="stylesheet">
+    <link href="assets/css/list-page.css?v=20261240" rel="stylesheet">
+    <link href="components/shared/pagination.css?v=20261240" rel="stylesheet">
 
     <style>
         /* ================================================================
@@ -132,39 +132,6 @@
             color: var(--wiki-muted);
         }
 
-        .geo-event-sort__btn,
-        .event-sort-btn {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border: 1.5px solid var(--wiki-line);
-            background: var(--wiki-paper-2);
-            color: var(--wiki-muted);
-            cursor: pointer;
-            letter-spacing: 0.06em;
-            transition:
-                color 0.3s var(--wiki-ease),
-                border-color 0.3s var(--wiki-ease),
-                background 0.3s var(--wiki-ease),
-                transform 0.3s var(--wiki-ease);
-        }
-
-        .geo-event-sort__btn:hover,
-        .event-sort-btn:hover {
-            border-color: var(--wiki-accent);
-            color: var(--wiki-accent-ink);
-            transform: translateY(-2px);
-        }
-
-        .geo-event-sort__btn.active,
-        .event-sort-btn.active {
-            background: var(--wiki-accent-ink);
-            border-color: var(--wiki-accent-ink);
-            color: white;
-            transform: none;
-        }
-
         /* 卡片头：墨色渐变带 */
         .geo-event-card__header,
         .event-card__header {
@@ -230,7 +197,7 @@
             letter-spacing: 0.05em;
             line-height: 1;
             color: var(--wiki-ink);
-            margin-bottom: 0.4rem;
+            margin: 0 0 0.4rem;
             transition: color 0.3s ease;
             word-break: break-word;
         }
@@ -243,23 +210,8 @@
             font-family: 'Outfit', 'Noto Sans SC', sans-serif;
             font-size: 0.78rem;
             color: var(--wiki-muted);
-            margin-bottom: 0.55rem;
+            margin: 0 0 0.55rem;
             min-height: 1.2em;
-        }
-
-        .geo-event-card__count,
-        .event-card__stats {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
-            font-size: 0.85rem;
-            color: #3a3d52;
-        }
-
-        .geo-event-card__count i,
-        .event-card__stat i {
-            color: var(--wiki-accent);
         }
 
         .event-card__footer {
@@ -284,7 +236,7 @@
             transition: transform 0.35s var(--wiki-ease);
         }
 
-        .event-card:hover .event-card__view i {
+        .event-card:hover .event-card__arrow {
             transform: translateX(4px);
         }
 
@@ -524,7 +476,7 @@
         #eventPaginationContainer {
             display: flex;
             justify-content: center;
-            padding: 0 2rem var(--ws-xl);
+            padding: var(--ws-m) 2rem var(--ws-xl);
         }
 
         #eventGrid {
@@ -534,10 +486,43 @@
         /* ================= 响应式 ================= */
         @media (max-width: 600px) {
             .geo-event-page {
-                padding-top: 72px;
+                padding-top: 62px;
             }
+
+            /* 行式列表：菱形图标 + 名称 + 张数，去掉头部的深色带 */
+            .event-card {
+                flex-direction: row;
+                align-items: center;
+                min-height: 64px;
+            }
+            .event-card::before { display: none; }
+            .event-card__header {
+                background: none;
+                padding: 0 0 0 0.9rem;
+                flex: 0 0 auto;
+            }
+            .event-card__series { display: none; }
+            .event-card__icon { width: 40px; height: 40px; font-size: 0.9rem; }
+            .event-card__body {
+                flex: 1;
+                min-width: 0;
+                padding: 0.65rem 0.9rem;
+                justify-content: center;
+            }
+            .event-card__name { font-size: 1.2rem; margin: 0; }
+            .event-card__edition { display: none; }
+            .event-card__footer {
+                border-top: none;
+                border-left: 1.5px solid var(--wiki-line);
+                background: none;
+                padding: 0.65rem 0.9rem;
+                align-self: stretch;
+                display: flex;
+                align-items: center;
+            }
+            .event-card__view { font-size: 0.74rem; }
             #eventPaginationContainer {
-                padding: 0 1.25rem var(--ws-l);
+                padding: var(--ws-s) 1.25rem var(--ws-l);
             }
             .geo-event-modal {
                 padding: 1rem;
@@ -549,12 +534,14 @@
 
         /* ≤380px：两列时卡片只有 ~118px，届次标签让位，名字降一档才不折行 */
         @media (max-width: 380px) {
-            .event-card__header { padding: 0.8rem 0.9rem; gap: 0.6rem; }
+            /* 行式布局在 320px 只有 ~280px 可分配：只留箭头，名字降一档，张数不折行 */
+            .event-card__header { padding: 0 0 0 0.7rem; }
             .event-card__series { display: none; }
-            .event-card__icon { width: 30px; height: 30px; font-size: 0.8rem; }
-            .event-card__body { padding: 0.9rem; }
-            .event-card__name { font-size: 1.15rem; }
-            .event-card__footer { padding: 0.7rem 0.9rem; }
+            .event-card__icon { width: 34px; height: 34px; font-size: 0.8rem; }
+            .event-card__body { padding: 0.7rem 0.7rem; }
+            .event-card__name { font-size: 1.05rem; }
+            .event-card__footer { padding: 0.6rem 0.7rem; }
+            .event-card__view { gap: 0.35rem; font-size: 0.68rem; letter-spacing: 0.04em; }
         }
 
         /* ================= 无障碍：减少动效 ================= */
@@ -619,6 +606,7 @@
                     <button class="geo-event-search__clear" id="eventSearchClear" aria-label="清除搜索">
                         <i class="fas fa-times"></i>
                     </button>
+                    <div class="geo-suggestions" id="eventSearchHistory"></div>
                 </div>
             </div>
         </div>
@@ -634,6 +622,18 @@
                     <button class="event-filter-tab" data-filter="m3">M3</button>
                     <button class="event-filter-tab" data-filter="other">其他</button>
                 </div>
+                <select id="eventFilterSelect" class="geo-filter-select" aria-label="按展会系列筛选">
+                    <option value="all">全部展会</option>
+                    <option value="comiket">Comic Market</option>
+                    <option value="reitaisai">例大祭</option>
+                    <option value="kouroumu">东方红楼梦</option>
+                    <option value="m3">M3</option>
+                    <option value="other">其他</option>
+                </select>
+                <select id="eventSortSelect" class="geo-filter-select" aria-label="排序方式">
+                    <option value="album_count">专辑数量</option>
+                    <option value="name">名称</option>
+                </select>
                 <div class="geo-event-sort">
                     <span class="geo-event-sort__label">排序</span>
                     <button class="event-sort-btn active" data-sort="album_count">专辑数量</button>
@@ -692,8 +692,10 @@
     <script src="webjars/jquery/jquery.min.js"></script>
     <script src="components/shared/image-loader.js"></script>
     <script src="components/shared/folia-player.js"></script>
-    <script src="components/shared/pagination.js?v=20261120"></script>
-    <script src="components/event-list/event-list.js?v=20261120"></script>
+    <script src="components/shared/search-history.js?v=20261240"></script>
+    <script src="components/shared/list-state.js?v=20261240"></script>
+    <script src="components/shared/pagination.js?v=20261240"></script>
+    <script src="components/event-list/event-list.js?v=20261240"></script>
     <script>
         // ===== 动效（渐进增强，与 artist-wiki / album 同一钩子）=====
         (function() {

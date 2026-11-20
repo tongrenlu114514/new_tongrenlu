@@ -9,7 +9,7 @@
     // ==================== 配置 ====================
     const CONFIG = {
         API_BASE: 'api/events',
-        PAGE_SIZE: 20,
+        PAGE_SIZE: 10,
         DEBOUNCE_DELAY: 300
     };
 
@@ -58,8 +58,62 @@
     // ==================== 初始化 ====================
     function init() {
         cacheElements();
+        restoreState();
         bindEvents();
         loadEvents();
+    }
+
+    // 从地址栏恢复上一次的搜索词 / 筛选 / 排序 / 页码
+    function restoreState() {
+        if (!window.TongrenluListState) return;
+
+        const saved = window.TongrenluListState.read({
+            keyword: '',
+            sort: 'album_count',
+            filter: 'all',
+            page: 1
+        });
+
+        if (saved.keyword) {
+            state.searchKeyword = saved.keyword;
+            if (elements.searchInput) elements.searchInput.value = saved.keyword;
+            updateClearButton();
+        }
+
+        if (['all', 'comiket', 'reitaisai', 'kouroumu', 'm3', 'other'].indexOf(saved.filter) >= 0) {
+            state.currentFilter = saved.filter;
+        }
+        if (saved.sort === 'name' || saved.sort === 'album_count') {
+            state.currentSort = saved.sort;
+        }
+        state.currentPage = saved.page || 1;
+
+        syncStateUI();
+    }
+
+    // 把当前状态回写到 Chip / 排序按钮 / 两个下拉
+    function syncStateUI() {
+        elements.filterTabs.forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.filter === state.currentFilter);
+        });
+        elements.sortBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.sort === state.currentSort);
+        });
+
+        const filterSelect = document.getElementById('eventFilterSelect');
+        const sortSelect = document.getElementById('eventSortSelect');
+        if (filterSelect) filterSelect.value = state.currentFilter;
+        if (sortSelect) sortSelect.value = state.currentSort;
+    }
+
+    function persistState() {
+        if (!window.TongrenluListState) return;
+        window.TongrenluListState.write({
+            keyword: state.searchKeyword,
+            sort: state.currentSort,
+            filter: state.currentFilter,
+            page: state.currentPage
+        }, { keyword: '', sort: 'album_count', filter: 'all', page: 1 });
     }
 
     function cacheElements() {
@@ -80,6 +134,22 @@
     }
 
     function bindEvents() {
+        // 搜索历史：与音乐库同一套下拉外观，独立存储
+        const searchHistory = window.TongrenluSearchHistory
+            ? window.TongrenluSearchHistory.mount({
+                input: '#eventSearchInput',
+                panel: '#eventSearchHistory',
+                storageKey: 'tongrenlu_search_history_event'
+            })
+            : null;
+        let historyTimer = null;
+
+        if (elements.searchInput && searchHistory) {
+            elements.searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') searchHistory.save(elements.searchInput.value);
+            });
+        }
+
         // 搜索输入
         if (elements.searchInput) {
             let debounceTimer;
@@ -91,6 +161,13 @@
                     loadEvents();
                     updateClearButton();
                 }, CONFIG.DEBOUNCE_DELAY);
+
+                // 停手 1.2 秒仍停在这个关键词上，才记进历史
+                if (historyTimer) clearTimeout(historyTimer);
+                historyTimer = setTimeout(() => {
+                    const kw = e.target.value.trim();
+                    if (searchHistory && kw.length >= 2) searchHistory.save(kw);
+                }, 1200);
             });
         }
 
@@ -112,6 +189,7 @@
                 tab.classList.add('active');
                 state.currentFilter = tab.dataset.filter;
                 state.currentPage = 1;
+                syncFilterSelect();
                 loadEvents();
             });
         });
@@ -123,9 +201,40 @@
                 btn.classList.add('active');
                 state.currentSort = btn.dataset.sort;
                 state.currentPage = 1;
+                syncSortSelect();
                 loadEvents();
             });
         });
+
+        // 手机端下拉：与按钮共用同一份状态，双向同步
+        const filterSelect = document.getElementById('eventFilterSelect');
+        const sortSelect = document.getElementById('eventSortSelect');
+
+        function syncFilterSelect() {
+            if (filterSelect) filterSelect.value = state.currentFilter;
+        }
+
+        function syncSortSelect() {
+            if (sortSelect) sortSelect.value = state.currentSort;
+        }
+
+        if (filterSelect) {
+            filterSelect.addEventListener('change', () => {
+                state.currentFilter = filterSelect.value;
+                state.currentPage = 1;
+                elements.filterTabs.forEach(t => t.classList.toggle('active', t.dataset.filter === filterSelect.value));
+                loadEvents();
+            });
+        }
+
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                state.currentSort = sortSelect.value;
+                state.currentPage = 1;
+                elements.sortBtns.forEach(b => b.classList.toggle('active', b.dataset.sort === sortSelect.value));
+                loadEvents();
+            });
+        }
 
         // 弹窗关闭
         if (elements.modalClose) {
@@ -203,7 +312,10 @@
 
             // 应用前端筛选和排序
             applyFilter();
-            
+
+            // 地址栏里的页码可能已经超出范围（换了筛选条件后），往下收
+            if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
+
             // 应用分页到过滤后的数据
             const startIndex = (state.currentPage - 1) * CONFIG.PAGE_SIZE;
             const endIndex = startIndex + CONFIG.PAGE_SIZE;
@@ -242,7 +354,9 @@
         
         // 应用前端筛选和排序
         applyFilter();
-        
+
+        if (state.currentPage > state.totalPages) state.currentPage = state.totalPages;
+
         // 应用分页
         const startIndex = (state.currentPage - 1) * CONFIG.PAGE_SIZE;
         const endIndex = startIndex + CONFIG.PAGE_SIZE;
@@ -382,15 +496,13 @@
                 <div class="event-card__body">
                     <h3 class="event-card__name">${safeName}</h3>
                     ${edition ? `<p class="event-card__edition">${safeEdition}</p>` : ''}
-                    <div class="event-card__stats">
-                        <span class="event-card__stat">
-                            <i class="fas fa-compact-disc" aria-hidden="true"></i>
-                            ${Number(albumCount) || 0} 张专辑
-                        </span>
-                    </div>
                 </div>
                 <div class="event-card__footer">
-                    <span class="event-card__view">查看专辑 <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                    <span class="event-card__view">
+                        <i class="fas fa-compact-disc" aria-hidden="true"></i>
+                        <span class="event-card__view-label">${Number(albumCount) || 0} 张专辑</span>
+                        <i class="fas fa-arrow-right event-card__arrow" aria-hidden="true"></i>
+                    </span>
                 </div>
             </div>
         `;
@@ -405,6 +517,9 @@
 
     function renderMainPagination(shouldScroll) {
         if (!elements.paginationContainer) return;
+
+        // 列表真正的落点在这里：加载完成、翻页都会经过它，状态此刻才是最终值
+        persistState();
 
         TongrenluPagination.render(elements.paginationContainer, {
             page: state.currentPage,

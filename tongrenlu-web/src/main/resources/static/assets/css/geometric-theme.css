@@ -347,53 +347,6 @@ body.geo-theme::before {
 }
 
 /* ============================================
-   搜索区域
-   ============================================ */
-.geo-search {
-    max-width: 1400px;
-    margin: 0 auto 2rem;
-    padding: 0 2rem;
-}
-
-.geo-search__wrapper {
-    position: relative;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.geo-search__input {
-    width: 100%;
-    padding: 1rem 1.5rem;
-    padding-right: 50px;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1rem;
-    border: 2px solid var(--geo-border);
-    background: var(--geo-bg);
-    color: var(--geo-text);
-    transition: all 0.3s ease;
-}
-.geo-search__input:focus {
-    outline: none;
-    border-color: var(--geo-accent);
-}
-
-.geo-search__btn {
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 50px;
-    background: var(--geo-accent);
-    border: none;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-.geo-search__btn:hover {
-    background: var(--geo-primary);
-}
-
-/* ============================================
    筛选和排序
    ============================================ */
 .geo-filter {

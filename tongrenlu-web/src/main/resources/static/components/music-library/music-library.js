@@ -187,7 +187,6 @@ async function updateAlbumModal(albumId) {
         const publishDate = albumDetail.publishDate ? new Date(albumDetail.publishDate) : null;
         $('.meta-item').eq(0).html(`<i class="far fa-calendar"></i> ${publishDate ? publishDate.getFullYear() + '年' : '未知'}`);
         $('.meta-item').eq(1).html(`<i class="fas fa-music"></i> ${albumDetail.tracks && albumDetail.tracks.length > 0 ? albumDetail.tracks.length + '首曲目' : '未知'}`);
-        $('.meta-item').eq(2).html(`<i class="fas fa-headphones"></i> <span class="access-count">${albumDetail.accessCount || 0}</span> 次播放`);
 
         // 更新描述
         const descriptionElement = $('.album-description');
@@ -217,34 +216,14 @@ async function updateAlbumModal(albumId) {
             if (albumDetail.tracks && albumDetail.tracks.length > 0) {
                 $.each(albumDetail.tracks, (index, track) => {
                     const trackNumber = (index + 1).toString().padStart(2, '0');
-                    const duration = track.duration || '0:00';
                     const trackTitle = track.name || `曲目 ${index + 1}`;
                     const hasMusicUrl = track.cloudMusicId;
                     const originalInfo = track.original || '';
-                    const originalUrl = track.originalUrl || '';
 
-                    // Generate original info subtitle and badges
-                    let originalSubtitle = '';
-                    let thbwikiLink = '';
-                    let confidenceBadge = '';
-
-                    if (originalInfo) {
-                        // Original info exists
-                        originalSubtitle = `<span class="track-subtitle">${originalInfo}</span>`;
-
-                        // Determine confidence based on originalUrl
-                        if (originalUrl) {
-                            // High confidence: has URL
-                            thbwikiLink = `<a href="${originalUrl}" target="_blank" class="thbwiki-link" title="THBWiki" onclick="event.stopPropagation();"><i class="fas fa-external-link-alt"></i></a>`;
-                            confidenceBadge = `<span class="confidence-badge confidence-high" title="已匹配THBWiki">●</span>`;
-                        } else {
-                            // Medium confidence: has original info but no URL
-                            confidenceBadge = `<span class="confidence-badge confidence-medium" title="原始信息">○</span>`;
-                        }
-                    } else {
-                        // Low confidence: no original info
-                        confidenceBadge = `<span class="confidence-badge confidence-low" title="未匹配">-</span>`;
-                    }
+                    // 原作信息只保留文字出处；外链与匹配标记、时长都不再展示
+                    const originalSubtitle = originalInfo
+                        ? `<span class="track-subtitle">${originalInfo}</span>`
+                        : '';
 
                     if (hasMusicUrl) {
                         tracksHtml += `
@@ -255,11 +234,6 @@ async function updateAlbumModal(albumId) {
                                     <span class="track-title">${trackTitle}</span>
                                     ${originalSubtitle}
                                 </div>
-                                <div class="track-actions">
-                                    ${thbwikiLink}
-                                    ${confidenceBadge}
-                                </div>
-                                <span class="track-duration">${duration}</span>
                             </li>
                         `;
                     } else {
@@ -271,11 +245,6 @@ async function updateAlbumModal(albumId) {
                                     <span class="track-title">${trackTitle} <span style="color: #999; font-size: 0.8em;">(无法播放)</span></span>
                                     ${originalSubtitle}
                                 </div>
-                                <div class="track-actions">
-                                    ${thbwikiLink}
-                                    ${confidenceBadge}
-                                </div>
-                                <span class="track-duration">${duration}</span>
                             </li>
                         `;
                     }
@@ -289,7 +258,6 @@ async function updateAlbumModal(albumId) {
                             <button class="track-play-btn"><i class="fas fa-play"></i></button>
                             <span class="track-number">${i.toString().padStart(2, '0')}</span>
                             <span class="track-title">${title} - 曲目 ${i}</span>
-                            <span class="track-duration">${Math.floor(Math.random() * 4 + 2)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}</span>
                         </li>
                     `;
                 }
@@ -515,7 +483,15 @@ function searchMusic(keyword, page = 1, orderBy = currentOrderBy, tag = currentT
     currentPage = page;
     currentOrderBy = orderBy;
     currentTag = tag;
-    
+
+    // 搜索词 / 标签 / 排序 / 页码写进地址栏：刷新、后退、分享都能回到这一屏
+    if (window.TongrenluListState) {
+        window.TongrenluListState.write(
+            { keyword: keyword, sort: orderBy, filter: tag, page: page },
+            { keyword: '', sort: 'publishDate', filter: '', page: 1 }
+        );
+    }
+
     // 保存搜索历史
     if (keyword && keyword.trim()) {
         searchHistory.save(keyword.trim());
@@ -527,7 +503,7 @@ function searchMusic(keyword, page = 1, orderBy = currentOrderBy, tag = currentT
     const params = new URLSearchParams();
     params.append('keyword', keyword);
     params.append('pageNumber', page.toString());
-    params.append('pageSize', '12');
+    params.append('pageSize', '10');
     params.append('orderBy', orderBy);
     if (tag) {
         params.append('tag', tag);
@@ -538,6 +514,12 @@ function searchMusic(keyword, page = 1, orderBy = currentOrderBy, tag = currentT
         method: 'GET',
         dataType: 'json',
         success: function(data) {
+            // 地址栏里的页码可能已经超出范围（换了筛选条件后），退到最后一页
+            const pages = data.pages || 1;
+            if (page > pages) {
+                searchMusic(keyword, pages, orderBy, tag);
+                return;
+            }
             renderSearchResults(data);
             renderPagination(data, keyword);
         },
@@ -579,24 +561,16 @@ function renderSearchResults(data) {
 
     let html = '';
     $.each(data.records, (index, music) => {
-        const description = music.description || '暂无描述';
         const title = escapeHtml(music.title || '未知专辑');
-        const desc = escapeHtml(description);
         const coverUrl = escapeHtml(music.cloudMusicPicUrl || '');
         const albumId = escapeHtml(music.id || '');
         html += `
-        <div class="music-card" tabindex="0" role="button" aria-label="查看专辑《${title}》" data-index="${index}" data-title="${title}" data-description="${desc}" data-access-count="${Number(music.accessCount) || 0}" data-cover-url="${coverUrl}" data-album-id="${albumId}">
+        <div class="music-card" tabindex="0" role="button" aria-label="查看专辑《${title}》" data-index="${index}" data-title="${title}" data-cover-url="${coverUrl}" data-album-id="${albumId}">
             <div class="album-cover" data-original-url="${coverUrl}">
                 ${music.cloudMusicPicUrl ? '' : '<div class="fallback-content" aria-hidden="true">🎵</div>'}
-                <div class="album-description-overlay" aria-hidden="true">
-                    <div class="album-description-text">${desc}</div>
-                </div>
             </div>
             <div class="card-content">
                 <h3 class="card-title">${title}</h3>
-                <div class="card-stats">
-                    <span><i class="far fa-heart" aria-hidden="true"></i> ${Number(music.accessCount) || 0}</span>
-                </div>
             </div>
             <button class="play-button" aria-label="播放《${title}》"><i class="fas fa-play" aria-hidden="true"></i></button>
         </div>
@@ -690,25 +664,59 @@ function loadPopularTags() {
     });
 }
 
-function renderTags(tags) {
-    const $filterTags = $('#filterTags');
+// 一行最多摆 8 个分类标签（加「全部」共 9 枚）；再多就把排序挤下去
+const TAG_CHIP_LIMIT = 8;
 
-    // 始终保留"全部"选项；标签是可切换的筛选器，用原生按钮 + aria-pressed 表达状态
-    let html = '<button type="button" class="tag active" data-tag="" aria-pressed="true">全部</button>';
+function renderTags(allTags) {
+    const $filterTags = $('#filterTags');
+    const tags = (allTags || []).slice(0, TAG_CHIP_LIMIT);
+
+    // 当前筛选可能来自艺术家页、又不在截断后的 8 个里：补进来并让最后一枚退位，
+    // 否则会出现「列表已筛选、筛选条上却看不到」的状态
+    if (currentTag && !tags.some(t => String(t.tag) === String(currentTag))) {
+        tags.unshift({ tag: currentTag });
+        if (tags.length > TAG_CHIP_LIMIT) tags.pop();
+    }
+
+    // 始终保留"全部"选项；选中态直接按 currentTag 渲染，避免异步时序错位
+    const allActive = !currentTag;
+    let html = `<button type="button" class="tag${allActive ? ' active' : ''}" data-tag="" aria-pressed="${allActive}">全部</button>`;
 
     // 添加后端返回的标签
     tags.forEach(tag => {
         const label = escapeHtml(tag.tag);
-        html += `<button type="button" class="tag" data-tag="${label}" aria-pressed="false">${label}</button>`;
+        const isActive = !!currentTag && String(tag.tag) === String(currentTag);
+        html += `<button type="button" class="tag${isActive ? ' active' : ''}" data-tag="${label}" aria-pressed="${isActive}">${label}</button>`;
     });
 
     $filterTags.html(html);
+
+    // 手机端下拉与 Chip 共用同一份标签，状态互相同步
+    const $tagSelect = $('#tagSelect');
+    if ($tagSelect.length) {
+        let options = '<option value="">全部标签</option>';
+        tags.forEach(tag => {
+            const label = escapeHtml(tag.tag);
+            options += `<option value="${label}">${label}</option>`;
+        });
+        $tagSelect.html(options).val(currentTag || '');
+    }
 
     // 绑定标签点击事件
     $('.tag').off('click').on('click', function() {
         $('.tag').removeClass('active').attr('aria-pressed', 'false');
         $(this).addClass('active').attr('aria-pressed', 'true');
         const tag = $(this).data('tag') || '';
+        $tagSelect.val(tag);
+        searchMusic(currentKeyword, 1, currentOrderBy, tag);
+    });
+
+    // 下拉切换：反向同步 Chip 的高亮与 aria-pressed
+    $tagSelect.off('change').on('change', function() {
+        const tag = $(this).val() || '';
+        $('.tag').removeClass('active').attr('aria-pressed', 'false');
+        $('.tag').filter(function() { return ($(this).data('tag') || '') === tag; })
+            .addClass('active').attr('aria-pressed', 'true');
         searchMusic(currentKeyword, 1, currentOrderBy, tag);
     });
 }
@@ -746,38 +754,30 @@ $(function () {
         localStorage.removeItem('selectedAlbumId');
     }
     
-    // 设置排序默认值
-    $('#sortSelect').val('publishDate');
-    
-    // 从 URL 读取状态
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('keyword')) {
-        currentKeyword = urlParams.get('keyword');
-        $('.geo-search__input').val(currentKeyword);
+    // 从地址栏恢复上一次的搜索词 / 标签 / 排序 / 页码
+    const saved = window.TongrenluListState
+        ? window.TongrenluListState.read({ keyword: '', sort: 'publishDate', filter: '', page: 1 })
+        : { keyword: '', sort: 'publishDate', filter: '', page: 1 };
+
+    // 选项已下线（如 accessCount）时不沿用，回退默认排序，避免地址栏与界面不一致
+    const allowed = $('#sortSelect option').map(function() { return this.value; }).get();
+    const sort = allowed.indexOf(saved.sort) >= 0 ? saved.sort : 'publishDate';
+
+    // 从艺术家页点「专辑」过来时按标签筛选，优先级高于地址栏
+    const keyword = filterTag ? '' : saved.keyword;
+    const tag = filterTag || saved.filter || '';
+    const page = filterTag ? 1 : saved.page;
+
+    currentKeyword = keyword;
+    currentTag = tag;
+    applySortSelection(sort);
+
+    if (keyword) {
+        $('.geo-search__input').val(keyword);
+        $('#searchClear').addClass('visible');
     }
-    if (urlParams.has('orderBy')) {
-        currentOrderBy = urlParams.get('orderBy');
-        $('#sortSelect').val(currentOrderBy);
-    }
-    if (urlParams.has('page')) {
-        currentPage = parseInt(urlParams.get('page')) || 1;
-    }
-    
-    // 如果有筛选标签，使用它进行搜索
-    if (filterTag) {
-        currentTag = filterTag;
-        // 高亮选中的标签
-        setTimeout(function() {
-            $('.tag').each(function() {
-                if ($(this).text() === filterTag) {
-                    $(this).addClass('active').attr('aria-pressed', 'true');
-                }
-            });
-        }, 500);
-        searchMusic('', 1, 'publishDate', filterTag);
-    } else {
-        searchMusic('', 1, 'publishDate', '');
-    }
+
+    searchMusic(keyword, page, sort, tag);
     
     // 如果有选中的专辑ID，打开详情弹窗
     if (selectedAlbumId) {
@@ -789,21 +789,33 @@ $(function () {
 });
 
 // 搜索按钮点击
-$('.geo-search__btn').on('click', function () {
-    const searchTerm = $('.geo-search__input').val();
-    hideSuggestions();
-    searchMusic(searchTerm, 1, currentOrderBy, currentTag);
-});
+// 搜索输入框事件：与艺术家/展会页一致，边打边搜（300ms），右侧清除钮可见
+let searchInputTimer = null;
 
-// 搜索输入框事件
 $('.geo-search__input').on('input', function() {
     const keyword = $(this).val().trim();
-    
+    $('#searchClear').toggleClass('visible', keyword.length > 0);
+
     if (keyword.length > 0) {
         fetchSuggestions(keyword);
     } else {
+        hideSuggestions();
         renderSearchHistory();
     }
+
+    if (searchInputTimer) clearTimeout(searchInputTimer);
+    searchInputTimer = setTimeout(function() {
+        searchMusic(keyword, 1, currentOrderBy, currentTag);
+    }, 300);
+});
+
+$('#searchClear').on('click', function() {
+    $('.geo-search__input').val('').focus();
+    $(this).removeClass('visible');
+    hideSuggestions();
+    if (searchInputTimer) clearTimeout(searchInputTimer);
+    currentKeyword = '';
+    searchMusic('', 1, currentOrderBy, currentTag);
 });
 
 // 搜索输入框聚焦
@@ -878,9 +890,24 @@ $(document).on('click', '.history-delete', function(e) {
     renderSearchHistory();
 });
 
-// 排序选择
+// 排序：宽屏按钮组、窄屏下拉，共用一个状态
+function applySortSelection(orderBy) {
+    currentOrderBy = orderBy;
+    $('.sort-btn').removeClass('active').attr('aria-pressed', 'false')
+        .filter('[data-sort="' + orderBy + '"]').addClass('active').attr('aria-pressed', 'true');
+    $('#sortSelect').val(orderBy);
+}
+
+$('.geo-sort').on('click', '.sort-btn', function() {
+    const value = $(this).data('sort');
+    if (!value || value === currentOrderBy) return;
+    applySortSelection(value);
+    searchMusic(currentKeyword, 1, currentOrderBy, currentTag);
+});
+
 $('#sortSelect').on('change', function() {
-    currentOrderBy = $(this).val();
+    const value = $(this).val();
+    applySortSelection(value);
     searchMusic(currentKeyword, 1, currentOrderBy, currentTag);
 });
 

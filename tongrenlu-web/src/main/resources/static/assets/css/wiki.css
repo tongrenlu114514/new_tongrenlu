@@ -82,6 +82,142 @@
             font-size: 1.5rem; color: #fff;
             clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
         }
+        /* 生成封面：三套配色 × 四种画面处理 × 两种 95 版排版，由名字哈希决定，同一名字恒定 */
+        .wiki-card__generated {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 0.45rem;
+            /* 底部留出角标的位置，名字不会被「42 张」压住 */
+            padding: 15% 12% 2.2rem;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        /* 黑底白字 / 白底黑字 / 黑底红字 */
+        .wiki-card__generated[data-scheme="bw"] { background: #0b0b10; color: #fff; }
+        .wiki-card__generated[data-scheme="wb"] { background: #f4f3ef; color: #0b0b10; }
+        .wiki-card__generated[data-scheme="br"] { background: #0b0b10; color: #e94560; }
+
+        .wiki-card__generated::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 18px 18px;
+        }
+        .wiki-card__generated[data-scheme="wb"]::before {
+            background:
+                linear-gradient(rgba(11, 11, 16, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(11, 11, 16, 0.05) 1px, transparent 1px);
+            background-size: 18px 18px;
+        }
+
+        /* 磨损：用带偏向的噪点做遮罩，让字迹掉墨、发旧 */
+        .wiki-card__generated[data-scheme="bw"] .wiki-card__generated-text,
+        .wiki-card__generated[data-scheme="wb"] .wiki-card__generated-text {
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' seed='5'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.45' intercept='0.62'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' seed='5'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.45' intercept='0.62'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
+            -webkit-mask-size: 120px 120px;
+            mask-size: 120px 120px;
+        }
+
+        /* 两道极细的划痕压在画面上（噪点款不再叠加，避免两层纹理打架） */
+        .wiki-card__generated[data-scheme="bw"]:not([data-fx="noise"])::after {
+            content: '';
+            position: absolute;
+            inset: -10%;
+            pointer-events: none;
+            background:
+                linear-gradient(101deg, transparent 38%, rgba(255, 255, 255, 0.12) 38.4%, transparent 39%),
+                linear-gradient(87deg, transparent 63%, rgba(255, 255, 255, 0.07) 63.2%, transparent 64%);
+        }
+        .wiki-card__generated[data-scheme="wb"]:not([data-fx="noise"])::after {
+            content: '';
+            position: absolute;
+            inset: -10%;
+            pointer-events: none;
+            background:
+                linear-gradient(101deg, transparent 38%, rgba(11, 11, 16, 0.12) 38.4%, transparent 39%),
+                linear-gradient(87deg, transparent 63%, rgba(11, 11, 16, 0.07) 63.2%, transparent 64%);
+        }
+
+        /* 黑白两套配色：错位叠影 + 轻微斜面浮雕，模仿 EVA 标题的立体感 */
+        .wiki-card__generated[data-scheme="bw"] .wiki-card__generated-text {
+            text-shadow:
+                0 -0.012em 0 rgba(255, 255, 255, 0.35),
+                0.02em 0.03em 0 rgba(0, 0, 0, 0.75),
+                0.035em 0.05em 0 rgba(0, 0, 0, 0.45),
+                0.055em 0.02em 0 rgba(255, 255, 255, 0.22),
+                0 0 0.6px rgba(255, 255, 255, 0.35);
+        }
+        .wiki-card__generated[data-scheme="wb"] .wiki-card__generated-text {
+            text-shadow:
+                0 -0.012em 0 rgba(255, 255, 255, 0.9),
+                0.02em 0.03em 0 rgba(11, 11, 16, 0.28),
+                0.035em 0.05em 0 rgba(11, 11, 16, 0.16),
+                0.055em 0.02em 0 rgba(11, 11, 16, 0.18),
+                0 0 0.6px rgba(11, 11, 16, 0.32);
+        }
+
+        /* 95 版排版（横）：细线压顶 + 标题 + 一排小字 */
+        .wiki-card__generated[data-layout="h"] .wiki-card__generated-text {
+            border-top: 2px solid currentColor;
+            padding-top: 0.5rem;
+        }
+
+        /* 95 版排版（竖）：靠右竖排，说明文字也竖排 */
+        .wiki-card__generated[data-layout="v"] {
+            align-items: flex-end;
+            text-align: right;
+        }
+        .wiki-card__generated[data-layout="v"] .wiki-card__generated-text {
+            writing-mode: vertical-rl;
+            display: block;
+            letter-spacing: 0.14em;
+        }
+        /* 画面处理：模糊 / 噪点 / 锐化 */
+        .wiki-card__generated[data-fx="blur"] { filter: blur(0.7px); }
+        .wiki-card__generated[data-fx="sharpen"] { filter: contrast(1.28) saturate(1.05); }
+        .wiki-card__generated[data-fx="noise"]::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.32;
+            mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+        }
+
+        /* 名字长度定基础字号，哈希再乘 0.9–1.1 */
+        .wiki-card__generated[data-len="1"] { --gen-size: clamp(1.5rem, 2.8vw, 2.2rem); }
+        .wiki-card__generated[data-len="2"] { --gen-size: clamp(1.2rem, 2.2vw, 1.7rem); }
+        .wiki-card__generated[data-len="3"] { --gen-size: clamp(1rem, 1.7vw, 1.3rem); }
+        .wiki-card__generated[data-len="4"] { --gen-size: clamp(0.85rem, 1.4vw, 1.05rem); }
+
+        .wiki-card__generated-text {
+            position: relative;
+            max-width: 100%;
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: calc(var(--gen-size, 1rem) * var(--gen-scale, 1));
+            font-weight: 500;
+            line-height: 1.35;
+            letter-spacing: 0.02em;
+            word-break: normal;
+            overflow-wrap: break-word;
+        }
+
+        .wiki-card__generated--hero {
+            padding: 10% 9%;
+        }
+        .wiki-card__generated--hero .wiki-card__generated-text {
+            font-size: calc(var(--gen-size, 1rem) * var(--gen-scale, 1) * 1.15);
+        }
         .wiki-card__badge {
             position: absolute; bottom: 10px; right: 10px; z-index: 6;
             background: var(--wiki-accent-ink); color: #fff;
@@ -93,12 +229,38 @@
         .wiki-card__info { padding: 1rem 1.1rem 1.1rem; border-top: 1.5px solid var(--wiki-line); }
         .wiki-card__name {
             font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 0.95rem; font-weight: 600;
-            color: var(--wiki-ink); word-break: break-word;
+            color: var(--wiki-ink); word-break: break-word; margin: 0;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             transition: color 0.3s ease;
         }
         .wiki-card:hover .wiki-card__name { color: var(--wiki-accent-ink); }
-        .wiki-card__count { font-family: 'Outfit', sans-serif; font-size: 0.73rem; letter-spacing: 0.06em; color: var(--wiki-muted); margin-top: 0.25rem; }
+
+        /* 有鼠标的宽屏：卡片只剩封面，名称做成封面底部的浮层，悬浮或键盘聚焦时滑入 */
+        @media (hover: hover) and (min-width: 601px) {
+            .wiki-card__info {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                border-top: none;
+                padding: 2.4rem 1rem 0.85rem;
+                background: linear-gradient(transparent, rgba(26, 26, 46, 0.92));
+                transform: translateY(100%);
+                transition: transform 0.45s var(--wiki-ease);
+                pointer-events: none;
+            }
+            .wiki-card:hover .wiki-card__info,
+            .wiki-card:focus .wiki-card__info,
+            .wiki-card:focus-within .wiki-card__info { transform: none; }
+
+            .wiki-card__info .wiki-card__name,
+            .wiki-card:hover .wiki-card__info .wiki-card__name { color: #fff; }
+
+            /* 名字滑上来时让角标退场，避免两个东西抢右下角 */
+            .wiki-card__badge { transition: opacity 0.3s ease; }
+            .wiki-card:hover .wiki-card__badge,
+            .wiki-card:focus .wiki-card__badge { opacity: 0; }
+        }
 
         /* ===== 详情视图 ===== */
         .geo-wiki-detail { max-width: 1140px; margin: 0 auto; padding: var(--ws-l) 2rem var(--ws-xl); }
@@ -263,7 +425,47 @@
             .geo-wiki-stats, .geo-wiki-links { justify-content: center; }
         }
         @media (max-width: 600px) {
-            .geo-wiki-page { padding-top: 72px; }
+            .geo-wiki-page { padding-top: 62px; }
+
+            /* 行式列表：64px 封面 + 名称，角标缩成小章 */
+            .wiki-card {
+                display: flex;
+                align-items: center;
+                min-height: 64px;
+            }
+            .wiki-card::before { display: none; }
+            .wiki-card__cover {
+                width: 64px; height: 64px; align-self: stretch;
+                aspect-ratio: auto; flex: 0 0 64px;
+                border-right: 1.5px solid var(--wiki-line);
+            }
+            .wiki-card__badge {
+                bottom: 4px; right: 4px;
+                font-size: 0.56rem; padding: 0.12rem 0.3rem; letter-spacing: 0.04em;
+            }
+            .wiki-card__info {
+                flex: 1; min-width: 0; border-top: none; padding: 0.6rem 0.9rem;
+            }
+            .wiki-card__generated { padding: 8px 6px 20px; }
+            .wiki-card__generated[data-len="1"] { --gen-size: 0.85rem; }
+            .wiki-card__generated[data-len="2"] { --gen-size: 0.7rem; }
+            .wiki-card__generated[data-len="3"] { --gen-size: 0.62rem; }
+            .wiki-card__generated[data-len="4"] { --gen-size: 0.58rem; }
+            .wiki-card__generated-text {
+                line-height: 1.25;
+                letter-spacing: 0;
+                border-top-width: 1px;
+                padding-top: 3px;
+            }
+            /* 64px 缩略图里竖排会被角标挤到，改回横排 */
+            .wiki-card__generated[data-layout="v"] { align-items: flex-start; text-align: left; }
+            .wiki-card__generated[data-layout="v"] .wiki-card__generated-text {
+                writing-mode: horizontal-tb;
+                border-top: 1px solid currentColor;
+                padding-top: 3px;
+                letter-spacing: 0;
+            }
+            .wiki-card__count { display: none; }
             .geo-wiki-detail { padding: var(--ws-m) 1.25rem var(--ws-l); }
             .geo-wiki-hero { padding: var(--ws-m); gap: var(--ws-m); }
             .geo-wiki-hero__avatar { width: min(55vw, 180px); }

@@ -38,9 +38,10 @@ public class ApiArtistController {
     public ResponseEntity<Map<String, Object>> list(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "30") int limit) {
+            @RequestParam(defaultValue = "30") int limit,
+            @RequestParam(defaultValue = "album_count") String orderBy) {
         try {
-            return ResponseEntity.ok(artistService.getArtistShowcasePaged(keyword, page, limit));
+            return ResponseEntity.ok(artistService.getArtistShowcasePaged(keyword, page, limit, orderBy));
         } catch (Exception e) {
             log.error("获取艺术家列表失败: keyword={}", keyword, e);
             return ResponseEntity.internalServerError().build();

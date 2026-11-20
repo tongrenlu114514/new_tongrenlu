@@ -148,16 +148,18 @@ public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
      * @param limit   每页数量（1-100）
      * @return 分页结果
      */
-    public Map<String, Object> getArtistShowcasePaged(String keyword, int page, int limit) {
+    public Map<String, Object> getArtistShowcasePaged(String keyword, int page, int limit, String orderBy) {
         int safePage = Math.max(1, page);
         int safeLimit = Math.min(Math.max(1, limit), 100);
         String keywordFilter = StringUtils.isBlank(keyword) ? null : keyword.trim();
+        // 只接受两个已知排序，其余一律按专辑数（后端不拼用户输入）
+        String safeOrder = "name".equals(orderBy) ? "name" : "album_count";
 
         long offset = (long) (safePage - 1) * safeLimit;
         long total = this.getBaseMapper().countArtistShowcase(keywordFilter);
         List<Map<String, Object>> records = total == 0
                 ? List.of()
-                : this.getBaseMapper().findArtistShowcasePaged(keywordFilter, offset, safeLimit);
+                : this.getBaseMapper().findArtistShowcasePaged(keywordFilter, safeOrder, offset, safeLimit);
 
         Map<String, Object> result = new HashMap<>();
         result.put("records", records);

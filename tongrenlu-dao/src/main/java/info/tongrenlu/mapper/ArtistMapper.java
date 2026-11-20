@@ -160,11 +160,19 @@ public interface ArtistMapper extends BaseMapper<ArtistBean> {
                      OR ar.cloud_music_name LIKE CONCAT('%', #{keyword}, '%'))
             </if>
         </where>
-        ORDER BY ac.album_count DESC, ar.name ASC, ar.id ASC
+        <choose>
+            <when test="orderBy == 'name'">
+                ORDER BY ar.name ASC, ar.id ASC
+            </when>
+            <otherwise>
+                ORDER BY ac.album_count DESC, ar.name ASC, ar.id ASC
+            </otherwise>
+        </choose>
         LIMIT #{offset}, #{limit}
         </script>
         """)
     List<Map<String, Object>> findArtistShowcasePaged(@Param("keyword") String keyword,
+                                                      @Param("orderBy") String orderBy,
                                                       @Param("offset") long offset,
                                                       @Param("limit") int limit);
 
