@@ -1,0 +1,456 @@
+/* ================================================================
+   列表页共用皮肤 — 音乐库 / 艺术家 / 展会
+   页头、搜索、筛选条、卡片底座、加载与空态在这里各写一次。
+   令牌一律取自 wiki.css（--wiki-* / --ws-*），页面内不再复制 :root。
+   页面自己只保留差异：卡片的内部结构、弹层、网格列数与排序控件。
+   ================================================================ */
+
+/* ================= 页头 ================= */
+.geo-wiki-header,
+.geo-music-header,
+.geo-event-header {
+    position: relative;
+    overflow: visible; /* 不裁切：搜索联想要能越出页头 */
+    text-align: center;
+    background:
+        radial-gradient(ellipse 60% 90% at 85% 10%, rgba(233, 69, 96, 0.22), transparent 60%),
+        radial-gradient(ellipse 50% 80% at 10% 90%, rgba(15, 52, 96, 0.5), transparent 65%),
+        linear-gradient(160deg, var(--wiki-ink) 0%, var(--wiki-ink-soft) 55%, #2a2a4a 100%);
+    padding: var(--ws-2xl) 2rem var(--ws-xl);
+}
+
+/* 装饰层自带裁切：网格底纹、辉光与被裁掉的水印都留在这一层里 */
+.geo-wiki-header__decor,
+.geo-music-header__decor,
+.geo-event-header__decor {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.geo-wiki-header__decor::before,
+.geo-music-header__decor::before,
+.geo-event-header__decor::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
+    mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
+}
+
+.geo-wiki-header__decor::after,
+.geo-music-header__decor::after,
+.geo-event-header__decor::after {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(circle 300px at 80% 30%, rgba(233, 69, 96, 0.14), transparent 70%);
+    animation: wiki-glow-drift 14s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.geo-wiki-header__watermark,
+.geo-music-header__watermark,
+.geo-event-header__watermark {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+    font-size: clamp(10rem, 34vw, 30rem);
+    letter-spacing: 0.08em;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.07);
+    user-select: none;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* 内容层要高过筛选条（z-index 50），否则联想下拉被压住 */
+.geo-wiki-header__inner,
+.geo-music-header__inner,
+.geo-event-header__inner {
+    position: relative;
+    z-index: 60;
+}
+
+.geo-wiki-header__eyebrow,
+.geo-music-header__eyebrow,
+.geo-event-header__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: var(--ws-m);
+    animation: wiki-rise 0.9s var(--wiki-ease) 0.05s both;
+}
+
+.geo-wiki-header__eyebrow::before,
+.geo-wiki-header__eyebrow::after,
+.geo-music-header__eyebrow::before,
+.geo-music-header__eyebrow::after,
+.geo-event-header__eyebrow::before,
+.geo-event-header__eyebrow::after {
+    content: '';
+    width: 2.5rem;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.geo-wiki-title,
+.geo-music-title,
+.geo-event-title {
+    font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+    font-size: clamp(3.2rem, 9vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: 0.04em;
+    color: #fff;
+    margin: 0 0 var(--ws-m);
+    animation: wiki-rise 0.9s var(--wiki-ease) 0.15s both;
+}
+
+.geo-wiki-title .accent,
+.geo-music-title .accent,
+.geo-event-title .accent { color: var(--wiki-accent); }
+
+.geo-wiki-subtitle,
+.geo-music-subtitle,
+.geo-event-subtitle {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    font-size: clamp(0.9rem, 1.4vw, 1.05rem);
+    letter-spacing: 0.14em;
+    color: rgba(255, 255, 255, 0.65);
+    margin: 0 auto var(--ws-xl);
+    max-width: 34em;
+    text-wrap: balance;
+    animation: wiki-rise 0.9s var(--wiki-ease) 0.25s both;
+}
+
+/* ================= 搜索 ================= */
+.geo-wiki-search,
+.geo-event-search,
+.geo-search {
+    max-width: 560px;
+    margin: 0 auto;
+    position: relative;
+    animation: wiki-rise 0.9s var(--wiki-ease) 0.35s both;
+}
+
+/* 音乐库的搜索带提交按钮，宽一档 */
+.geo-search { max-width: 640px; }
+
+.geo-wiki-search__input,
+.geo-event-search__input,
+.geo-search__input {
+    width: 100%;
+    padding: 1.1rem 3.2rem 1.1rem 1.4rem;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--wiki-ink);
+    clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+    transition: background 0.4s var(--wiki-ease), box-shadow 0.4s var(--wiki-ease);
+}
+
+.geo-search__input { padding-right: 4.2rem; }
+
+.geo-wiki-search__input:focus,
+.geo-event-search__input:focus,
+.geo-search__input:focus {
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 2px var(--wiki-accent) inset;
+}
+
+.geo-wiki-search__input::placeholder,
+.geo-event-search__input::placeholder,
+.geo-search__input::placeholder { color: var(--wiki-muted); }
+
+.geo-wiki-search__icon,
+.geo-event-search__icon {
+    position: absolute;
+    right: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--wiki-muted);
+    transition: color 0.3s ease, transform 0.3s var(--wiki-ease-snap);
+}
+
+.geo-wiki-search:focus-within .geo-wiki-search__icon,
+.geo-event-search:focus-within .geo-event-search__icon {
+    color: var(--wiki-accent);
+    transform: translateY(-50%) scale(1.15);
+}
+
+.geo-wiki-search__clear,
+.geo-event-search__clear {
+    position: absolute;
+    right: 2.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--wiki-muted);
+    cursor: pointer;
+    display: none;
+    transition: color 0.25s ease, transform 0.25s var(--wiki-ease-snap);
+}
+
+.geo-wiki-search__clear:hover,
+.geo-event-search__clear:hover {
+    color: var(--wiki-accent-ink);
+    transform: translateY(-50%) rotate(90deg);
+}
+
+.geo-wiki-search__clear.visible,
+.geo-event-search__clear.visible { display: flex; }
+
+/* ================= 筛选工具条 ================= */
+.geo-wiki-filter,
+.geo-filter-section,
+.geo-event-filter {
+    position: relative;
+    background: var(--wiki-paper);
+    border-bottom: 1.5px solid var(--wiki-line);
+    padding: var(--ws-m) 2rem;
+    z-index: 50;
+}
+
+.geo-wiki-filter__inner,
+.geo-filter-inner,
+.geo-event-filter__inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ws-s);
+}
+
+.geo-wiki-tabs,
+.geo-tags,
+#filterTags,
+.geo-event-tabs,
+.event-filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* 一枚 Chip 走遍三页：可点、当前态、悬停都只有一种写法 */
+.geo-tag,
+.tag,
+.wiki-type-tab,
+.geo-event-tab,
+.event-filter-tab {
+    appearance: none;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.4;
+    padding: 0.5rem 1.1rem;
+    border: 1.5px solid var(--wiki-line);
+    background: var(--wiki-paper-2);
+    color: var(--wiki-muted);
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition:
+        color 0.3s var(--wiki-ease),
+        border-color 0.3s var(--wiki-ease),
+        background 0.3s var(--wiki-ease),
+        transform 0.3s var(--wiki-ease),
+        box-shadow 0.3s var(--wiki-ease);
+}
+
+.geo-tag:hover,
+.tag:hover,
+.wiki-type-tab:hover,
+.geo-event-tab:hover,
+.event-filter-tab:hover {
+    border-color: var(--wiki-accent);
+    color: var(--wiki-accent-ink);
+    transform: translateY(-2px);
+}
+
+.geo-tag.active,
+.tag.active,
+.wiki-type-tab.active,
+.geo-event-tab.active,
+.event-filter-tab.active {
+    background: var(--wiki-accent-ink);
+    border-color: var(--wiki-accent-ink);
+    color: #fff;
+    transform: none;
+    box-shadow: 3px 3px 0 rgba(26, 26, 46, 0.85);
+}
+
+.geo-wiki-filter__count {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    color: var(--wiki-muted);
+}
+
+.geo-wiki-filter__count b {
+    font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
+    font-size: 1.3rem;
+    color: var(--wiki-accent-ink);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+}
+
+/* 标签多到换行时，排序仍贴右侧，而不是掉到下一行左边 */
+@media (min-width: 601px) {
+    .geo-filter-inner .geo-sort,
+    .geo-event-filter__inner .geo-event-sort { margin-left: auto; }
+}
+
+/* ================= 列表网格 ================= */
+.geo-wiki-grid,
+.music-grid,
+.geo-event-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: clamp(1rem, 2.2vw, 1.75rem);
+    padding: var(--ws-l) 2rem var(--ws-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+    scroll-margin-top: calc(80px + 1rem);
+}
+
+/* ================= 卡片底座 ================= */
+.wiki-card,
+.music-card,
+.event-card {
+    position: relative;
+    background: var(--wiki-paper);
+    border: 1.5px solid var(--wiki-line);
+    overflow: hidden;
+    cursor: pointer;
+    transition:
+        transform 0.45s var(--wiki-ease),
+        border-color 0.45s var(--wiki-ease),
+        box-shadow 0.45s var(--wiki-ease);
+    animation: wiki-card-in 0.7s var(--wiki-ease) both;
+    animation-delay: min(calc(var(--i, 0) * 45ms), 0.6s);
+}
+
+.wiki-card::before,
+.music-card::before,
+.event-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 26px;
+    height: 26px;
+    background: var(--wiki-accent);
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 0.35s ease, transform 0.45s var(--wiki-ease-snap);
+    z-index: 5;
+}
+
+.wiki-card:hover,
+.music-card:hover,
+.event-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--wiki-ink);
+    box-shadow: 8px 8px 0 var(--wiki-accent);
+}
+
+.wiki-card:hover::before,
+.music-card:hover::before,
+.event-card:hover::before {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ================= 动效原语 ================= */
+@keyframes wiki-glow-drift {
+    0%   { transform: translate(-10%, -6%) rotate(-4deg); }
+    50%  { transform: translate(6%, 4%) rotate(3deg); }
+    100% { transform: translate(-10%, -6%) rotate(-4deg); }
+}
+
+/* ================= 响应式 ================= */
+@media (max-width: 900px) {
+    .geo-wiki-header,
+    .geo-music-header,
+    .geo-event-header { padding: var(--ws-xl) 1.5rem var(--ws-l); }
+}
+
+@media (max-width: 600px) {
+    .geo-wiki-grid,
+    .music-grid,
+    .geo-event-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.9rem;
+        padding: var(--ws-m) 1.25rem var(--ws-l);
+    }
+    .geo-wiki-header,
+    .geo-music-header,
+    .geo-event-header { padding: var(--ws-l) 1.25rem 2.5rem; }
+    .geo-wiki-filter,
+    .geo-filter-section,
+    .geo-event-filter { padding: var(--ws-s) 1.25rem; }
+    .geo-wiki-filter__inner,
+    .geo-filter-inner,
+    .geo-event-filter__inner { flex-direction: column; align-items: flex-start; }
+    .geo-wiki-subtitle,
+    .geo-music-subtitle,
+    .geo-event-subtitle { letter-spacing: 0.08em; }
+}
+
+/* ================= 减少动效：关掉位移与入场，保留颜色反馈 ================= */
+@media (prefers-reduced-motion: reduce) {
+    .geo-wiki-header__eyebrow,
+    .geo-music-header__eyebrow,
+    .geo-event-header__eyebrow,
+    .geo-wiki-title,
+    .geo-music-title,
+    .geo-event-title,
+    .geo-wiki-subtitle,
+    .geo-music-subtitle,
+    .geo-event-subtitle,
+    .geo-wiki-search,
+    .geo-event-search,
+    .geo-search,
+    .wiki-card,
+    .music-card,
+    .event-card { animation: none !important; }
+
+    .geo-wiki-header__decor::after,
+    .geo-music-header__decor::after,
+    .geo-event-header__decor::after { animation: none !important; }
+
+    .wiki-card,
+    .music-card,
+    .event-card { transition-duration: 0.12s; }
+
+    .wiki-card:hover,
+    .music-card:hover,
+    .event-card:hover { transform: none; }
+}

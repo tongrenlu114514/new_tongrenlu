@@ -1,0 +1,279 @@
+        /* 统一百科 — 与 event / album 同一套 Award 设计令牌 */
+        :root {
+            --wiki-ink: #1a1a2e;
+            --wiki-ink-soft: #23233d;
+            --wiki-accent: #e94560;
+            /* 文字与白字填充专用：与纸底 5.6:1、白字压它 5.6:1，过 AA；
+               #e94560 只保留给描边、阴影、装饰与深色页头 */
+            --wiki-accent-ink: #c22c47;
+            --wiki-blue: #0f3460;
+            --wiki-paper: #ffffff;
+            --wiki-paper-2: #f6f7fb;
+            --wiki-line: #e5e7ef;
+            --wiki-muted: #666b80;
+            --ws-xs: 0.5rem;
+            --ws-s: 1rem;
+            --ws-m: 1.5rem;
+            --ws-l: 2.5rem;
+            --ws-xl: 4rem;
+            --ws-2xl: clamp(4rem, 9vw, 7.5rem);
+            --wiki-ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --wiki-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .geo-wiki-page {
+            padding-top: 80px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--wiki-paper-2) 0%, var(--wiki-paper) 40%);
+        }
+
+        .geo-wiki-page ::selection { background: var(--wiki-accent); color: #fff; }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--wiki-paper-2); }
+        ::-webkit-scrollbar-thumb { background: var(--wiki-ink); border: 2px solid var(--wiki-paper-2); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--wiki-accent); }
+
+        .geo-wiki-page a:focus-visible,
+        .geo-wiki-page button:focus-visible,
+        .geo-wiki-page input:focus-visible,
+        .geo-wiki-page .wiki-card:focus-visible,
+        .geo-wiki-page .wiki-album-item:focus-visible {
+            outline: 2px solid var(--wiki-accent);
+            outline-offset: 3px;
+        }
+
+        .wiki-progress {
+            position: fixed; top: 0; left: 0; right: 0; height: 3px;
+            z-index: 1200; background: transparent; pointer-events: none;
+        }
+        .wiki-progress__bar {
+            display: block; height: 100%; width: 0;
+            background: linear-gradient(90deg, var(--wiki-blue), var(--wiki-accent));
+            transition: width 0.1s linear;
+        }
+
+        @keyframes wiki-rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes wiki-card-in { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes wiki-line-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        [data-rv].rv-armed {
+            opacity: 0; transform: translateY(26px);
+            transition: opacity 0.8s var(--wiki-ease) var(--rv-delay, 0s),
+                        transform 0.8s var(--wiki-ease) var(--rv-delay, 0s);
+        }
+        [data-rv].rv-armed.is-visible { opacity: 1; transform: none; }
+
+        /* 列表页的页头 / 搜索 / 筛选条 / 卡片底座已抽到 assets/css/list-page.css */
+        /* 词条卡片的内部结构仍归这里（只有词条卡用得到） */
+        .wiki-card__cover {
+            width: 100%; aspect-ratio: 1; position: relative; overflow: hidden;
+            background: linear-gradient(135deg, var(--wiki-paper-2), #eceef5);
+        }
+        .wiki-card__image {
+            width: 100%; height: 100%; object-fit: cover; filter: saturate(0.92);
+            transition: transform 0.7s var(--wiki-ease), filter 0.7s var(--wiki-ease);
+        }
+        .wiki-card:hover .wiki-card__image { transform: scale(1.07); filter: saturate(1.08); }
+        .wiki-card__placeholder {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 60px; height: 60px; background: var(--wiki-ink);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: #fff;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        .wiki-card__badge {
+            position: absolute; bottom: 10px; right: 10px; z-index: 6;
+            background: var(--wiki-accent-ink); color: #fff;
+            font-family: 'Space Grotesk', sans-serif; font-size: 0.68rem; font-weight: 600;
+            padding: 0.3rem 0.65rem; letter-spacing: 0.08em;
+            clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%);
+        }
+        .wiki-card--event .wiki-card__badge { background: var(--wiki-blue); }
+        .wiki-card__info { padding: 1rem 1.1rem 1.1rem; border-top: 1.5px solid var(--wiki-line); }
+        .wiki-card__name {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 0.95rem; font-weight: 600;
+            color: var(--wiki-ink); word-break: break-word;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: color 0.3s ease;
+        }
+        .wiki-card:hover .wiki-card__name { color: var(--wiki-accent-ink); }
+        .wiki-card__count { font-family: 'Outfit', sans-serif; font-size: 0.73rem; letter-spacing: 0.06em; color: var(--wiki-muted); margin-top: 0.25rem; }
+
+        /* ===== 详情视图 ===== */
+        .geo-wiki-detail { max-width: 1140px; margin: 0 auto; padding: var(--ws-l) 2rem var(--ws-xl); }
+        .geo-wiki-detail.is-entering > * { animation: wiki-rise 0.7s var(--wiki-ease) both; }
+        .geo-wiki-detail.is-entering > *:nth-child(1) { animation-delay: 0.05s; }
+        .geo-wiki-detail.is-entering > *:nth-child(2) { animation-delay: 0.12s; }
+        .geo-wiki-detail.is-entering > *:nth-child(3) { animation-delay: 0.19s; }
+        .geo-wiki-detail.is-entering > *:nth-child(4) { animation-delay: 0.26s; }
+        .geo-wiki-detail.is-entering > *:nth-child(5) { animation-delay: 0.33s; }
+
+        .geo-wiki-back {
+            display: inline-flex; align-items: center; gap: 0.55rem;
+            font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 500; letter-spacing: 0.08em;
+            color: var(--wiki-ink); background: var(--wiki-paper); border: 1.5px solid var(--wiki-line);
+            padding: 0.55rem 1.1rem; cursor: pointer; margin-bottom: var(--ws-l);
+            transition: border-color 0.35s var(--wiki-ease), color 0.35s var(--wiki-ease),
+                        box-shadow 0.35s var(--wiki-ease), transform 0.35s var(--wiki-ease);
+        }
+        .geo-wiki-back i { transition: transform 0.35s var(--wiki-ease); }
+        .geo-wiki-back:hover { border-color: var(--wiki-accent); color: var(--wiki-accent-ink); box-shadow: 5px 5px 0 var(--wiki-accent); transform: translateX(-2px); }
+        .geo-wiki-back:hover i { transform: translateX(-3px); }
+
+        .geo-wiki-hero {
+            display: flex; gap: var(--ws-l); align-items: flex-start; position: relative;
+            background: var(--wiki-paper); border: 1.5px solid var(--wiki-line);
+            padding: clamp(1.5rem, 3vw, 2.5rem); box-shadow: 8px 8px 0 var(--wiki-ink);
+        }
+        .geo-wiki-hero::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--wiki-accent) 0%, var(--wiki-blue) 100%);
+            transform-origin: left; animation: wiki-line-grow 1s var(--wiki-ease) 0.2s both;
+        }
+        .geo-wiki-hero__avatar {
+            width: clamp(150px, 20vw, 220px); aspect-ratio: 1; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--wiki-paper-2), #eceef5);
+            overflow: hidden; position: relative; border: 3px solid var(--wiki-ink);
+            box-shadow: 8px 8px 0 rgba(233, 69, 96, 0.85);
+        }
+        .geo-wiki-hero__avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .geo-wiki-hero__avatar .wiki-card__placeholder { width: 70px; height: 70px; font-size: 2rem; }
+        .geo-wiki-hero__main { flex: 1; min-width: 0; padding-top: 0.25rem; }
+        .geo-wiki-name {
+            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif; font-size: clamp(2.2rem, 5vw, 3.6rem);
+            line-height: 1; color: var(--wiki-ink); letter-spacing: 0.03em; word-break: break-word;
+            margin-bottom: var(--ws-s);
+        }
+        .geo-wiki-stats { display: flex; flex-wrap: wrap; gap: var(--ws-xs) 0.75rem; margin-bottom: var(--ws-m); }
+        .geo-wiki-stat {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 500; color: #fff;
+            background: var(--wiki-blue); padding: 0.42rem 0.95rem;
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+        }
+        .geo-wiki-stat--accent { background: var(--wiki-accent-ink); }
+        .geo-wiki-links { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+        .geo-wiki-link {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            font-family: 'Space Grotesk', sans-serif; font-size: 0.83rem; font-weight: 500;
+            color: var(--wiki-ink); text-decoration: none; border: 1.5px solid var(--wiki-line);
+            background: var(--wiki-paper-2); padding: 0.48rem 1rem;
+            transition: border-color 0.3s var(--wiki-ease), color 0.3s var(--wiki-ease),
+                        transform 0.3s var(--wiki-ease), box-shadow 0.3s var(--wiki-ease);
+        }
+        .geo-wiki-link:hover { border-color: var(--wiki-accent); color: var(--wiki-accent-ink); transform: translateY(-2px); box-shadow: 3px 3px 0 var(--wiki-accent); }
+        .geo-wiki-link i { font-size: 0.78rem; }
+
+        .geo-wiki-section {
+            position: relative; background: var(--wiki-paper); border: 1.5px solid var(--wiki-line);
+            padding: clamp(1.5rem, 3vw, 2.4rem); margin-top: var(--ws-l);
+            transition: box-shadow 0.5s var(--wiki-ease);
+        }
+        .geo-wiki-section:hover { box-shadow: 6px 6px 0 rgba(26, 26, 46, 0.08); }
+        .geo-wiki-section__title {
+            display: flex; align-items: baseline; gap: 0.9rem;
+            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif; font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+            letter-spacing: 0.12em; color: var(--wiki-ink); margin-bottom: var(--ws-m);
+            padding-bottom: 0.9rem; border-bottom: 1.5px solid var(--wiki-line); position: relative;
+        }
+        .geo-wiki-section__title::after {
+            content: ''; position: absolute; left: 0; bottom: -1.5px; width: 3.5rem; height: 3px; background: var(--wiki-accent);
+        }
+        .geo-wiki-section__index {
+            font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; font-weight: 600;
+            letter-spacing: 0.1em; color: var(--wiki-accent-ink); transform: translateY(-2px);
+        }
+
+        .geo-wiki-desc {
+            font-family: 'Noto Sans SC', sans-serif; font-size: 0.96rem; font-weight: 300;
+            line-height: 2; letter-spacing: 0.01em; color: #3a3d52; word-break: break-word;
+        }
+        .geo-wiki-desc h3, .geo-wiki-desc h4 {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-weight: 600; color: var(--wiki-ink);
+            margin: 1.6rem 0 0.6rem; display: flex; align-items: center; gap: 0.6rem;
+        }
+        .geo-wiki-desc h3::before, .geo-wiki-desc h4::before {
+            content: ''; width: 0.55rem; height: 0.55rem; background: var(--wiki-accent);
+            clip-path: polygon(0 0, 100% 0, 0 100%); flex-shrink: 0;
+        }
+        .geo-wiki-desc h3 { font-size: 1.18rem; letter-spacing: 0.03em; }
+        .geo-wiki-desc h4 { font-size: 1.05rem; letter-spacing: 0.02em; }
+        .geo-wiki-desc p { margin: 0.55rem 0; }
+        .geo-wiki-desc strong { font-weight: 600; color: var(--wiki-ink); background: linear-gradient(transparent 65%, rgba(233, 69, 96, 0.18) 65%); }
+        .geo-wiki-desc code { font-family: 'Space Grotesk', monospace; font-size: 0.88em; background: var(--wiki-paper-2); border: 1px solid var(--wiki-line); padding: 0.1em 0.4em; }
+        .geo-wiki-desc ul { padding-left: 0.4rem; margin: 0.6rem 0; list-style: none; }
+        .geo-wiki-desc li { position: relative; padding-left: 1.4rem; margin: 0.4rem 0; }
+        .geo-wiki-desc li::before { content: '—'; position: absolute; left: 0; color: var(--wiki-accent-ink); font-weight: 600; }
+        .geo-wiki-desc--empty { color: var(--wiki-muted); font-style: italic; }
+
+        /* OKF description 导语（词条正文前的 LLM 摘要） */
+        .geo-wiki-lead {
+            margin: 0 0 1.1rem;
+            padding: 0.9rem 1.1rem;
+            background: var(--wiki-paper-2);
+            border-left: 4px solid var(--wiki-accent);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 400;
+            line-height: 1.8;
+            color: var(--wiki-ink);
+        }
+
+        .geo-wiki-tags { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+        .geo-wiki-tag {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 0.82rem; font-weight: 500;
+            padding: 0.42rem 0.9rem; border: 1.5px solid var(--wiki-line); background: var(--wiki-paper-2);
+            color: var(--wiki-ink); text-decoration: none;
+            clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+            transition: background 0.3s var(--wiki-ease), color 0.3s var(--wiki-ease), transform 0.3s var(--wiki-ease), box-shadow 0.3s var(--wiki-ease);
+        }
+        .geo-wiki-tag--artist { border-color: rgba(15, 52, 96, 0.4); color: var(--wiki-blue); }
+        .geo-wiki-tag--artist:hover { background: var(--wiki-blue); color: #fff; transform: translateY(-2px); box-shadow: 3px 3px 0 var(--wiki-accent); }
+        .geo-wiki-tag--style { color: var(--wiki-muted); cursor: default; border-style: dashed; }
+
+        .geo-wiki-albums { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: clamp(0.8rem, 1.6vw, 1.1rem); }
+        .wiki-album-item {
+            background: var(--wiki-paper-2); border: 1.5px solid var(--wiki-line); overflow: hidden; cursor: pointer;
+            transition: border-color 0.35s var(--wiki-ease), transform 0.35s var(--wiki-ease), box-shadow 0.35s var(--wiki-ease);
+            animation: wiki-card-in 0.55s var(--wiki-ease) both;
+            animation-delay: min(calc(var(--i, 0) * 35ms), 0.45s);
+        }
+        .wiki-album-item:hover { border-color: var(--wiki-accent); transform: translateY(-4px); box-shadow: 5px 5px 0 var(--wiki-accent); }
+        .wiki-album-item__cover { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, var(--wiki-paper), #eceef5); overflow: hidden; }
+        .wiki-album-item__cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--wiki-ease); }
+        .wiki-album-item:hover .wiki-album-item__cover img { transform: scale(1.09); }
+        .wiki-album-item__title {
+            padding: 0.7rem 0.75rem; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 0.8rem;
+            color: var(--wiki-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1.5px solid var(--wiki-line);
+        }
+        .geo-wiki-albums-pagination { margin-top: var(--ws-l); }
+        .geo-wiki-albums { scroll-margin-top: calc(80px + 1rem); }
+
+        .geo-wiki-detail-loading, .geo-wiki-detail-error {
+            text-align: center; padding: var(--ws-2xl) var(--ws-m); color: var(--wiki-muted);
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; letter-spacing: 0.1em;
+        }
+        .geo-wiki-detail-loading i { font-size: 2rem; color: var(--wiki-accent); margin-bottom: var(--ws-s); display: block; }
+
+        /* ===== 响应式 / 无障碍 ===== */
+        @media (max-width: 900px) {
+            .geo-wiki-hero { flex-direction: column; align-items: center; text-align: center; box-shadow: 8px 8px 0 var(--wiki-ink); }
+            .geo-wiki-stats, .geo-wiki-links { justify-content: center; }
+        }
+        @media (max-width: 600px) {
+            .geo-wiki-page { padding-top: 72px; }
+            .geo-wiki-detail { padding: var(--ws-m) 1.25rem var(--ws-l); }
+            .geo-wiki-hero { padding: var(--ws-m); gap: var(--ws-m); }
+            .geo-wiki-hero__avatar { width: min(55vw, 180px); }
+            .geo-wiki-albums { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .geo-wiki-page *, .geo-wiki-page *::before, .geo-wiki-page *::after {
+                animation: none !important; transition-duration: 0.12s !important;
+            }
+            .wiki-card:hover, .wiki-album-item:hover { transform: none; }
+            [data-rv].rv-armed { opacity: 1; transform: none; }
+            .wiki-progress { display: none; }
+        }

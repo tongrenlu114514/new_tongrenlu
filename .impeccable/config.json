@@ -1,0 +1,159 @@
+{
+  "buildPath": "code",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-11-20T15:32:59.738Z",
+        "reason": "DESIGN.md pins Space Grotesk as the UI/label font; the brief owns this choice"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/assets/css/wiki.css"
+        ],
+        "createdAt": "2026-11-20T15:32:59.787Z",
+        "reason": "DESIGN.md defines --wiki-ease-snap as the system's overshoot easing"
+      },
+      {
+        "rule": "hero-eyebrow-chip",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/album.html"
+        ],
+        "createdAt": "2026-11-20T15:33:02.473Z",
+        "reason": "DESIGN.md registers the header eyebrow as a component with its own spec"
+      },
+      {
+        "rule": "hero-eyebrow-chip",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/artist-showcase.html"
+        ],
+        "createdAt": "2026-11-20T15:33:02.514Z",
+        "reason": "DESIGN.md registers the header eyebrow as a component with its own spec"
+      },
+      {
+        "rule": "hero-eyebrow-chip",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/event.html"
+        ],
+        "createdAt": "2026-11-20T15:33:02.560Z",
+        "reason": "DESIGN.md registers the header eyebrow as a component with its own spec"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/album.html"
+        ],
+        "createdAt": "2026-11-20T15:33:02.605Z",
+        "reason": "The 4px gradient rule under a header is the system's documented signature line, not a side-tab"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/album.html"
+        ],
+        "createdAt": "2026-11-20T15:33:02.652Z",
+        "reason": "DESIGN.md's 56px grid field in the dark header is a named signature element"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/event.html"
+        ],
+        "createdAt": "2026-11-20T15:33:02.698Z",
+        "reason": "The 4px gradient rule under a header is the system's documented signature line, not a side-tab"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/event.html"
+        ],
+        "createdAt": "2026-11-20T15:33:02.745Z",
+        "reason": "DESIGN.md's 56px grid field in the dark header is a named signature element"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/assets/css/wiki.css"
+        ],
+        "createdAt": "2026-11-20T15:33:02.790Z",
+        "reason": "Documented signature: 4px gradient rule between hero and body"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/assets/css/wiki.css"
+        ],
+        "createdAt": "2026-11-20T15:33:02.836Z",
+        "reason": "DESIGN.md's 56px grid field is a named signature element"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/assets/css/list-page.css"
+        ],
+        "createdAt": "2026-11-20T15:33:02.883Z",
+        "reason": "Documented signature: 4px gradient rule between hero and body"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/assets/css/list-page.css"
+        ],
+        "createdAt": "2026-11-20T15:33:02.934Z",
+        "reason": "DESIGN.md's 56px grid field is a named signature element"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/assets/css/geometric-theme.css"
+        ],
+        "createdAt": "2026-11-20T15:33:02.982Z",
+        "reason": "Documented signature: 4px gradient rule between hero and body"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/assets/css/geometric-theme.css"
+        ],
+        "createdAt": "2026-11-20T15:33:03.035Z",
+        "reason": "DESIGN.md's 56px grid field is a named signature element"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/artist-showcase.html"
+        ],
+        "createdAt": "2026-11-20T15:33:43.741Z",
+        "reason": "Documented signature: 4px gradient rule on the detail hero, not a decorative side tab"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "tongrenlu-web/src/main/resources/static/artist-showcase.html"
+        ],
+        "createdAt": "2026-11-20T15:33:49.552Z",
+        "reason": "The 56px grid field is DESIGN.md's named header texture; scan attributes the linked stylesheet here"
+      }
+    ]
+  }
+}

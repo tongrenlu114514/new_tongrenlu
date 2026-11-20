@@ -1,5 +1,16 @@
 // 音乐库相关功能
 
+// ==================== 工具：HTML 转义 ====================
+// 专辑标题/描述来自外部抓取与生成内容，进模板前一律转义
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // ==================== 全局状态 ====================
 let currentKeyword = '';
 let currentPage = 1;
@@ -97,13 +108,60 @@ const searchHistory = {
 
 // ==================== 模态框功能 ====================
 
+// 弹层焦点管理：打开时把焦点送进去，关闭时还给触发它的卡片
+var albumModalReturnFocus = null;
+
+function albumModalFocusables(modal) {
+    return Array.prototype.filter.call(
+        modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+        function (el) { return el.offsetParent !== null; }
+    );
+}
+
 function openAlbumModal() {
-    $('#albumModal').css('display', 'flex');
+    var modal = document.getElementById('albumModal');
+    if (!modal) return;
+    albumModalReturnFocus = document.activeElement;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    var content = modal.querySelector('.geo-modal__content');
+    if (content) content.scrollTop = 0;
+    var closeBtn = modal.querySelector('.geo-modal__close');
+    if (closeBtn) closeBtn.focus();
 }
 
 function closeAlbumModal() {
-    $('#albumModal').css('display', 'none');
+    var modal = document.getElementById('albumModal');
+    if (!modal || modal.style.display === 'none') return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    if (albumModalReturnFocus && typeof albumModalReturnFocus.focus === 'function') {
+        albumModalReturnFocus.focus();
+    }
+    albumModalReturnFocus = null;
 }
+
+document.addEventListener('keydown', function (e) {
+    var modal = document.getElementById('albumModal');
+    if (!modal || modal.style.display !== 'flex') return;
+    if (e.key === 'Escape') {
+        e.preventDefault();
+        closeAlbumModal();
+        return;
+    }
+    if (e.key !== 'Tab') return;
+    var focusables = albumModalFocusables(modal);
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+    }
+});
 
 async function updateAlbumModal(albumId) {
     try {
@@ -346,12 +404,14 @@ function renderSuggestions(items) {
     
     let html = '';
     items.forEach((item, index) => {
+        const title = escapeHtml(item.title);
+        const artist = escapeHtml(item.artist || '未知艺术家');
         html += `
-            <div class="suggestion-item" data-index="${index}" data-title="${item.title}">
-                <div class="suggestion-icon"><i class="fas fa-music"></i></div>
+            <div class="suggestion-item" role="option" id="suggestion-opt-${index}" aria-selected="false" data-index="${index}" data-title="${title}">
+                <div class="suggestion-icon" aria-hidden="true"><i class="fas fa-music"></i></div>
                 <div class="suggestion-content">
-                    <div class="suggestion-title">${item.title}</div>
-                    <div class="suggestion-artist">${item.artist || '未知艺术家'}</div>
+                    <div class="suggestion-title">${title}</div>
+                    <div class="suggestion-artist">${artist}</div>
                 </div>
             </div>
         `;
@@ -359,6 +419,7 @@ function renderSuggestions(items) {
     
     $list.html(html);
     $('#searchSuggestions').show();
+    $('.geo-search__input').attr('aria-expanded', 'true').removeAttr('aria-activedescendant');
     highlightedIndex = -1;
     suggestionsData = items;
 }
@@ -375,14 +436,15 @@ function renderSearchHistory() {
     
     let html = '<div class="suggestions-header"><span>搜索历史</span></div>';
     history.forEach((keyword, index) => {
+        const kw = escapeHtml(keyword);
         html += `
-            <div class="suggestion-item history-item" data-index="${index}" data-keyword="${keyword}">
-                <div class="suggestion-icon"><i class="fas fa-history"></i></div>
+            <div class="suggestion-item history-item" role="option" id="history-opt-${index}" aria-selected="false" data-index="${index}" data-keyword="${kw}">
+                <div class="suggestion-icon" aria-hidden="true"><i class="fas fa-history"></i></div>
                 <div class="suggestion-content">
-                    <div class="suggestion-title">${keyword}</div>
+                    <div class="suggestion-title">${kw}</div>
                 </div>
-                <button class="history-delete" data-keyword="${keyword}">
-                    <i class="fas fa-times"></i>
+                <button class="history-delete" data-keyword="${kw}" aria-label="删除搜索历史「${kw}」">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
         `;
@@ -390,6 +452,7 @@ function renderSearchHistory() {
     
     $list.html(html);
     $('#searchSuggestions').show();
+    $('.geo-search__input').attr('aria-expanded', 'true').removeAttr('aria-activedescendant');
     highlightedIndex = -1;
     suggestionsData = [];
 }
@@ -397,17 +460,23 @@ function renderSearchHistory() {
 // 隐藏搜索建议
 function hideSuggestions() {
     $('#searchSuggestions').hide();
+    $('.geo-search__input').attr('aria-expanded', 'false').removeAttr('aria-activedescendant');
     highlightedIndex = -1;
 }
 
 // 高亮建议项
 function highlightSuggestion(index) {
     const $items = $('.suggestion-item');
-    $items.removeClass('highlighted');
-    
+    $items.removeClass('highlighted').attr('aria-selected', 'false');
+    const $input = $('.geo-search__input');
+
     if (index >= 0 && index < $items.length) {
-        $items.eq(index).addClass('highlighted');
+        const $active = $items.eq(index).addClass('highlighted').attr('aria-selected', 'true');
         highlightedIndex = index;
+        $input.attr('aria-activedescendant', $active.attr('id') || '');
+    } else {
+        highlightedIndex = -1;
+        $input.removeAttr('aria-activedescendant');
     }
 }
 
@@ -511,21 +580,25 @@ function renderSearchResults(data) {
     let html = '';
     $.each(data.records, (index, music) => {
         const description = music.description || '暂无描述';
+        const title = escapeHtml(music.title || '未知专辑');
+        const desc = escapeHtml(description);
+        const coverUrl = escapeHtml(music.cloudMusicPicUrl || '');
+        const albumId = escapeHtml(music.id || '');
         html += `
-        <div class="music-card" data-index="${index}" data-title="${music.title || '未知专辑'}" data-description="${description}" data-access-count="${music.accessCount || 0}" data-cover-url="${music.cloudMusicPicUrl || ''}" data-album-id="${music.id || ''}">
-            <div class="album-cover" data-original-url="${music.cloudMusicPicUrl || ''}">
-                ${music.cloudMusicPicUrl ? '' : '<div class="fallback-content">🎵</div>'}
-                <div class="album-description-overlay">
-                    <div class="album-description-text">${description}</div>
+        <div class="music-card" tabindex="0" role="button" aria-label="查看专辑《${title}》" data-index="${index}" data-title="${title}" data-description="${desc}" data-access-count="${Number(music.accessCount) || 0}" data-cover-url="${coverUrl}" data-album-id="${albumId}">
+            <div class="album-cover" data-original-url="${coverUrl}">
+                ${music.cloudMusicPicUrl ? '' : '<div class="fallback-content" aria-hidden="true">🎵</div>'}
+                <div class="album-description-overlay" aria-hidden="true">
+                    <div class="album-description-text">${desc}</div>
                 </div>
             </div>
             <div class="card-content">
-                <h3 class="card-title">${music.title || '未知专辑'}</h3>
+                <h3 class="card-title">${title}</h3>
                 <div class="card-stats">
-                    <span><i class="far fa-heart"></i> ${music.accessCount || 0}</span>
+                    <span><i class="far fa-heart" aria-hidden="true"></i> ${Number(music.accessCount) || 0}</span>
                 </div>
             </div>
-            <button class="play-button"><i class="fas fa-play"></i></button>
+            <button class="play-button" aria-label="播放《${title}》"><i class="fas fa-play" aria-hidden="true"></i></button>
         </div>
         `;
     });
@@ -559,92 +632,45 @@ function renderSearchResults(data) {
         }
     });
 
+    // 键盘等价：卡片是 role=link，Enter/Space 打开详情（事件源为播放按钮时交给按钮自己处理）
+    $('.music-card').off('keydown').on('keydown', function (e) {
+        if (e.target !== this) return;
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        const albumId = $(this).data('album-id');
+        if (albumId) {
+            updateAlbumModal(albumId);
+            openAlbumModal();
+        }
+    });
+
     triggerLazyLoadAfterSearch();
 }
 
 // ==================== 分页功能 ====================
 
-function renderPagination(data, keyword) {
+let pendingPaginationScroll = false;
+
+function renderPagination(data) {
     totalPages = data.pages || 1;
     totalRecords = data.total || 0;
     currentPage = data.current || 1;
-    
-    // 更新分页信息
-    $('#paginationInfo').text(`共 ${totalRecords} 条，第 ${currentPage} 页 / 共 ${totalPages} 页`);
-    
-    // 更新跳转输入框
-    $('#jumpInput').attr('max', totalPages).val(currentPage);
-    
-    // 渲染分页按钮
-    renderPaginationButtons(currentPage, totalPages, keyword);
-}
 
-function renderPaginationButtons(current, pages, keyword) {
-    const $controls = $('#paginationControls');
-    let html = '';
-    
-    // 上一页按钮
-    if (current > 1) {
-        html += `<button class="page-btn" data-page="${current - 1}"><i class="fas fa-chevron-left"></i></button>`;
-    } else {
-        html += `<button class="page-btn" disabled><i class="fas fa-chevron-left"></i></button>`;
-    }
-    
-    // 页码按钮（智能省略）
-    const maxVisible = 5;
-    let startPage = Math.max(1, current - Math.floor(maxVisible / 2));
-    let endPage = Math.min(pages, startPage + maxVisible - 1);
-    
-    if (endPage - startPage < maxVisible - 1) {
-        startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-    
-    // 第一页
-    if (startPage > 1) {
-        html += `<button class="page-btn" data-page="1">1</button>`;
-        if (startPage > 2) {
-            html += `<span class="page-ellipsis">...</span>`;
+    TongrenluPagination.render('#paginationContainer', {
+        page: currentPage,
+        totalPages: totalPages,
+        total: totalRecords,
+        unit: '条',
+        jump: true,
+        scroll: pendingPaginationScroll,
+        scrollTarget: '.music-grid',
+        onPage: function(page) {
+            pendingPaginationScroll = true;
+            searchMusic(currentKeyword, page, currentOrderBy, currentTag);
         }
-    }
-    
-    // 中间页码
-    for (let i = startPage; i <= endPage; i++) {
-        if (i === current) {
-            html += `<button class="page-btn active" data-page="${i}">${i}</button>`;
-        } else {
-            html += `<button class="page-btn" data-page="${i}">${i}</button>`;
-        }
-    }
-    
-    // 最后一页
-    if (endPage < pages) {
-        if (endPage < pages - 1) {
-            html += `<span class="page-ellipsis">...</span>`;
-        }
-        html += `<button class="page-btn" data-page="${pages}">${pages}</button>`;
-    }
-    
-    // 下一页按钮
-    if (current < pages) {
-        html += `<button class="page-btn" data-page="${current + 1}"><i class="fas fa-chevron-right"></i></button>`;
-    } else {
-        html += `<button class="page-btn" disabled><i class="fas fa-chevron-right"></i></button>`;
-    }
-    
-    $controls.html(html);
-    
-    // 绑定分页按钮事件 - 使用事件委托确保事件能正确触发
-    $controls.off('click', '.page-btn').on('click', '.page-btn', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const $btn = $(this);
-        if ($btn.prop('disabled')) return;
-        
-        const page = $btn.data('page');
-        console.log('分页点击:', page);
-        searchMusic(currentKeyword, page, currentOrderBy, currentTag);
     });
+
+    pendingPaginationScroll = false;
 }
 
 // ==================== 动态标签功能 ====================
@@ -666,21 +692,22 @@ function loadPopularTags() {
 
 function renderTags(tags) {
     const $filterTags = $('#filterTags');
-    
-    // 始终保留"全部"选项
-    let html = '<div class="tag active" data-tag="">全部</div>';
-    
+
+    // 始终保留"全部"选项；标签是可切换的筛选器，用原生按钮 + aria-pressed 表达状态
+    let html = '<button type="button" class="tag active" data-tag="" aria-pressed="true">全部</button>';
+
     // 添加后端返回的标签
     tags.forEach(tag => {
-        html += `<div class="tag" data-tag="${tag.tag}">${tag.tag}</div>`;
+        const label = escapeHtml(tag.tag);
+        html += `<button type="button" class="tag" data-tag="${label}" aria-pressed="false">${label}</button>`;
     });
-    
+
     $filterTags.html(html);
-    
+
     // 绑定标签点击事件
     $('.tag').off('click').on('click', function() {
-        $('.tag').removeClass('active');
-        $(this).addClass('active');
+        $('.tag').removeClass('active').attr('aria-pressed', 'false');
+        $(this).addClass('active').attr('aria-pressed', 'true');
         const tag = $(this).data('tag') || '';
         searchMusic(currentKeyword, 1, currentOrderBy, tag);
     });
@@ -691,7 +718,7 @@ function renderTags(tags) {
 $(window).on('click', function (event) {
     const modal = $('#albumModal');
     if (event.target === modal[0]) {
-        modal.css('display', 'none');
+        closeAlbumModal();
     }
     
     // 点击外部关闭搜索建议
@@ -743,7 +770,7 @@ $(function () {
         setTimeout(function() {
             $('.tag').each(function() {
                 if ($(this).text() === filterTag) {
-                    $(this).addClass('active');
+                    $(this).addClass('active').attr('aria-pressed', 'true');
                 }
             });
         }, 500);
@@ -855,19 +882,6 @@ $(document).on('click', '.history-delete', function(e) {
 $('#sortSelect').on('change', function() {
     currentOrderBy = $(this).val();
     searchMusic(currentKeyword, 1, currentOrderBy, currentTag);
-});
-
-// 分页跳转
-$('#jumpBtn').on('click', function() {
-    const page = parseInt($('#jumpInput').val()) || 1;
-    const validPage = Math.max(1, Math.min(page, totalPages));
-    searchMusic(currentKeyword, validPage, currentOrderBy, currentTag);
-});
-
-$('#jumpInput').on('keypress', function(e) {
-    if (e.key === 'Enter') {
-        $('#jumpBtn').click();
-    }
 });
 
 // 触发懒加载

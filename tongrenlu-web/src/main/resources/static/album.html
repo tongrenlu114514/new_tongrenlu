@@ -10,35 +10,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/geometric-theme.css" rel="stylesheet">
+    <link href="webjars/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/geometric-theme.css?v=20261120" rel="stylesheet">
+    <link href="assets/css/wiki.css?v=20261120" rel="stylesheet">
+    <link href="assets/css/list-page.css?v=20261120" rel="stylesheet">
+    <link href="components/shared/pagination.css?v=20261120" rel="stylesheet">
 
     <style>
         /* ================================================================
            音乐库 — Award Tier Design System（与 wiki 同一语言）
            令牌 → 基础 → 头部 → 筛选工具条 → 网格卡片 → 骨架 → 分页 → 模态框 → 动效 → 响应式
            ================================================================ */
-        :root {
-            /* 色彩令牌（:root 全局作用域：模态框等页面外元素也需要） */
-            --wiki-ink: #1a1a2e;
-            --wiki-ink-soft: #23233d;
-            --wiki-accent: #e94560;
-            --wiki-blue: #0f3460;
-            --wiki-paper: #ffffff;
-            --wiki-paper-2: #f6f7fb;
-            --wiki-line: #e5e7ef;
-            --wiki-muted: #8a90a6;
-            /* 空白令牌 */
-            --ws-xs: 0.5rem;
-            --ws-s: 1rem;
-            --ws-m: 1.5rem;
-            --ws-l: 2.5rem;
-            --ws-xl: 4rem;
-            --ws-2xl: clamp(4rem, 9vw, 7.5rem);
-            /* 动效令牌 */
-            --wiki-ease: cubic-bezier(0.22, 1, 0.36, 1);
-            --wiki-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
 
         .geo-music-page {
             padding-top: 80px;
@@ -98,23 +80,7 @@
         }
 
         /* ================= 动效原语 ================= */
-        @keyframes wiki-rise {
-            from { opacity: 0; transform: translateY(28px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes wiki-card-in {
-            from { opacity: 0; transform: translateY(20px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes wiki-line-grow {
-            from { transform: scaleX(0); }
-            to   { transform: scaleX(1); }
-        }
-        @keyframes wiki-glow-drift {
-            0%   { transform: translate(-10%, -6%) rotate(-4deg); }
-            50%  { transform: translate(6%, 4%) rotate(3deg); }
-            100% { transform: translate(-10%, -6%) rotate(-4deg); }
-        }
+        /* 共享动效原语由 wiki.css / list-page.css 提供，本页不再复制 */
 
         [data-rv].rv-armed {
             opacity: 0;
@@ -128,146 +94,14 @@
             transform: none;
         }
 
-        /* ===== 头部 ===== */
-        .geo-music-header {
-            position: relative;
-            overflow: hidden;
-            background:
-                radial-gradient(ellipse 60% 90% at 85% 10%, rgba(233, 69, 96, 0.22), transparent 60%),
-                radial-gradient(ellipse 50% 80% at 10% 90%, rgba(15, 52, 96, 0.5), transparent 65%),
-                linear-gradient(160deg, var(--wiki-ink) 0%, var(--wiki-ink-soft) 55%, #2a2a4a 100%);
-            padding: var(--ws-2xl) 2rem var(--ws-xl);
-            text-align: center;
-        }
-
-        .geo-music-header::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-            background-size: 56px 56px;
-            -webkit-mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
-            mask-image: radial-gradient(ellipse 90% 100% at 50% 40%, black 30%, transparent 100%);
-        }
-
-        .geo-music-header::after {
-            content: '';
-            position: absolute;
-            inset: -20%;
-            background:
-                radial-gradient(circle 300px at 80% 30%, rgba(233, 69, 96, 0.14), transparent 70%);
-            animation: wiki-glow-drift 14s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        .geo-music-header__watermark {
-            position: absolute;
-            top: 46%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
-            font-size: clamp(10rem, 34vw, 30rem);
-            letter-spacing: 0.08em;
-            line-height: 1;
-            color: transparent;
-            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.07);
-            user-select: none;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        .geo-music-header__inner {
-            position: relative;
-            z-index: 2;
-        }
-
-        .geo-music-header__eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.72rem;
-            font-weight: 500;
-            letter-spacing: 0.35em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.55);
-            margin-bottom: var(--ws-m);
-            animation: wiki-rise 0.9s var(--wiki-ease) 0.05s both;
-        }
-
-        .geo-music-header__eyebrow::before,
-        .geo-music-header__eyebrow::after {
-            content: '';
-            width: 2.5rem;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        .geo-music-title {
-            font-family: 'Bebas Neue', 'Noto Sans SC', sans-serif;
-            font-size: clamp(3.2rem, 9vw, 6.5rem);
-            line-height: 0.95;
-            letter-spacing: 0.04em;
-            color: #fff;
-            margin: 0 0 var(--ws-m);
-            animation: wiki-rise 0.9s var(--wiki-ease) 0.15s both;
-        }
-
-        .geo-music-title .accent {
-            color: var(--wiki-accent);
-        }
-
-        .geo-music-subtitle {
-            font-family: 'Noto Sans SC', sans-serif;
-            font-weight: 300;
-            font-size: clamp(0.9rem, 1.4vw, 1.05rem);
-            letter-spacing: 0.14em;
-            color: rgba(255, 255, 255, 0.65);
-            margin: 0 auto var(--ws-xl);
-            max-width: 34em;
-            animation: wiki-rise 0.9s var(--wiki-ease) 0.25s both;
-        }
-
         /* ===== 搜索 ===== */
-        .geo-search {
-            max-width: 640px;
-            margin: 0 auto;
-            position: relative;
-            animation: wiki-rise 0.9s var(--wiki-ease) 0.35s both;
-        }
-
-        .geo-search__input {
-            width: 100%;
-            padding: 1.1rem 4.2rem 1.1rem 1.4rem;
-            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 0.02em;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: rgba(255, 255, 255, 0.94);
-            color: var(--wiki-ink);
-            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
-            transition: background 0.4s var(--wiki-ease), box-shadow 0.4s var(--wiki-ease);
-        }
-
-        .geo-search__input:focus {
-            outline: none;
-            background: #fff;
-            box-shadow: 0 0 0 2px var(--wiki-accent) inset;
-        }
-
-        .geo-search__input::placeholder {
-            color: var(--wiki-muted);
-        }
-
         .geo-search__btn {
             position: absolute;
             right: 6px;
             top: 6px;
             bottom: 6px;
             width: 52px;
-            background: var(--wiki-accent);
+            background: var(--wiki-accent-ink);
             border: none;
             color: white;
             cursor: pointer;
@@ -343,7 +177,7 @@
         }
 
         .suggestion-item:hover .suggestion-icon {
-            background: var(--wiki-accent);
+            background: var(--wiki-accent-ink);
         }
 
         .geo-suggestions__info,
@@ -401,76 +235,14 @@
             transition: opacity 0.25s ease, color 0.25s ease, transform 0.25s var(--wiki-ease-snap);
         }
 
-        .history-item:hover .history-delete {
+        .history-item:hover .history-delete,
+        .history-item:focus-within .history-delete {
             opacity: 1;
         }
 
         .history-delete:hover {
-            color: var(--wiki-accent);
+            color: var(--wiki-accent-ink);
             transform: translateY(-50%) rotate(90deg);
-        }
-
-        /* ===== 筛选工具条 ===== */
-        .geo-filter-section {
-            position: relative;
-            background: var(--wiki-paper);
-            border-bottom: 1.5px solid var(--wiki-line);
-            padding: var(--ws-m) 2rem;
-            z-index: 50;
-        }
-
-        .geo-filter-inner {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: var(--ws-s);
-        }
-
-        .geo-tags,
-        #filterTags {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .geo-tag,
-        .tag {
-            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 500;
-            padding: 0.5rem 1.1rem;
-            border: 1.5px solid var(--wiki-line);
-            background: var(--wiki-paper-2);
-            color: var(--wiki-muted);
-            cursor: pointer;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-            transition:
-                color 0.3s var(--wiki-ease),
-                border-color 0.3s var(--wiki-ease),
-                background 0.3s var(--wiki-ease),
-                transform 0.3s var(--wiki-ease),
-                box-shadow 0.3s var(--wiki-ease);
-        }
-
-        .geo-tag:hover,
-        .tag:hover {
-            border-color: var(--wiki-accent);
-            color: var(--wiki-accent);
-            transform: translateY(-2px);
-        }
-
-        .geo-tag.active,
-        .tag.active {
-            background: var(--wiki-accent);
-            border-color: var(--wiki-accent);
-            color: white;
-            transform: none;
-            box-shadow: 3px 3px 0 rgba(26, 26, 46, 0.85);
         }
 
         .geo-sort {
@@ -503,61 +275,13 @@
             border-color: var(--wiki-accent);
         }
 
-        /* ===== 音乐网格 ===== */
-        .music-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: clamp(1rem, 2.2vw, 1.75rem);
-            padding: var(--ws-l) 2rem var(--ws-xl);
-            max-width: 1500px;
-            margin: 0 auto;
-        }
-
-        /* 音乐卡片 */
-        .music-card {
-            position: relative;
-            background: var(--wiki-paper);
-            border: 1.5px solid var(--wiki-line);
-            overflow: hidden;
-            cursor: pointer;
-            transition:
-                transform 0.45s var(--wiki-ease),
-                border-color 0.45s var(--wiki-ease),
-                box-shadow 0.45s var(--wiki-ease);
-            animation: wiki-card-in 0.7s var(--wiki-ease) both;
-            animation-delay: min(calc(var(--i, 0) * 45ms), 0.6s);
-        }
-
-        .music-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 26px;
-            height: 26px;
-            background: var(--wiki-accent);
-            clip-path: polygon(0 0, 100% 0, 0 100%);
-            opacity: 0;
-            transform: scale(0.4);
-            transition: opacity 0.35s ease, transform 0.45s var(--wiki-ease-snap);
-            z-index: 5;
-        }
-
-        .music-card:hover {
-            transform: translateY(-6px);
-            border-color: var(--wiki-ink);
-            box-shadow: 10px 10px 0 var(--wiki-accent);
-        }
-
-        .music-card:hover::before {
-            opacity: 1;
-            transform: scale(1);
-        }
-
         .music-card .album-cover {
             width: 100%;
             aspect-ratio: 1;
             background: linear-gradient(135deg, var(--wiki-paper-2), #eceef5);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             position: relative;
             overflow: hidden;
         }
@@ -615,7 +339,7 @@
         }
 
         .music-card:hover .card-title {
-            color: var(--wiki-accent);
+            color: var(--wiki-accent-ink);
         }
 
         .music-card .card-stats {
@@ -635,7 +359,7 @@
             right: 10px;
             width: 40px;
             height: 40px;
-            background: var(--wiki-accent);
+            background: var(--wiki-accent-ink);
             border: none;
             color: white;
             font-size: 0.8rem;
@@ -735,114 +459,9 @@
             color: var(--wiki-muted);
         }
 
-        /* ===== 分页 ===== */
+        /* ===== 分页（结构、样式与无障碍行为见 components/shared/pagination.css） ===== */
         .geo-music-page .geo-pagination {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: var(--ws-s) var(--ws-m);
             padding: 0 2rem var(--ws-xl);
-        }
-
-        .geo-music-page .geo-pagination__info {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.85rem;
-            color: var(--wiki-muted);
-        }
-
-        .geo-music-page .geo-pagination__controls {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .geo-music-page .page-btn {
-            font-family: 'Space Grotesk', sans-serif;
-            min-width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1.5px solid var(--wiki-line);
-            background: var(--wiki-paper);
-            color: var(--wiki-ink);
-            cursor: pointer;
-            padding: 0 0.5rem;
-            transition:
-                border-color 0.3s var(--wiki-ease),
-                color 0.3s var(--wiki-ease),
-                background 0.3s var(--wiki-ease),
-                transform 0.15s ease;
-        }
-
-        .geo-music-page .page-btn:hover:not(.active) {
-            border-color: var(--wiki-accent);
-            color: var(--wiki-accent);
-            transform: translateY(-2px);
-        }
-
-        .geo-music-page .page-btn:active {
-            transform: translateY(0) scale(0.95);
-        }
-
-        .geo-music-page .page-btn.active {
-            background: var(--wiki-accent);
-            border-color: var(--wiki-accent);
-            color: white;
-            transform: none;
-        }
-
-        .geo-music-page .page-ellipsis {
-            padding: 0 0.4rem;
-            color: var(--wiki-muted);
-        }
-
-        .geo-pagination__jump {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
-            font-size: 0.85rem;
-            color: var(--wiki-muted);
-        }
-
-        .geo-pagination__jump-input {
-            width: 56px;
-            padding: 0.5rem;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
-            border: 1.5px solid var(--wiki-line);
-            background: var(--wiki-paper);
-            color: var(--wiki-ink);
-            text-align: center;
-            transition: border-color 0.3s ease;
-        }
-
-        .geo-pagination__jump-input:focus {
-            outline: none;
-            border-color: var(--wiki-accent);
-        }
-
-        .geo-pagination__jump-btn {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            padding: 0.5rem 1rem;
-            border: 1.5px solid var(--wiki-accent);
-            background: var(--wiki-accent);
-            color: white;
-            cursor: pointer;
-            transition: background 0.3s ease, border-color 0.3s ease, transform 0.15s ease;
-        }
-
-        .geo-pagination__jump-btn:hover {
-            background: var(--wiki-blue);
-            border-color: var(--wiki-blue);
-        }
-
-        .geo-pagination__jump-btn:active {
-            transform: scale(0.95);
         }
 
         /* ===== 模态框（专辑详情）— Award 重设计 ===== */
@@ -863,7 +482,7 @@
             max-height: 88vh;
             overflow-y: auto;
             border: 1.5px solid var(--wiki-line);
-            box-shadow: 14px 14px 0 var(--wiki-ink);
+            box-shadow: 8px 8px 0 var(--wiki-ink);
             position: relative;
         }
 
@@ -876,7 +495,7 @@
             right: 0.9rem;
             width: 38px;
             height: 38px;
-            background: var(--wiki-accent);
+            background: var(--wiki-accent-ink);
             clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
             transition:
                 background 0.3s ease,
@@ -933,6 +552,9 @@
             aspect-ratio: 1;
             height: auto;
             background: var(--wiki-accent);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1057,8 +679,8 @@
         }
 
         .report-error-btn:hover {
-            border-color: var(--wiki-accent);
-            color: var(--wiki-accent);
+            border-color: var(--wiki-accent-ink);
+            color: var(--wiki-accent-ink);
             transform: translateY(-2px);
         }
 
@@ -1146,7 +768,7 @@
         .track-play-btn {
             width: 30px;
             height: 30px;
-            background: var(--wiki-accent);
+            background: var(--wiki-accent-ink);
             border: none;
             color: white;
             cursor: pointer;
@@ -1174,7 +796,7 @@
         }
 
         .track:hover .track-number {
-            color: var(--wiki-accent);
+            color: var(--wiki-accent-ink);
         }
 
         .track-info {
@@ -1213,10 +835,11 @@
         }
 
         .thbwiki-link:hover {
-            color: var(--wiki-accent);
+            color: var(--wiki-accent-ink);
             transform: translate(2px, -2px);
         }
 
+        /* 置信度只用墨色深浅分三档，不引入调色板外的绿与琥珀 */
         .confidence-badge {
             font-size: 0.7rem;
             width: 16px;
@@ -1224,19 +847,19 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
         }
 
         .confidence-high {
-            color: #22c55e;
+            color: var(--wiki-ink);
         }
 
         .confidence-medium {
-            color: #f59e0b;
+            color: var(--wiki-muted);
         }
 
         .confidence-low {
             color: var(--wiki-muted);
+            opacity: 0.55;
         }
 
         .track-duration {
@@ -1257,12 +880,6 @@
         }
 
         /* ================= 响应式 ================= */
-        @media (max-width: 900px) {
-            .geo-music-header {
-                padding: var(--ws-xl) 1.5rem var(--ws-l);
-            }
-        }
-
         @media (max-width: 600px) {
             .geo-modal__header {
                 flex-direction: column;
@@ -1278,21 +895,6 @@
             .geo-music-page {
                 padding-top: 72px;
             }
-            .geo-music-header {
-                padding: var(--ws-l) 1.25rem 2.5rem;
-            }
-            .music-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.9rem;
-                padding: var(--ws-m) 1.25rem var(--ws-l);
-            }
-            .geo-filter-section {
-                padding: var(--ws-s) 1.25rem;
-            }
-            .geo-filter-inner {
-                flex-direction: column;
-                align-items: flex-start;
-            }
             .geo-music-page .geo-pagination {
                 padding: 0 1.25rem var(--ws-l);
             }
@@ -1306,10 +908,10 @@
             .geo-modal *,
             .geo-modal *::before,
             .geo-modal *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
+                animation: none !important;
+                transition-duration: 0.12s !important;
             }
+            .music-card:hover { transform: none; }
             [data-rv].rv-armed {
                 opacity: 1;
                 transform: none;
@@ -1321,6 +923,7 @@
     </style>
 </head>
 <body class="geo-theme">
+    <a class="skip-link" href="#main">跳到主要内容</a>
     <!-- 阅读进度条 -->
     <div class="wiki-progress" aria-hidden="true">
         <span class="wiki-progress__bar" id="wikiProgressBar"></span>
@@ -1332,9 +935,8 @@
         <div class="geo-nav__links">
             <a href="index.html" class="geo-nav__link">首页</a>
             <a href="album.html" class="geo-nav__link active">音乐库</a>
-            <a href="wiki.html?type=artist" class="geo-nav__link">艺术家</a>
-            <a href="wiki.html?type=event" class="geo-nav__link">展会</a>
-            <a href="wiki.html" class="geo-nav__link">百科</a>
+            <a href="artist-showcase.html" class="geo-nav__link">艺术家</a>
+            <a href="event.html" class="geo-nav__link">展会</a>
         </div>
         <div class="geo-nav__stats">
             <span class="geo-nav__number" id="navAlbumCount">--</span>
@@ -1343,19 +945,21 @@
     </nav>
 
     <!-- 音乐库页面 -->
-    <div class="geo-music-page">
+    <main id="main" class="geo-music-page">
         <!-- 搜索头部 -->
         <div class="geo-music-header">
-            <span class="geo-music-header__watermark" aria-hidden="true">MUSIC</span>
+            <div class="geo-music-header__decor" aria-hidden="true">
+                <span class="geo-music-header__watermark">MUSIC</span>
+            </div>
             <div class="geo-music-header__inner">
                 <div class="geo-music-header__eyebrow">Doujin Music Archive</div>
                 <h1 class="geo-music-title">音乐<span class="accent">库</span></h1>
                 <p class="geo-music-subtitle">东方同人专辑档案 · 支持全文搜索与标签筛选</p>
                 <div class="geo-search">
-                    <input type="text" class="geo-search__input" id="searchInput" placeholder="搜索音乐、艺术家、专辑..." autocomplete="off">
+                    <input type="text" class="geo-search__input" id="searchInput" placeholder="搜索音乐、艺术家、专辑..." autocomplete="off" aria-label="搜索音乐、艺术家、专辑" role="combobox" aria-expanded="false" aria-controls="suggestionsList" aria-autocomplete="list">
                     <button class="geo-search__btn" aria-label="搜索"><i class="fas fa-search"></i></button>
                     <div class="geo-suggestions" id="searchSuggestions">
-                        <div id="suggestionsList"></div>
+                        <div id="suggestionsList" role="listbox" aria-label="搜索建议"></div>
                     </div>
                 </div>
             </div>
@@ -1365,7 +969,7 @@
         <div class="geo-filter-section" data-rv>
             <div class="geo-filter-inner">
                 <div class="geo-tags" id="filterTags">
-                    <div class="geo-tag active" data-tag="">全部</div>
+                    <button type="button" class="geo-tag active" data-tag="" aria-pressed="true">全部</button>
                 </div>
                 <div class="geo-sort">
                     <span class="geo-sort__label">排序</span>
@@ -1379,36 +983,25 @@
         </div>
 
         <!-- 音乐网格 -->
+        <h2 class="sr-only">专辑列表</h2>
         <div class="music-grid" id="musicGrid">
         </div>
 
         <!-- 分页 -->
-        <div class="geo-pagination" data-rv>
-            <div class="geo-pagination__info">
-                <span id="paginationInfo">第 1 页 / 共 1 页</span>
-            </div>
-            <div class="geo-pagination__controls" id="paginationControls">
-            </div>
-            <div class="geo-pagination__jump">
-                <span>跳转到</span>
-                <input type="number" class="geo-pagination__jump-input" id="jumpInput" min="1" value="1">
-                <span>页</span>
-                <button class="geo-pagination__jump-btn" id="jumpBtn">GO</button>
-            </div>
-        </div>
+        <div class="geo-pagination pgn-mount" id="paginationContainer"></div>
     </div>
 
     <!-- 专辑详情模态框 -->
-    <div class="geo-modal" id="albumModal">
-        <div class="geo-modal__content">
-            <button class="geo-modal__close" onclick="closeAlbumModal()"><i class="fas fa-times"></i></button>
+    <div class="geo-modal" id="albumModal" aria-hidden="true">
+        <div class="geo-modal__content" role="dialog" aria-modal="true" aria-labelledby="albumModalTitle">
+            <button class="geo-modal__close" onclick="closeAlbumModal()" aria-label="关闭专辑详情"><i class="fas fa-times" aria-hidden="true"></i></button>
             <div class="geo-modal__header">
                 <div class="album-art geo-modal__cover">
                     <div class="fallback-content">🎵</div>
                 </div>
                 <div class="geo-modal__info">
                     <div class="geo-modal__eyebrow">Album Detail</div>
-                    <h2 class="album-title">专辑标题</h2>
+                    <h2 class="album-title" id="albumModalTitle">专辑标题</h2>
                     <p class="album-artist">艺术家</p>
                     <div class="album-meta">
                         <span class="meta-item"><i class="far fa-calendar"></i> 未知</span>
@@ -1433,25 +1026,23 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- 页脚 -->
     <footer class="geo-footer">
         <div class="geo-footer__logo">TONGRENLU</div>
         <p class="geo-footer__text">&copy; 2025 东方同人录. 本站所有内容版权归原作者所有.</p>
         <p class="geo-footer__text">本网站仅为学习交流使用，不涉及任何商业用途</p>
+        <p class="geo-footer__meta">v2.1 GEOMETRIC · LIBRARY EDITION</p>
     </footer>
 
-    <!-- 版本号 -->
-    <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; background: var(--geo-primary); color: white; padding: 5px 10px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; z-index: 1002; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
-        v2.1 GEOMETRIC · LIBRARY EDITION
-    </div>
 
     <!-- JavaScript -->
     <script src="webjars/jquery/jquery.min.js"></script>
     <script src="components/shared/image-loader.js"></script>
     <script src="components/shared/folia-player.js"></script>
-    <script src="components/music-library/music-library.js"></script>
+    <script src="components/shared/pagination.js?v=20261120"></script>
+    <script src="components/music-library/music-library.js?v=20261120"></script>
     <script>
         // ===== 动效（渐进增强，与 wiki 同一钩子）=====
         (function() {
