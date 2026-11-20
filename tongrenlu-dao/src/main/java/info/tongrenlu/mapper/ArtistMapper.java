@@ -115,14 +115,84 @@ public interface ArtistMapper extends BaseMapper<ArtistBean> {
     long countSearchArtistsWithAlbums(@Param("keyword") String keyword);
 
     /**
-     * 统计单个艺术家的专辑数量（已发布）
+     * 统计单个艺术家的专辑数量（已发布）。
+     * 必须用 INNER JOIN：LEFT JOIN 下未发布的专辑也会留下一条 art.* 为 NULL 的行，
+     * COUNT(DISTINCT rat.article_id) 会把它们算进去（详情页张数会大于列表角标）。
      */
     @Select("""
         SELECT COUNT(DISTINCT rat.article_id)
         FROM r_article_tag rat
-        LEFT JOIN m_article art ON rat.article_id = art.id AND art.publish_flg = '1'
+        INNER JOIN m_article art ON art.id = rat.article_id AND art.publish_flg = '1'
         WHERE rat.tag_id = #{tagId}
         """)
     long countAlbumsByTagId(@Param("tagId") Long tagId);
+
+    /**
+     * 艺术家展示页列表：一个 m_tag 词条只出一行（m_artist 存在重复 tag_id，按 tag_id 去重），
+     * 只保留至少一张已发布专辑的艺术家。
+     * 代表行取 MIN(id)：OKF 导入时 artist 词条的 ref_id 通常就是这一行，便于详情命中词条。
+     * 专辑数用预聚合派生表，避免逐行相关子查询；排序补 id 兜底，否则 album_count/name
+     * 相同的行在 LIMIT/OFFSET 分页下会重复或漏行。
+     */
+    @Select("""
+        <script>
+        SELECT ar.id                  AS id,
+               ar.name                AS name,
+               ar.cloud_music_pic_url AS cloudMusicPicUrl,
+               ar.tag_id              AS tagId,
+               ac.album_count         AS albumCount
+        FROM (
+            SELECT tag_id, MIN(id) AS artist_id
+            FROM m_artist
+            WHERE tag_id IS NOT NULL
+            GROUP BY tag_id
+        ) g
+        INNER JOIN m_artist ar ON ar.id = g.artist_id
+        INNER JOIN (
+            SELECT rat.tag_id AS tag_id, COUNT(DISTINCT rat.article_id) AS album_count
+            FROM r_article_tag rat
+            INNER JOIN m_article art ON art.id = rat.article_id AND art.publish_flg = '1'
+            GROUP BY rat.tag_id
+        ) ac ON ac.tag_id = g.tag_id
+        <where>
+            <if test='keyword != null'>
+                AND (ar.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR ar.cloud_music_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY ac.album_count DESC, ar.name ASC, ar.id ASC
+        LIMIT #{offset}, #{limit}
+        </script>
+        """)
+    List<Map<String, Object>> findArtistShowcasePaged(@Param("keyword") String keyword,
+                                                      @Param("offset") long offset,
+                                                      @Param("limit") int limit);
+
+    /** 与 findArtistShowcasePaged 完全相同的去重口径与筛选条件。 */
+    @Select("""
+        <script>
+        SELECT COUNT(*)
+        FROM (
+            SELECT tag_id, MIN(id) AS artist_id
+            FROM m_artist
+            WHERE tag_id IS NOT NULL
+            GROUP BY tag_id
+        ) g
+        INNER JOIN m_artist ar ON ar.id = g.artist_id
+        INNER JOIN (
+            SELECT rat.tag_id AS tag_id
+            FROM r_article_tag rat
+            INNER JOIN m_article art ON art.id = rat.article_id AND art.publish_flg = '1'
+            GROUP BY rat.tag_id
+        ) ac ON ac.tag_id = g.tag_id
+        <where>
+            <if test='keyword != null'>
+                AND (ar.name LIKE CONCAT('%', #{keyword}, '%')
+                     OR ar.cloud_music_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        </script>
+        """)
+    long countArtistShowcase(@Param("keyword") String keyword);
 
 }

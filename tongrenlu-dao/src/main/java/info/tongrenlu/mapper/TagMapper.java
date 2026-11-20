@@ -122,7 +122,7 @@ public interface TagMapper extends BaseMapper<TagBean> {
      * 获取展会的专辑列表
      */
     @Select("""
-        SELECT a.id, a.title, a.description, a.publish_date,
+        SELECT a.id, a.title, a.artist, a.description, a.publish_date,
                a.cloud_music_pic_url
         FROM m_article a
         INNER JOIN r_article_tag rat ON a.id = rat.article_id

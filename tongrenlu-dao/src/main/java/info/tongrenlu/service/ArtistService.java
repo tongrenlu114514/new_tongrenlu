@@ -140,6 +140,35 @@ public class ArtistService extends ServiceImpl<ArtistMapper, ArtistBean> {
     }
 
     /**
+     * 展示页艺术家分页列表：只含有已发布专辑的艺术家，并按 tag_id 去重。
+     * 返回 {records, total, page, limit, totalPages}，与其它分页接口同形。
+     *
+     * @param keyword 搜索关键词（可为空，匹配 name / cloud_music_name）
+     * @param page    页码（从1开始）
+     * @param limit   每页数量（1-100）
+     * @return 分页结果
+     */
+    public Map<String, Object> getArtistShowcasePaged(String keyword, int page, int limit) {
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.min(Math.max(1, limit), 100);
+        String keywordFilter = StringUtils.isBlank(keyword) ? null : keyword.trim();
+
+        long offset = (long) (safePage - 1) * safeLimit;
+        long total = this.getBaseMapper().countArtistShowcase(keywordFilter);
+        List<Map<String, Object>> records = total == 0
+                ? List.of()
+                : this.getBaseMapper().findArtistShowcasePaged(keywordFilter, offset, safeLimit);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("records", records);
+        result.put("total", total);
+        result.put("page", safePage);
+        result.put("limit", safeLimit);
+        result.put("totalPages", (int) Math.ceil((double) total / safeLimit));
+        return result;
+    }
+
+    /**
      * 按ID或名称查询艺人详情（含简介、专辑数量）
      *
      * @param id   艺人ID（优先）
