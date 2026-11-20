@@ -403,7 +403,7 @@ svg { display: block; }
 .nav__link em {
   font-family: var(--f-mono);
   font-style: normal;
-  font-size: .68rem;
+  font-size: .75rem;
   letter-spacing: .01em;
   color: var(--accent);
   transform: translateY(-.4em);
@@ -782,7 +782,7 @@ html.js .is-ready .hero__stats { opacity: 1; transform: none; }
   font-family: var(--f-sans);
   font-size: 12px;
   letter-spacing: .01em;
-  color: var(--paper-h);
+  color: var(--paper-f);
 }
 
 .hero__foot {
@@ -988,7 +988,7 @@ html.js .sleeve:focus-visible .sleeve__play { transform: none; opacity: 1; }
   font-family: var(--f-display);
   font-size: .86rem;
   letter-spacing: .02em;
-  color: var(--ink-e);
+  color: var(--ink-a);
   transition: color .3s ease, transform .4s var(--e-out);
 }
 .sleeve:hover .sleeve__idx { color: var(--accent-text); transform: translateX(3px); }
@@ -1110,7 +1110,7 @@ html.js .sleeve:focus-visible .sleeve__play { transform: none; opacity: 1; }
 .ncell__note {
   font-size: .9rem;
   line-height: 1.75;
-  color: var(--paper-h);
+  color: var(--paper-f);
   max-width: 46ch;
 }
 
@@ -1180,9 +1180,9 @@ html.js .sleeve:focus-visible .sleeve__play { transform: none; opacity: 1; }
 
 .index__no {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .01em;
-  color: var(--veil-2);
+  color: var(--ink-a);
   transition: color .35s ease;
 }
 
@@ -1200,7 +1200,7 @@ html.js .sleeve:focus-visible .sleeve__play { transform: none; opacity: 1; }
 
 .index__count {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .01em;
   color: var(--ink-a);
   font-variant-numeric: tabular-nums;
@@ -1278,9 +1278,9 @@ html.js .peek.is-on { opacity: 1; transform: translate(-50%, -50%) scale(1) rota
 
 .event__no {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .01em;
-  color: var(--veil-2);
+  color: var(--ink-a);
 }
 
 .event__name {
