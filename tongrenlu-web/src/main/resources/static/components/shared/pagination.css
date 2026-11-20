@@ -1,0 +1,179 @@
+/*!
+ * 东方同人录 — 统一分页组件样式
+ * 与 wiki / 图鉴语言一致：1.5px 细线、零圆角、朱红当前页、硬边偏移感。
+ */
+
+.pgn-mount[hidden] {
+    display: none !important;
+}
+
+.pgn {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem 1.1rem;
+    width: 100%;
+}
+
+.pgn__info {
+    margin: 0;
+    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    color: var(--wiki-muted, #666b80);
+    font-variant-numeric: tabular-nums;
+}
+
+.pgn__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.pgn__btn {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--wiki-ink, #1a1a2e);
+    background: var(--wiki-paper, #fff);
+    border: 1.5px solid var(--wiki-line, #e5e7ef);
+    cursor: pointer;
+    transition:
+        border-color 0.3s var(--wiki-ease, ease),
+        color 0.3s var(--wiki-ease, ease),
+        background 0.3s var(--wiki-ease, ease),
+        transform 0.15s ease;
+}
+
+.pgn__btn:hover:not(:disabled):not([aria-current='page']) {
+    border-color: var(--wiki-accent, #e94560);
+    color: var(--wiki-accent-ink, #c22c47);
+    transform: translateY(-2px);
+}
+
+.pgn__btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.95);
+}
+
+.pgn__btn[aria-current='page'] {
+    background: var(--wiki-accent-ink, #c22c47);
+    border-color: var(--wiki-accent-ink, #c22c47);
+    color: #fff;
+    cursor: default;
+}
+
+.pgn__btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+
+.pgn__btn:focus-visible,
+.pgn__jump-input:focus-visible,
+.pgn__jump-btn:focus-visible {
+    outline: 2px solid var(--wiki-accent, #e94560);
+    outline-offset: 3px;
+}
+
+.pgn__ellipsis {
+    padding: 0 0.15rem;
+    line-height: 44px;
+    color: var(--wiki-muted, #666b80);
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.pgn__jump {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: 0.85rem;
+    color: var(--wiki-muted, #666b80);
+}
+
+.pgn__jump-input {
+    width: 4.5rem;
+    height: 44px;
+    padding: 0 0.5rem;
+    font: inherit;
+    text-align: center;
+    color: var(--wiki-ink, #1a1a2e);
+    background: var(--wiki-paper, #fff);
+    border: 1.5px solid var(--wiki-line, #e5e7ef);
+    transition: border-color 0.3s var(--wiki-ease, ease);
+}
+
+.pgn__jump-input:hover {
+    border-color: var(--wiki-accent, #e94560);
+}
+
+.pgn__jump-btn {
+    height: 44px;
+    padding: 0 1rem;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #fff;
+    background: var(--wiki-accent-ink, #c22c47);
+    border: 1.5px solid var(--wiki-accent-ink, #c22c47);
+    cursor: pointer;
+    transition: background 0.3s ease, border-color 0.3s ease, transform 0.15s ease;
+}
+
+.pgn__jump-btn:hover {
+    background: var(--wiki-blue, #0f3460);
+    border-color: var(--wiki-blue, #0f3460);
+}
+
+.pgn__jump-btn:active {
+    transform: scale(0.95);
+}
+
+/* 视觉隐藏，仅提供给读屏（可达名称与播报） */
+.pgn__jump-hint,
+.pgn__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 600px) {
+    .pgn {
+        gap: 0.5rem 0.75rem;
+    }
+
+    .pgn__info {
+        width: 100%;
+        text-align: center;
+    }
+
+    .pgn__jump {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pgn * {
+        transition-duration: 0.01ms !important;
+        animation: none !important;
+    }
+}

@@ -1,5 +1,5 @@
 /**
- * Wiki 页面共享工具（wiki.html 使用；其它页面需要时可直接引入）。
+ * 共享工具（artist-showcase.html 等使用；其它页面需要时可直接引入）。
  * 全局函数，依赖 jQuery（$），须在 jquery.min.js 之后、页面逻辑之前引入。
  */
 
@@ -50,9 +50,13 @@ function renderMarkdown(text) {
         }
     };
 
-    // 剥离开头的 "# 简介"（区块标题已承担）
-    if (lines.length > 0 && /^#\s*简介\s*$/.test(lines[0].trim())) {
+    // 剥离开头的一级标题行（词条名已由 hero 承担；H1 也不该出现在正文中）
+    // 只匹配单个 # 开头的行，保留 "## 简介" 等二级分节标题
+    if (lines.length > 0 && /^#\s+\S/.test(lines[0].trim())) {
         lines.shift();
+        while (lines.length > 0 && lines[0].trim() === '') {
+            lines.shift();
+        }
     }
 
     lines.forEach(function(rawLine) {
