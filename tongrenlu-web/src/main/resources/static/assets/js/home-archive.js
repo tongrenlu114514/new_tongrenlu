@@ -484,8 +484,12 @@
       list.innerHTML = records.map((a, i) => {
         const name = a.name || '未知创作者';
         const count = Number(a.album_count || 0);
+        // 创作者索引直接进艺术家详情页（关键词兜底，避免缺 id 时跳到空页）
+        const href = a.id
+          ? 'artist-showcase.html?id=' + encodeURIComponent(a.id)
+          : 'artist-showcase.html?keyword=' + encodeURIComponent(name);
         return '<li>' +
-          '<a class="index__row" href="album.html?keyword=' + encodeURIComponent(name) + '"' +
+          '<a class="index__row" href="' + href + '"' +
              ' data-img="' + ESC(cover(a.cloud_music_pic_url, 300)) + '"' +
              ' style="--d:' + (i * 45) + 'ms">' +
             '<span class="index__no">' + String(i + 1).padStart(2, '0') + '</span>' +
