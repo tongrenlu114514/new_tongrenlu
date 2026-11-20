@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T02:05:00+08:00",
+  "title": "Design System: 东方同人录 TONGRENLU",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "墨蓝",
+        "canonical": "#1a1a2e",
+        "tonalRamp": ["#0b0b12", "#1a1a2e", "#2a2a45", "#3c3c5c", "#565676", "#7b7b96", "#a9a9bd", "#dcdce6"]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "墨蓝·柔",
+        "canonical": "#23233d",
+        "tonalRamp": ["#0d0d16", "#18182a", "#23233d", "#32324f", "#4a4a6b", "#6f6f8c", "#a1a1b8", "#d8d8e4"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "朱砂印泥",
+        "canonical": "#e94560",
+        "tonalRamp": ["#2e0710", "#5a0f20", "#86172f", "#b32440", "#e94560", "#ee6e84", "#f5a3b0", "#fce0e5"]
+      },
+      "accent-deep": {
+        "role": "primary",
+        "displayName": "朱砂印泥·深",
+        "canonical": "#c22c47",
+        "tonalRamp": ["#27060d", "#4a0c1a", "#6d1327", "#941d37", "#c22c47", "#d75a70", "#e893a3", "#f7d9df"]
+      },
+      "blue": {
+        "role": "secondary",
+        "displayName": "深蓝",
+        "canonical": "#0f3460",
+        "tonalRamp": ["#05101f", "#0a2140", "#0f3460", "#17497f", "#2a67a8", "#5b8fc6", "#a3c0dd", "#dfe9f4"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "白纸",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#c9ccd8", "#dde0ea", "#e9ebf2", "#f2f3f8", "#f6f7fb", "#fafbfd", "#fdfdff", "#ffffff"]
+      },
+      "paper-2": {
+        "role": "neutral",
+        "displayName": "纸·二",
+        "canonical": "#f6f7fb",
+        "tonalRamp": ["#bfc3d2", "#d5d9e5", "#e3e6f0", "#eef0f7", "#f6f7fb", "#fafbfd", "#fdfdff", "#ffffff"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "描线",
+        "canonical": "#e5e7ef",
+        "tonalRamp": ["#9aa0b4", "#b7bccb", "#cdd1dd", "#dce0e9", "#e5e7ef", "#eef0f5", "#f6f7fa", "#ffffff"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "弱文字",
+        "canonical": "#666b80",
+        "tonalRamp": ["#252831", "#33363f", "#454954", "#565b6a", "#666b80", "#878ca0", "#b4b8c7", "#e2e4ea"]
+      },
+      "body-text": {
+        "role": "neutral",
+        "displayName": "正文灰",
+        "canonical": "#3a3d52",
+        "tonalRamp": ["#14161f", "#22242f", "#2e3140", "#3a3d52", "#545872", "#7b8098", "#aeb2c4", "#e4e6ee"]
+      },
+      "archive-ink": {
+        "role": "neutral",
+        "displayName": "档案墨（首页）",
+        "canonical": "#0b0b10",
+        "tonalRamp": ["#050507", "#0b0b10", "#14141c", "#20202c", "#33333f", "#5b5b68", "#9a9aa4", "#dedee3"]
+      },
+      "archive-paper": {
+        "role": "neutral",
+        "displayName": "档案纸（首页）",
+        "canonical": "#f4f3ef",
+        "tonalRamp": ["#b7b5ac", "#cdcbc3", "#dedcd5", "#e9e7e1", "#f4f3ef", "#f8f7f4", "#fbfaf8", "#ffffff"]
+      },
+      "archive-ink-2": {
+        "role": "neutral",
+        "displayName": "档案墨·二（首页）",
+        "canonical": "#14141c",
+        "tonalRamp": ["#070709", "#0b0b10", "#14141c", "#1d1d27", "#2b2b36", "#4d4d58", "#8b8b95", "#d6d6db"]
+      },
+      "archive-paper-2": {
+        "role": "neutral",
+        "displayName": "档案纸·二（首页）",
+        "canonical": "#e9e7e1",
+        "tonalRamp": ["#a8a69d", "#bfbdb5", "#d2d0c8", "#e1dfd9", "#e9e7e1", "#f0eee8", "#f7f6f2", "#fefefd"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display / 页头主标题", "purpose": "列表页页头，Bebas Neue 大写，配朱砂印泥副词。" },
+      "headline": { "displayName": "Headline / 实体名", "purpose": "详情页艺术家或词条名称。" },
+      "title": { "displayName": "Title / 分节标题", "purpose": "「01 词条正文」这类分节标题，编号用 Bebas。" },
+      "body": { "displayName": "Body / 词条正文", "purpose": "长文阅读，行高 2.0、字重 300。" },
+      "label": { "displayName": "Label / 眉题", "purpose": "页头小写眉题，0.35em 字距，大写。" },
+      "numeric": { "displayName": "Numeric / 计数", "purpose": "stat 徽章与 meta 数字。" },
+      "mono": { "displayName": "Mono / 首页索引元数据", "purpose": "仅首页索引行的计数与元数据，内容页不使用。" }
+    },
+    "shadows": [
+      { "name": "sticker-lift", "value": "5px 5px 0 var(--wiki-accent, #e94560)", "purpose": "卡片、返回按钮、可点 chip 的 hover。" },
+      { "name": "soft-hold", "value": "6px 6px 0 rgba(26, 26, 46, 0.08)", "purpose": "详情页分节面板 hover，几乎不可见。" },
+      { "name": "deep-print", "value": "8px 8px 0 var(--wiki-ink, #1a1a2e)", "purpose": "首页强对比大块的 hover。" },
+      { "name": "ambient-peek", "value": "0 26px 60px -20px rgba(11, 11, 16, .6)", "purpose": "仅首页悬停预览图，姊妹世界的例外。" }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "内容页默认缓动（--wiki-ease）。" },
+      { "name": "ease-snap", "value": "cubic-bezier(0.34, 1.56, 0.64, 1)", "purpose": "强调出现、贴纸回弹（--wiki-ease-snap）。" },
+      { "name": "ease-archive", "value": "cubic-bezier(.35, .05, .2, 1)", "purpose": "首页世界的缓动（--e-soft）。" },
+      { "name": "reveal-rise", "value": "translateY(26px) → 0, opacity 0 → 1, 0.8s", "purpose": "[data-rv] 元素的进入动画。" }
+    ],
+    "breakpoints": [
+      { "name": "page-max", "value": "1400px" },
+      { "name": "nav-h", "value": "76px" },
+      { "name": "md", "value": "900px" },
+      { "name": "sm", "value": "600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "nav-bar",
+      "description": "固定顶栏：Bebas 标识 + 朱红短线，Space Grotesk 大写链接，当前页朱红下划线。",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav__logo\" href=\"#\">TONGRENLU</a><div class=\"ds-nav__links\"><a class=\"ds-nav__link is-active\" href=\"#\">艺术家</a><a class=\"ds-nav__link\" href=\"#\">展会</a><a class=\"ds-nav__link\" href=\"#\">百科</a></div></nav>",
+      "css": ".ds-nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1rem 2.5rem;background:var(--wiki-paper,#fff);border-bottom:1.5px solid var(--wiki-line,#e5e7ef);font-family:'Space Grotesk','Noto Sans SC',sans-serif}.ds-nav__logo{position:relative;font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:1.8rem;font-weight:400;letter-spacing:3px;color:var(--wiki-ink,#1a1a2e);text-decoration:none}.ds-nav__logo::after{content:'';position:absolute;left:0;bottom:-3px;width:30px;height:3px;background:var(--wiki-accent,#e94560)}.ds-nav__links{display:flex;gap:2rem}.ds-nav__link{padding-bottom:3px;font-size:.85rem;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--wiki-muted,#8a90a6);text-decoration:none;border-bottom:2px solid transparent;transition:color .3s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),border-color .3s var(--wiki-ease,cubic-bezier(.22,1,.36,1))}.ds-nav__link:hover{color:var(--wiki-ink,#1a1a2e)}.ds-nav__link.is-active{color:var(--wiki-ink,#1a1a2e);border-bottom-color:var(--wiki-accent,#e94560)}.ds-nav__link:focus-visible{outline:2px solid var(--wiki-accent,#e94560);outline-offset:3px}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "search-input",
+      "description": "深色页头上的白纸搜索框，15px 对角切，聚焦时内嵌朱红 2px 环。",
+      "html": "<div class=\"ds-search-wrap\"><input class=\"ds-search\" type=\"search\" placeholder=\"搜索艺术家...\" aria-label=\"搜索艺术家\"><svg class=\"ds-search__icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"></circle><path d=\"M20 20l-3.5-3.5\"></path></svg></div>",
+      "css": ".ds-search-wrap{position:relative;max-width:520px}.ds-search{width:100%;padding:1.1rem 3.2rem 1.1rem 1.4rem;font-family:'Space Grotesk','Noto Sans SC',sans-serif;font-size:1rem;letter-spacing:.02em;color:var(--wiki-ink,#1a1a2e);background:rgba(255,255,255,.94);border:1px solid rgba(255,255,255,.18);clip-path:polygon(15px 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%,0 15px);transition:background .4s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),box-shadow .4s var(--wiki-ease,cubic-bezier(.22,1,.36,1))}.ds-search::placeholder{color:var(--wiki-muted,#8a90a6)}.ds-search:focus{outline:none;background:#fff;box-shadow:inset 0 0 0 2px var(--wiki-accent,#e94560)}.ds-search__icon{position:absolute;right:1.1rem;top:50%;width:18px;height:18px;transform:translateY(-50%);color:var(--wiki-muted,#8a90a6);pointer-events:none}"
+    },
+    {
+      "name": "Tag Chip",
+      "kind": "chip",
+      "refersTo": "tag-chip",
+      "description": "6px 切角的标签；可点的用深蓝描边并在 hover 填充，不可点的用虚线 + 弱文字色。",
+      "html": "<div class=\"ds-chips\"><a class=\"ds-chip ds-chip--link\" href=\"#\">Alstroemeria Records</a><a class=\"ds-chip ds-chip--link\" href=\"#\">电子音乐</a><span class=\"ds-chip ds-chip--static\">Comic Market</span></div>",
+      "css": ".ds-chips{display:flex;flex-wrap:wrap;gap:.65rem}.ds-chip{display:inline-flex;align-items:center;gap:.45rem;padding:.42rem .9rem;font-family:'Space Grotesk','Noto Sans SC',sans-serif;font-size:.82rem;font-weight:500;text-decoration:none;background:var(--wiki-paper-2,#f6f7fb);border:1.5px solid var(--wiki-line,#e5e7ef);color:var(--wiki-ink,#1a1a2e);clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);transition:background .3s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),color .3s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),border-color .3s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),transform .3s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),box-shadow .3s var(--wiki-ease,cubic-bezier(.22,1,.36,1))}.ds-chip--link{border-color:rgba(15,52,96,.4);color:var(--wiki-blue,#0f3460)}.ds-chip--link:hover{background:var(--wiki-blue,#0f3460);color:#fff;transform:translateY(-2px);box-shadow:3px 3px 0 var(--wiki-accent,#e94560)}.ds-chip--static{color:var(--wiki-muted,#8a90a6);border-style:dashed;cursor:default}"
+    },
+    {
+      "name": "Archive Card",
+      "kind": "card",
+      "refersTo": "archive-card",
+      "description": "方图封面 + 名称 + 数量的白纸卡片；hover 上浮 4px 并出现朱红硬阴影。",
+      "html": "<article class=\"ds-card\" tabindex=\"0\" role=\"link\" aria-label=\"查看 幽閉サテライト\"><div class=\"ds-card__cover\"><span class=\"ds-card__badge\">228 张</span></div><div class=\"ds-card__info\"><h3 class=\"ds-card__name\">幽閉サテライト</h3><p class=\"ds-card__meta\">艺术家</p></div></article>",
+      "css": ".ds-card{width:220px;background:var(--wiki-paper,#fff);border:1.5px solid var(--wiki-line,#e5e7ef);overflow:hidden;cursor:pointer;transition:transform .45s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),border-color .45s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),box-shadow .45s var(--wiki-ease,cubic-bezier(.22,1,.36,1))}.ds-card:hover{transform:translateY(-4px);border-color:var(--wiki-accent,#e94560);box-shadow:5px 5px 0 var(--wiki-accent,#e94560)}.ds-card:focus-visible{outline:2px solid var(--wiki-accent,#e94560);outline-offset:3px}.ds-card__cover{position:relative;aspect-ratio:1/1;background:linear-gradient(135deg,var(--wiki-paper-2,#f6f7fb),#eceef5)}.ds-card__badge{position:absolute;right:10px;bottom:10px;padding:.3rem .65rem;font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.08em;color:#fff;background:var(--wiki-accent,#e94560);clip-path:polygon(6px 0,100% 0,100% 100%,0 100%)}.ds-card__info{padding:1rem 1.1rem 1.1rem;border-top:1.5px solid var(--wiki-line,#e5e7ef)}.ds-card__name{margin:0;font-family:'Space Grotesk','Noto Sans SC',sans-serif;font-size:.95rem;font-weight:600;color:var(--wiki-ink,#1a1a2e);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .3s ease}.ds-card:hover .ds-card__name{color:var(--wiki-accent,#e94560)}.ds-card__meta{margin:.25rem 0 0;font-family:'Outfit',sans-serif;font-size:.73rem;letter-spacing:.06em;color:var(--wiki-muted,#8a90a6)}"
+    },
+    {
+      "name": "Section Panel",
+      "kind": "custom",
+      "refersTo": "section-panel",
+      "description": "详情页的编号分节：Bebas 编号 + 标题 + 描线，导语用纸·二底加朱红左竖条。",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-panel__title\"><span class=\"ds-panel__index\">01</span>词条正文</h2><p class=\"ds-lead\">幽闭サテライト是成立于2009年的东方同人音乐社团。</p><p class=\"ds-panel__body\">社团主催为嵯峨飛鳥，成员包括演唱、编曲等角色，活跃于各类同人展会。</p></section>",
+      "css": ".ds-panel{padding:clamp(1.5rem,3vw,2.4rem);background:var(--wiki-paper,#fff);border:1.5px solid var(--wiki-line,#e5e7ef);transition:box-shadow .5s var(--wiki-ease,cubic-bezier(.22,1,.36,1))}.ds-panel:hover{box-shadow:6px 6px 0 rgba(26,26,46,.08)}.ds-panel__title{display:flex;align-items:baseline;gap:.9rem;margin:0 0 1.5rem;padding-bottom:.9rem;font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:clamp(1.5rem,2.6vw,1.9rem);font-weight:400;letter-spacing:.12em;color:var(--wiki-ink,#1a1a2e);border-bottom:1.5px solid var(--wiki-line,#e5e7ef)}.ds-panel__index{font-family:'Bebas Neue',sans-serif;color:var(--wiki-accent,#e94560)}.ds-lead{margin:0 0 1.1rem;padding:.9rem 1.1rem;background:var(--wiki-paper-2,#f6f7fb);border-left:4px solid var(--wiki-accent,#e94560);font-family:'Noto Sans SC',sans-serif;font-size:.92rem;line-height:1.8;color:var(--wiki-ink,#1a1a2e)}.ds-panel__body{margin:0;font-family:'Noto Sans SC',sans-serif;font-size:.96rem;font-weight:300;line-height:2;letter-spacing:.01em;color:#3a3d52}"
+    },
+    {
+      "name": "Stat Badge",
+      "kind": "custom",
+      "refersTo": "stat-badge",
+      "description": "深蓝 8px 切角徽章，承载类别与计数；强调档用朱砂印泥。",
+      "html": "<div class=\"ds-stats\"><span class=\"ds-stat\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"8\" r=\"3.5\"></circle><path d=\"M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6\"></path></svg>艺术家</span><span class=\"ds-stat ds-stat--accent\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"8\"></circle><circle cx=\"12\" cy=\"12\" r=\"2.5\"></circle></svg>228 张专辑</span></div>",
+      "css": ".ds-stats{display:flex;flex-wrap:wrap;gap:.6rem}.ds-stat{display:inline-flex;align-items:center;gap:.5rem;padding:.42rem .95rem;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:500;color:#fff;background:var(--wiki-blue,#0f3460);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}.ds-stat svg{width:14px;height:14px}.ds-stat--accent{background:var(--wiki-accent,#e94560)}"
+    },
+    {
+      "name": "Back Button",
+      "kind": "button",
+      "refersTo": "archive-card",
+      "description": "白底描线返回按钮；hover 时描边转朱红、左移 2px 并出现 5px 硬阴影，箭头同步左移。",
+      "html": "<button class=\"ds-back\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M19 12H5\"></path><path d=\"M11 18l-6-6 6-6\"></path></svg>返回列表</button>",
+      "css": ".ds-back{display:inline-flex;align-items:center;gap:.55rem;padding:.55rem 1.1rem;font-family:'Space Grotesk',sans-serif;font-size:.85rem;font-weight:500;letter-spacing:.08em;color:var(--wiki-ink,#1a1a2e);background:var(--wiki-paper,#fff);border:1.5px solid var(--wiki-line,#e5e7ef);cursor:pointer;transition:border-color .35s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),color .35s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),box-shadow .35s var(--wiki-ease,cubic-bezier(.22,1,.36,1)),transform .35s var(--wiki-ease,cubic-bezier(.22,1,.36,1))}.ds-back svg{width:16px;height:16px;transition:transform .35s var(--wiki-ease,cubic-bezier(.22,1,.36,1))}.ds-back:hover{border-color:var(--wiki-accent,#e94560);color:var(--wiki-accent,#e94560);transform:translateX(-2px);box-shadow:5px 5px 0 var(--wiki-accent,#e94560)}.ds-back:hover svg{transform:translateX(-3px)}.ds-back:focus-visible{outline:2px solid var(--wiki-accent,#e94560);outline-offset:3px}"
+    },
+    {
+      "name": "Index Row (首页)",
+      "kind": "custom",
+      "refersTo": "archive-card",
+      "description": "首页创作者索引行：编号/名称/计数/箭头四列，hover 整行反色。属于奶油纸世界。",
+      "html": "<a class=\"ds-row\" href=\"#\"><span class=\"ds-row__no\">01</span><span class=\"ds-row__name\">幽閉サテライト</span><span class=\"ds-row__count\">228 张</span><span class=\"ds-row__arw\">&nearr;</span></a>",
+      "css": ".ds-row{display:grid;grid-template-columns:2.6rem minmax(0,1fr) auto 1.6rem;align-items:center;gap:1rem;padding-block:1rem;border-bottom:1px solid rgba(11,11,16,.12);color:var(--ink,#0b0b10);text-decoration:none;font-family:'Noto Sans SC',sans-serif;transition:background .45s var(--e-soft,cubic-bezier(.35,.05,.2,1)),color .45s var(--e-soft,cubic-bezier(.35,.05,.2,1))}.ds-row__no{font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;color:inherit;opacity:.6}.ds-row__name{font-size:1rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-row__count{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.04em;opacity:.7}.ds-row__arw{justify-self:end;font-size:.9rem;transition:transform .45s var(--e-soft,cubic-bezier(.35,.05,.2,1))}.ds-row:hover{background:var(--ink,#0b0b10);color:var(--paper,#f4f3ef)}.ds-row:hover .ds-row__arw{transform:translate(2px,-2px)}.ds-row:focus-visible{outline:2px solid var(--accent,#e94560);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "同人图鉴",
+    "overview": "东方同人录的界面不是唱片店，也不是资料库后台，而是一本可以翻的同人图鉴：白纸、细描线、编号分节、朱红小印章、印在页边的大号编号。信息密度高，但每一页都保持目录感——读者先看到「这是什么、属于谁、有多少张」，再往下读词条、跳到相关专辑。\n\n实现上，这套系统用三件事固定住图鉴气质：零圆角的切角轮廓（clip-path 斜切，不用 border-radius）、硬边偏移阴影（3–8px、零模糊，像贴纸被揭起）、以及字号跨度极大的三字体组合（Bebas Neue 承担标题与编号，Noto Sans SC 承担正文，Space Grotesk 承担控件与标签）。装饰全部来自网格、编号、细线和裁切，不靠渐变光效或大插图。\n\n首页是刻意保留的姊妹世界：奶油纸底（#f4f3ef + 墨黑 #0b0b10）的编辑式地标页，比内容页更暗、更像纸质档案封面，但共享同一个朱砂印泥与同一套切角／偏移阴影语言。两个世界不合并——新页面按表面归属选择其一，不混用令牌。",
+    "keyCharacteristics": [
+      "白纸内容页 + 奶油纸首页两个世界，共享朱砂印泥与切角语言；两套令牌同表登记（archive-* 前缀）",
+      "零圆角；所有「角」由 clip-path 斜切（6 / 8 / 10 / 15px）",
+      "1.5px 细描线构成所有分隔与边界，不用粗边框",
+      "硬边偏移阴影（无模糊），只作为 hover / 焦点响应出现",
+      "Bebas Neue 的编号与标题几乎总是大写 + 0.03–0.35em 字距",
+      "深色页头（墨蓝渐变 + 56px 网格 + 径向朱红辉光）与正文白纸形成硬分界"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "朱砂印泥在任何一屏上的覆盖不超过约 10%。它靠稀有来强调；一旦用于大面积底色或装饰性背景，强调就失效。", "section": "colors" },
+      { "name": "The Two Worlds Rule", "body": "白纸令牌（--wiki-*）只用于内容页，奶油纸令牌（--ink / --paper）只用于首页。两套令牌都在本规范里登记（frontmatter 用 archive-* 前缀区分），同一份规范、两套纸，不互相替代——跨页复用等于把两本书的纸混在一起。", "section": "colors" },
+      { "name": "The Ink Accent Rule", "body": "强调色分两档：#e94560 只做描边、阴影、图形与深色底上的文字；凡承载文字、或作为白字底色的强调块，一律用 #c22c47（--wiki-accent-ink）。拿错一档就是对比度事故。", "section": "colors" },
+      { "name": "The Index Number Rule", "body": "分节编号（01 / 02 / 03）是图鉴的页码，必须用 Bebas、必须由 JS 按可见分节重排，隐藏一节后不允许出现断号。", "section": "typography" },
+      { "name": "The No Sentences In Bebas Rule", "body": "Bebas Neue 只用于标题、编号、与 ≤4 个词的短语。任何完整句子、任何正文，一律 Noto Sans SC。", "section": "typography" },
+      { "name": "The Registration Offset Rule", "body": "阴影永远是硬边偏移、零模糊，且与位移方向一致（右下 5px 配向左上 -2px 位移）。柔和阴影会让图鉴质感塌回普通网页。", "section": "elevation" },
+      { "name": "The Flat At Rest Rule", "body": "静止状态不加阴影。阴影是状态（hover / focus）的回应，不是元素的默认装饰。", "section": "elevation" }
+    ],
+    "dos": [
+      "Do 从 assets/css/wiki.css 读取白纸令牌（--wiki-* / --ws-*），并把它当作唯一权威；wiki.html、album.html 里的内联 :root 是历史副本，新页面不要再复制一份。首页令牌以 assets/css/home-archive.css 为准，改首页时不要引入 --wiki-*。",
+      "Do 用 clip-path 表达切角，并把同一元素的所有角切成一致尺寸（8px 常用、6px 用于小角标、15px 用于输入框）。",
+      "Do 让朱砂印泥承担「当前状态 + 可点 + 重点」三件事之一，一屏内通常只出现 2–4 处。",
+      "Do 强调色承字时用 #c22c47（--wiki-accent-ink）；#e94560 只出现在描边、阴影、图形与深色页头上。",
+      "Do 每个页面都保留 <main id=main> 与 .skip-link，键盘用户第一次 Tab 就能跳过固定导航。",
+      "Do 在深色页头里保留网格底纹与径向辉光，正文区保持纯净白纸——对比来自区块本身，不来自正文装饰。",
+      "Do 长文行高保持 2.0、字重 300；换行宽度控制在 34em 左右。",
+      "Do 分节编号用 JS 按可见分节重排，隐藏任何一节后不出现 01 → 03。"
+    ],
+    "donts": [
+      "Don't 使用 border-radius 做卡片或按钮圆角（头像除外）；圆角会直接摧毁图鉴的印刷感。",
+      "Don't 写柔和模糊阴影（0 4px 24px rgba(...)）；阴影只能是 3–8px 的硬偏移。",
+      "Don't 把 Bebas Neue 用在完整句子或正文里，也不要给中文正文加 Bebas 回退。",
+      "Don't 把首页的奶油纸 / 墨黑令牌带进内容页，反之亦然（Two Worlds Rule）。",
+      "Don't 用大面积朱砂印泥做背景或装饰条；一旦超过约 10% 屏占比，强调失效。",
+      "Don't 用纯黑 #000 或纯灰 #888——墨与灰都要带蓝调（#1a1a2e / #8a90a6）。",
+      "Don't 引入新的强调色（绿、紫、青）；系统只有一支朱红，分类靠深蓝和色调分层解决。",
+      "Don't 为了视觉效果引入前端框架或构建链——视觉规则必须能在静态 CSS 里落地。"
+    ]
+  }
+}
