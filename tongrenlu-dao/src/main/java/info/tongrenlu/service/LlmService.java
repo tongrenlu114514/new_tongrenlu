@@ -28,9 +28,12 @@ public class LlmService {
     /**
      * 素材保险上限（超出截断）。列表页类素材（原作/原曲）已由 WikiService 按词条名
      * 截取窗口并组合（可超过单页窗口），因此这里的值只作兜底，实际大小由调用方控制。
-     * 模型上下文 128K，30000 字符 ≈ 30K tokens，远低于上限。
+     * 上下文预算（128K 模型）：source 80K + system prompt 10K + output 30K。
+     * 80000 字符 ≈ 80K tokens；system prompt 实际很短，10K 仅为预算预留。
      */
-    private static final int MAX_SOURCE_CHARS = 30000;
+    private static final int MAX_SOURCE_CHARS = 80000;
+    /** 合并阶段每个草稿片段正文保留的最大字符数，避免合并请求体过大。 */
+    private static final int PARTIAL_CONTENT_CHARS = 6000;
     private static final int MAX_RETRIES = 2;
     private static final long[] BACKOFF_MS = {2000, 4000};
 
@@ -43,7 +46,7 @@ public class LlmService {
     public LlmService(@Value("${llm.api-base:${LLM_API_BASE:https://api.deepseek.com}}") String apiBase,
             @Value("${llm.api-key:${LLM_API_KEY:}}") String apiKey,
             @Value("${llm.model:${LLM_MODEL:deepseek-chat}}") String model,
-            @Value("${llm.max-tokens:${LLM_MAX_TOKENS:8192}}") int maxTokens,
+            @Value("${llm.max-tokens:${LLM_MAX_TOKENS:30000}}") int maxTokens,
             ObjectMapper objectMapper) {
         this.apiBase = apiBase;
         this.apiKey = apiKey;
@@ -69,13 +72,55 @@ public class LlmService {
     }
 
     private static final String ARTIST_SYSTEM_PROMPT = """
-            你是东方Project同人音乐维基的编辑。根据提供的 THBWiki 页面文本，为同人社团『%s』撰写中文维基条目，只输出 JSON。
+            你是东方Project同人音乐维基的编辑。根据提供的素材，为同人社团『%s』撰写中文维基条目，只输出 JSON。
 
             要求：
-            1. content 为 markdown 字符串，使用二级标题（##）分节，依次包含：简介、活动经历、音乐风格、主要作品（列出页面中提到的 3-5 张专辑或代表作品）。
-            2. 严格基于页面文本撰写，不得编造页面中没有的事实；页面文本信息不足时相应分节写"暂无资料"。
-            3. tags 为 3-8 个相关标签的字符串数组：优先列出与该社团活跃时期相近、风格相似的其他真实同人社团名，可补充 1-2 个风格标签（如"电子"、"摇滚"、"和风"）。
+            1. content 为 markdown 字符串，仅用二级标题（##）分节，不得使用一级标题（#）；依次包含：简介、活动经历、音乐风格三个章节，不要生成"主要作品"章节。
+            2. 素材含【THBWiki 社团页文本】【网易云音乐艺人描述】与【本站收录的相关专辑信息】三部分：简介、活动经历以 THBWiki 社团页文本为主，网易云艺人描述可作补充（其措辞可能含宣传或主观评价，须客观转述，不得当作事实照抄）；音乐风格必须依据相关专辑信息（专辑简介、题材、曲目原作等）归纳得出，不得脱离专辑信息凭空臆测。严格基于素材，不得编造；某部分信息不足时相应分节写"暂无资料"。
+            3. 页面文本可能是长页面截取的片段，并可能混入其它社团、导航或列表内容；只提取与该社团直接相关的信息，忽略无关段落。
+            4. tags 为 3-8 个相关标签的字符串数组：只能从素材中明确提到的关联社团、展会或风格词中选取，宁可少给也不要编造未出现的名称；不得把该社团自身名称列为标签。可补充 1-2 个风格标签（如"电子"、"摇滚"、"和风"）。
+            5. 输出格式：{"description": "一两句话概括该词条", "content": "...", "tags": ["...", "..."]}
+            """;
+
+    /** album force 生成专用提示词：素材是本站专辑资料 + 可选的网易云推荐评论。 */
+    private static final String ALBUM_SYSTEM_PROMPT = """
+            你是东方Project同人音乐维基的编辑。根据提供的本站专辑资料（专辑信息、收录曲目）及可选的【网易云推荐评论】，为专辑『%s』撰写中文维基条目，只输出 JSON。
+
+            要求：
+            1. content 为 markdown 字符串，仅用二级标题（##）分节，不得使用一级标题（#）；依次包含：专辑信息（艺术家、编号、发行日期等资料中给出的字段）、收录曲目（以资料列出的曲目为准）。不要生成"简介"章节。若素材含【网易云推荐评论】，可追加"听众评价"一节：从评论中提炼对读者有用的信息——反复被提到的风格/氛围、公认出色的曲目、创作或演奏特点、整体口碑倾向；用自己的话归纳，不得逐条罗列或引用评论原文，不得包含昵称、打卡、广告、纯情绪宣泄等无实质内容。
+            2. 严格基于提供的素材撰写，不得编造素材中没有的事实；资料信息不足时相应分节写"暂无资料"。评论仅代表部分听众观点，须以"有听众认为"等措辞客观转述，不得当作客观事实陈述。
+            3. tags 为 3-8 个相关标签的字符串数组：只能从素材中明确出现的艺术家名、风格词中选取，宁可少给也不要编造；不得把该专辑自身名称列为标签。
             4. 输出格式：{"description": "一两句话概括该词条", "content": "...", "tags": ["...", "..."]}
+            """;
+
+    /**
+     * 分批提取：素材过大时，每块按此提示词产出"草稿片段"。
+     * 只提取本块内与该名称相关的信息，不要求结构完整，供后续合并。
+     * 占位符：name / 当前块序号 / 总块数（3 个 %s/%d，由 formatted 传入）。
+     */
+    private static final String CHUNK_EXTRACT_PROMPT = """
+            你是东方Project同人音乐维基的编辑。提供的素材很长，已切成若干块，这是第 %d / %d 块。请根据这一块素材，提取其中与『%s』相关的全部信息，输出 JSON 草稿，只输出 JSON。
+
+            要求：
+            1. content 为 markdown 草稿，用二级标题（##）分节，分节名按素材实际内容拟定，不必强求完整结构；只写本块素材中明确出现的内容，不编造、不参考其它块。
+            2. description 用一两句话概括本块中与该名称相关的信息。
+            3. tags 为本块素材中明确出现的关联名称/风格词字符串数组，宁缺毋滥。
+            4. 输出格式：{"description": "...", "content": "...", "tags": ["..."]}
+            """;
+
+    /**
+     * 合并总结：把各块草稿拼成一份素材，按本类型常规结构产出最终词条。
+     * 占位符：name（1 个 %s）。
+     */
+    private static final String MERGE_SYSTEM_PROMPT = """
+            你是东方Project同人音乐维基的编辑。提供的素材是同一词条『%s』的长篇资料分块提取后的草稿集合，请把它们综合成一篇完整、连贯的中文维基条目，只输出 JSON。
+
+            要求：
+            1. content 为 markdown 字符串，仅用二级标题（##）分节，不得使用一级标题（#）；按该词条类型的常规结构组织，合并各草稿中重复的内容，保留全部可核实信息，消除块与块之间的重复与矛盾。
+            2. 严格基于草稿集合撰写，不得编造素材中没有的事实；信息不足处写"暂无资料"。
+            3. description 为一两句话概括最终词条。
+            4. tags 为 3-8 个相关标签的字符串数组，汇总各草稿中明确出现的关联名称/风格词并去重；不得把该词条自身名称列为标签。
+            5. 输出格式：{"description": "...", "content": "...", "tags": ["...", "..."]}
             """;
 
     private static final String EVENT_SYSTEM_PROMPT = """
@@ -118,6 +163,7 @@ public class LlmService {
             case "event" -> EVENT_SYSTEM_PROMPT;
             case "original_game" -> ORIGINAL_GAME_SYSTEM_PROMPT;
             case "original_track", "game_track", "cd_track" -> ORIGINAL_TRACK_SYSTEM_PROMPT;
+            case "album" -> ALBUM_SYSTEM_PROMPT;
             default -> ARTIST_SYSTEM_PROMPT;
         };
     }
@@ -140,16 +186,89 @@ public class LlmService {
             return Optional.empty();
         }
 
-        String truncatedSource = sourceText.length() > MAX_SOURCE_CHARS
-                ? sourceText.substring(0, MAX_SOURCE_CHARS)
-                : sourceText;
+        // 素材超大：分块提取草稿 → 合并总结；否则走原有单次调用
+        if (sourceText.length() > MAX_SOURCE_CHARS) {
+            return generateInBatches(name, type, sourceText);
+        }
+        return callLlm(name, type, buildRequestBody(name, type, sourceText));
+    }
 
-        String body = buildRequestBody(name, type, truncatedSource);
+    /**
+     * 超大素材的生成：先按窗口切成多块，逐块提取草稿，再把草稿汇总为一次合并调用。
+     * 全部块都失败时回退到"仅用首块"的单次调用，避免比不分批更差。
+     */
+    private Optional<WikiResult> generateInBatches(String name, String type, String sourceText) {
+        List<String> chunks = splitSource(sourceText, MAX_SOURCE_CHARS);
+        log.info("素材超限（{} 字符），分 {} 块提取草稿（name: {}, type: {}）",
+                sourceText.length(), chunks.size(), name, type);
+
+        List<WikiResult> drafts = new ArrayList<>();
+        for (int i = 0; i < chunks.size(); i++) {
+            String system = CHUNK_EXTRACT_PROMPT.formatted(i + 1, chunks.size(), name);
+            String body = buildBatchRequestBody(system, "素材片段", chunks.get(i));
+            Optional<WikiResult> draft = callLlm(name, type, body);
+            draft.ifPresent(d -> drafts.add(d));
+        }
+
+        if (drafts.isEmpty()) {
+            log.warn("所有分块提取均失败，回退到首块单次生成（name: {}, type: {}）", name, type);
+            return callLlm(name, type,
+                    buildRequestBody(name, type, chunks.get(0)));
+        }
+
+        String mergedSource = buildMergedDraftSource(drafts);
+        String mergeBody = buildBatchRequestBody(MERGE_SYSTEM_PROMPT.formatted(name), "各分块草稿", mergedSource);
+        return callLlm(name, type, mergeBody);
+    }
+
+    /** 按上限切块，优先在靠近上限的换行处断开，避免切断行/句。 */
+    List<String> splitSource(String source, int maxChars) {
+        List<String> chunks = new ArrayList<>();
+        int start = 0;
+        int len = source.length();
+        while (start < len) {
+            int end = Math.min(start + maxChars, len);
+            if (end < len) {
+                int newline = source.lastIndexOf('\n', end);
+                // 仅在断点不会太靠前（至少半块）时回退到换行，避免产生极小块
+                if (newline > start + maxChars / 2) {
+                    end = newline + 1;
+                }
+            }
+            chunks.add(source.substring(start, end));
+            start = end;
+        }
+        return chunks;
+    }
+
+    /** 汇总各块草稿为合并调用的输入素材，每块正文按上限截断以控制总量。 */
+    private String buildMergedDraftSource(List<WikiResult> drafts) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < drafts.size(); i++) {
+            WikiResult d = drafts.get(i);
+            sb.append("----- 草稿 ").append(i + 1).append(" / ").append(drafts.size()).append(" -----\n");
+            if (StringUtils.hasText(d.description())) {
+                sb.append("摘要：").append(d.description()).append('\n');
+            }
+            String content = d.content() == null ? "" : d.content();
+            if (content.length() > PARTIAL_CONTENT_CHARS) {
+                content = content.substring(0, PARTIAL_CONTENT_CHARS);
+            }
+            sb.append("正文：\n").append(content).append('\n');
+            if (d.tags() != null && !d.tags().isEmpty()) {
+                sb.append("标签：").append(String.join("、", d.tags())).append('\n');
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
+    /** 发起一次 LLM 调用并解析为 WikiResult。 */
+    private Optional<WikiResult> callLlm(String name, String type, String body) {
         String response = postChatCompletions(body);
         if (response == null) {
             return Optional.empty();
         }
-
         return parseResponse(response, name);
     }
 
@@ -165,26 +284,40 @@ public class LlmService {
      * 组装 chat/completions 请求体（JSON mode）。
      */
     String buildRequestBody(String name, String type, String sourceText) {
+        String t = type == null ? "" : type;
+        String label = switch (t) {
+            case "event" -> "展会名称";
+            case "original_game" -> "原作名";
+            case "original_track" -> "原曲名";
+            case "album" -> "专辑名称";
+            default -> "社团名称";
+        };
+        String sourceLabel = switch (t) {
+            case "event" -> "本站收录数据";
+            case "original_track" -> "THBWiki 原作页面文本";
+            case "album" -> "本站专辑资料";
+            case "artist" -> "素材";
+            default -> "THBWiki 页面文本";
+        };
+        String userContent = label + "：" + name + "\n\n" + sourceLabel + "：\n" + sourceText;
+        return buildRequestBody(systemPrompt(type).formatted(name), userContent);
+    }
+
+    /** 分批提取 / 合并总结用：自定义 system 内容与来源标签。 */
+    private String buildBatchRequestBody(String systemContent, String sourceLabel, String sourceText) {
+        return buildRequestBody(systemContent, sourceLabel + "：\n" + sourceText);
+    }
+
+    /** 组装 chat/completions 请求体（JSON mode）的公共实现。 */
+    private String buildRequestBody(String systemContent, String userContent) {
         try {
             var messages = objectMapper.createArrayNode();
             var system = messages.addObject();
             system.put("role", "system");
-            system.put("content", systemPrompt(type).formatted(name));
+            system.put("content", systemContent);
             var user = messages.addObject();
             user.put("role", "user");
-            String t = type == null ? "" : type;
-            String label = switch (t) {
-                case "event" -> "展会名称";
-                case "original_game" -> "原作名";
-                case "original_track" -> "原曲名";
-                default -> "社团名称";
-            };
-            String sourceLabel = switch (t) {
-                case "event" -> "本站收录数据";
-                case "original_track" -> "THBWiki 原作页面文本";
-                default -> "THBWiki 页面文本";
-            };
-            user.put("content", label + "：" + name + "\n\n" + sourceLabel + "：\n" + sourceText);
+            user.put("content", userContent);
 
             var root = objectMapper.createObjectNode();
             root.put("model", model);
